@@ -23,15 +23,15 @@ public class PaymentMapper {
     public PaymentResponse toStatusResponse(Payment payment) {
         Objects.requireNonNull(payment, "payment must not be null");
 
-        return new PaymentResponse(
-                payment.getId(),
-                payment.getPayhereOrderId(),
-                payment.getAmount(),
-                normalizeCurrency(payment.getCurrency()),
-                payment.getStatus(),
-                payment.getCreatedAt(),
-                null
-        );
+        return PaymentResponse.builder()
+                .paymentId(payment.getId())
+                .orderId(payment.getPayhereOrderId())
+                .amount(payment.getAmount())
+                .currency(normalizeCurrency(payment.getCurrency()))
+                .status(payment.getStatus())
+                .createdAt(payment.getCreatedAt())
+                .updatedAt(payment.getUpdatedAt())
+                .build();
     }
 
     public CheckoutPayloadResponse toCheckoutResponse(
@@ -67,7 +67,10 @@ public class PaymentMapper {
         fields.put("custom_2", payment.getAppointmentId() == null ? "" : payment.getAppointmentId().toString());
         fields.put("hash", defaultString(hash));
 
-        return new CheckoutPayloadResponse(config.checkoutUrl(), fields);
+        return CheckoutPayloadResponse.builder()
+            .actionUrl(config.checkoutUrl())
+            .fields(fields)
+            .build();
     }
 
     private String formatAmount(BigDecimal amount) {

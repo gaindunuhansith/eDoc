@@ -1,7 +1,10 @@
 package com.edoc.paymentservice.model;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -9,6 +12,9 @@ import java.util.UUID;
 @Data
 @Entity
 @Table(name = "payment_logs")
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class PaymentLog {
 
     @Id
@@ -25,5 +31,6 @@ public class PaymentLog {
     private String eventType; // AUTHORIZATION, CAPTURE, WEBHOOK_RECEIVED
 
     @Column(name = "created_at", nullable = false)
+    @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 }
