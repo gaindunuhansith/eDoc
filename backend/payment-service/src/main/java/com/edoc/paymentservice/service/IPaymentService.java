@@ -1,5 +1,6 @@
 package com.edoc.paymentservice.service;
 
+import com.edoc.paymentservice.model.CustomerData;
 import com.edoc.paymentservice.model.Payment;
 
 import java.math.BigDecimal;
@@ -12,7 +13,7 @@ public interface IPaymentService {
 
     String generatePayHereHash(String orderId, BigDecimal amount, String currency);
 
-    Map<String, String> initiatePayment(UUID paymentId);
+    Map<String, String> initiatePayment(UUID paymentId, CustomerData customerData);
 
     void handleNotification(Map<String, String> params);
 
