@@ -5,6 +5,7 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -15,19 +16,21 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class InitiatePaymentRequest {
 
     @NotNull(message = "Appointment ID is required")
     private UUID appointmentId;
 
-    // Optional amount hint from client; backend must re-derive and enforce actual amount.
+    @NotNull(message = "Amount is required")
     @DecimalMin(value = "0.01", message = "Amount must be greater than zero")
     private BigDecimal amount;
 
-    // Optional currency hint from client; backend must enforce authoritative currency.
+    @NotNull(message = "Currency is required")
     @Pattern(regexp = "^[A-Za-z]{3}$", message = "Currency must be a 3-letter ISO code")
     private String currency;
 
+    @NotNull(message = "Patient ID is required")
     private UUID patientId;
 
     private String firstName;
