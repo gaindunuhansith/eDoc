@@ -16,10 +16,17 @@ payhere:
   merchant-id: ${PAYHERE_MERCHANT_ID:your_merchant_id}
   merchant-secret: ${PAYHERE_MERCHANT_SECRET:your_merchant_secret}
   checkout-url: ${PAYHERE_CHECKOUT_URL:https://sandbox.payhere.lk/pay/checkout}
-  return-url: ${PAYHERE_RETURN_URL:http://localhost:3000/payment/success}
-  cancel-url: ${PAYHERE_CANCEL_URL:http://localhost:3000/payment/cancel}
-  notify-url: ${PAYHERE_NOTIFY_URL:http://localhost:8085/payments/notify}
+  return-url: ${PAYHERE_RETURN_URL:https://app.example.com/payment/success}
+  cancel-url: ${PAYHERE_CANCEL_URL:https://app.example.com/payment/cancel}
+  notify-url: ${PAYHERE_NOTIFY_URL:https://api.example.com/payments/notify}
   sandbox: ${PAYHERE_SANDBOX:true}
+
+services:
+  appointment-base-url: ${APPOINTMENT_SERVICE_BASE_URL:http://appointment-service:8081}
+  notification-base-url: ${NOTIFICATION_SERVICE_BASE_URL:http://notification-service:8083}
+
+app:
+  api-gateway-origin: ${API_GATEWAY_ORIGIN:http://localhost:8080}
 
 server:
   port: ${SERVER_PORT:8085}
