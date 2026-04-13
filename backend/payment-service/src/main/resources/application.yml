@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: payment-service
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5437}/${DB_NAME:payment_db}
+    username: ${DB_USER:user}
+    password: ${DB_PASSWORD:password}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+
+payhere:
+  merchant:
+    id: ${PAYHERE_MERCHANT_ID:your_merchant_id}
+    secret: ${PAYHERE_MERCHANT_SECRET:your_merchant_secret}
+
+server:
+  port: ${SERVER_PORT:8085}
