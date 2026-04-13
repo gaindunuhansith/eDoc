@@ -19,6 +19,10 @@ public class NotificationRequest {
     @JsonProperty("order_id")
     private String orderId;
 
+    @NotBlank(message = "Payment ID is required")
+    @JsonProperty("payment_id")
+    private String paymentId;
+
     @NotBlank(message = "PayHere amount is required")
     @JsonProperty("payhere_amount")
     private String payhereAmount;
@@ -34,4 +38,16 @@ public class NotificationRequest {
     @NotBlank(message = "Signature is required")
     @JsonProperty("md5sig")
     private String md5sig;
+
+    @JsonProperty("custom_1")
+    private String custom1;
+
+    @JsonProperty("custom_2")
+    private String custom2;
+
+    @JsonProperty("method")
+    private String method;
+
+    @JsonProperty("status_message")
+    private String statusMessage;
 }

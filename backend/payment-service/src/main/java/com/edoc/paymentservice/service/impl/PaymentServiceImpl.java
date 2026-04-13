@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -77,8 +78,8 @@ public class PaymentServiceImpl implements IPaymentService {
         if (currency == null || currency.isBlank()) {
             throw new IllegalArgumentException("currency is required");
         }
-        if (currency.trim().length() != 3) {
-            throw new IllegalArgumentException("currency must be a 3-letter ISO code");
+        if (!"LKR".equals(currency.trim().toUpperCase(Locale.ROOT))) {
+            throw new IllegalArgumentException("Only LKR is supported");
         }
     }
 }
