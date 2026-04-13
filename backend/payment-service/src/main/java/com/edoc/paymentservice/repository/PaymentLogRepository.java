@@ -1,6 +1,6 @@
 package com.edoc.paymentservice.repository;
 
-import com.edoc.paymentservice.entity.PaymentLog;
+import com.edoc.paymentservice.model.PaymentLog;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

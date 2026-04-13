@@ -1,6 +1,6 @@
 package com.edoc.paymentservice.repository;
 
-import com.edoc.paymentservice.entity.Payment;
+import com.edoc.paymentservice.model.Payment;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import java.util.UUID;

@@ -1,6 +1,6 @@
 package com.edoc.paymentservice.dto;
 
-import com.edoc.paymentservice.entity.PaymentStatus;
+import com.edoc.paymentservice.model.enums.PaymentStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

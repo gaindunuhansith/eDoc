@@ -1,6 +1,6 @@
 package com.edoc.paymentservice.service;
 
-import com.edoc.paymentservice.entity.Payment;
+import com.edoc.paymentservice.model.Payment;
 
 import java.math.BigDecimal;
 import java.util.Map;

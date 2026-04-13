@@ -1,4 +1,4 @@
-package com.edoc.paymentservice.entity;
+package com.edoc.paymentservice.model.enums;
 
 public enum PaymentStatus {
     PENDING,

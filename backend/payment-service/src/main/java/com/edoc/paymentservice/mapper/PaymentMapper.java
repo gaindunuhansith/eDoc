@@ -3,8 +3,8 @@ package com.edoc.paymentservice.mapper;
 import com.edoc.paymentservice.config.PayHereProperties;
 import com.edoc.paymentservice.dto.CheckoutPayloadResponse;
 import com.edoc.paymentservice.dto.PaymentResponse;
-import com.edoc.paymentservice.entity.Payment;
 import com.edoc.paymentservice.model.CustomerData;
+import com.edoc.paymentservice.model.Payment;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;

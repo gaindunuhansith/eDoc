@@ -1,7 +1,9 @@
-package com.edoc.paymentservice.entity;
+package com.edoc.paymentservice.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import com.edoc.paymentservice.model.enums.PaymentStatus;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;

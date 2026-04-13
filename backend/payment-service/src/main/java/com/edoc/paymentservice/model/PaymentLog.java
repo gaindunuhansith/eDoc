@@ -1,8 +1,10 @@
-package com.edoc.paymentservice.entity;
+package com.edoc.paymentservice.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Data
 @Entity
@@ -14,7 +16,7 @@ public class PaymentLog {
     private Long id;
 
     @Column(name = "payment_id", nullable = false)
-    private java.util.UUID paymentId;
+    private UUID paymentId;
 
     @Column(name = "raw_response", columnDefinition = "jsonb")
     private String rawResponse; // Full webhook payload from PayHere for debugging
