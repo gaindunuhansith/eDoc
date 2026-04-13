@@ -25,6 +25,7 @@ import com.edoc.paymentservice.util.ValidationUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -38,6 +39,7 @@ public class PaymentServiceImpl implements IPaymentService {
 
     private static final Logger log = LoggerFactory.getLogger(PaymentServiceImpl.class);
     private static final Pattern CURRENCY_CODE_PATTERN = Pattern.compile("^[A-Za-z]{3}$");
+    private static final String MD5SIG_PARAM = "md5sig";
 
     private final PaymentRepository paymentRepository;
     private final PaymentLogRepository paymentLogRepository;
@@ -106,25 +108,39 @@ public class PaymentServiceImpl implements IPaymentService {
     @Transactional
     public void handleNotification(Map<String, String> params) {
         Objects.requireNonNull(params, "params must not be null");
+        log.info("Received PayHere notify callback");
+        log.debug("PayHere notify payload={}", sanitizeNotifyParams(params));
 
         String merchantId = ValidationUtils.requireParam(params, "merchant_id");
         String orderId = ValidationUtils.requireParam(params, "order_id");
         String payhereAmount = ValidationUtils.requireParam(params, "payhere_amount");
         String payhereCurrency = ValidationUtils.requireParam(params, "payhere_currency");
         String statusCode = ValidationUtils.requireParam(params, "status_code");
-        String md5sig = ValidationUtils.requireParam(params, "md5sig");
+        String md5sig = ValidationUtils.requireParam(params, MD5SIG_PARAM);
 
         if (!payHereProperties.merchantId().equals(merchantId)) {
+            log.warn("Rejected notify callback due to merchant mismatch orderId={} receivedMerchantId={} configuredMerchantId={}",
+                    orderId, merchantId, payHereProperties.merchantId());
             throw new InvalidNotificationSignatureException("merchant_id does not match configured merchant");
         }
 
+        // PayHere spec: md5sig = MD5(merchant_id + order_id + payhere_amount + payhere_currency + status_code + UPPER(MD5(secret)))
         String localSignature = payHereSignatureService.generate(orderId, payhereAmount, payhereCurrency, statusCode);
         if (!localSignature.equalsIgnoreCase(md5sig)) {
+            log.warn("Rejected notify callback due to invalid signature orderId={} statusCode={}", orderId, statusCode);
+            log.debug("Signature mismatch details orderId={} localSignature={} remoteSignature={}",
+                    orderId, localSignature, md5sig);
             throw new InvalidNotificationSignatureException("Invalid PayHere notification signature");
         }
+        log.info("PayHere signature verification passed orderId={} statusCode={}", orderId, statusCode);
 
         Payment payment = paymentRepository.findByPayhereOrderId(orderId)
-                .orElseThrow(() -> new PaymentNotFoundException("Payment not found for order_id: " + orderId));
+                .orElseThrow(() -> {
+                    log.warn("Payment not found for verified callback orderId={}", orderId);
+                    return new PaymentNotFoundException("Payment not found for order_id: " + orderId);
+                });
+
+        validateNotificationBusinessData(payment, payhereAmount, payhereCurrency, orderId);
 
         PaymentStatus incomingStatus = PaymentStatus.fromPayHereCode(statusCode);
         if (payment.getStatus().canTransitionTo(incomingStatus)) {
@@ -142,6 +158,7 @@ public class PaymentServiceImpl implements IPaymentService {
                 .rawResponse(JsonUtils.toJson(params))
                 .build();
         paymentLogRepository.save(paymentLog);
+        log.info("Stored callback payload for paymentId={} orderId={}", payment.getId(), orderId);
     }
 
     @Override
@@ -170,6 +187,37 @@ public class PaymentServiceImpl implements IPaymentService {
         if (!CURRENCY_CODE_PATTERN.matcher(currency.trim()).matches()) {
             throw new IllegalArgumentException("currency must be a valid 3-letter ISO code");
         }
+    }
+
+    private void validateNotificationBusinessData(Payment payment, String payhereAmount, String payhereCurrency, String orderId) {
+        String expectedCurrency = payment.getCurrency() == null ? "" : payment.getCurrency().trim().toUpperCase(Locale.ROOT);
+        String incomingCurrency = payhereCurrency.trim().toUpperCase(Locale.ROOT);
+        if (!expectedCurrency.equals(incomingCurrency)) {
+            log.warn("Rejected notify callback due to currency mismatch paymentId={} orderId={} expectedCurrency={} incomingCurrency={}",
+                    payment.getId(), orderId, expectedCurrency, incomingCurrency);
+            throw new IllegalArgumentException("Payment currency does not match callback currency");
+        }
+
+        BigDecimal incomingAmount;
+        try {
+            incomingAmount = new BigDecimal(payhereAmount);
+        } catch (NumberFormatException ex) {
+            log.warn("Rejected notify callback due to invalid amount format paymentId={} orderId={} amount={}",
+                    payment.getId(), orderId, payhereAmount);
+            throw new IllegalArgumentException("Invalid payhere_amount format");
+        }
+
+        if (payment.getAmount() == null || incomingAmount.compareTo(payment.getAmount()) != 0) {
+            log.warn("Rejected notify callback due to amount mismatch paymentId={} orderId={} expectedAmount={} incomingAmount={}",
+                    payment.getId(), orderId, payment.getAmount(), incomingAmount);
+            throw new IllegalArgumentException("Payment amount does not match callback amount");
+        }
+    }
+
+    private Map<String, String> sanitizeNotifyParams(Map<String, String> params) {
+        Map<String, String> sanitized = new HashMap<>(params);
+        sanitized.computeIfPresent(MD5SIG_PARAM, (key, value) -> "[REDACTED]");
+        return sanitized;
     }
 
     
