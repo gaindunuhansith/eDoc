@@ -1,0 +1,16 @@
+services:
+  payment-db:
+    image: postgres:16-alpine
+    container_name: payment-db
+    environment:
+      POSTGRES_DB: payment_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      PGDATA: /data/postgres
+    ports:
+      - "5437:5432"
+    volumes:
+      - payment-db-data:/data/postgres
+
+volumes:
+  payment-db-data:
