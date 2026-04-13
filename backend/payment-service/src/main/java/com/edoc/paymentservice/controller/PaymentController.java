@@ -11,6 +11,8 @@ import com.edoc.paymentservice.model.Payment;
 import jakarta.validation.Valid;
 import com.edoc.paymentservice.service.IPaymentService;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,6 +31,8 @@ import java.util.UUID;
 @RequestMapping("/payments")
 @RequiredArgsConstructor
 public class PaymentController {
+
+    private static final Logger log = LoggerFactory.getLogger(PaymentController.class);
 
     private final IPaymentService paymentService;
     private final PaymentMapper paymentMapper;
@@ -70,7 +74,13 @@ public class PaymentController {
 
     @PostMapping(value = "/notify", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ResponseEntity<String> handleNotification(@Valid @ModelAttribute NotificationRequest request) {
-        paymentService.handleNotification(toNotificationParams(request));
+        Map<String, String> params = toNotificationParams(request);
+        log.info("Incoming notify callback orderId={} paymentId={} statusCode={}",
+            request.getOrderId(), request.getPaymentId(), request.getStatusCode());
+        log.debug("Incoming notify payload keys={}", params.keySet());
+        paymentService.handleNotification(params);
+        log.info("Notify callback processed orderId={} paymentId={} statusCode={}",
+            request.getOrderId(), request.getPaymentId(), request.getStatusCode());
         return ResponseEntity.ok("OK");
     }
 
