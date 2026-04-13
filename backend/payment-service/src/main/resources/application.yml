@@ -13,9 +13,13 @@ spring:
         format_sql: true
 
 payhere:
-  merchant:
-    id: ${PAYHERE_MERCHANT_ID:your_merchant_id}
-    secret: ${PAYHERE_MERCHANT_SECRET:your_merchant_secret}
+  merchant-id: ${PAYHERE_MERCHANT_ID:your_merchant_id}
+  merchant-secret: ${PAYHERE_MERCHANT_SECRET:your_merchant_secret}
+  checkout-url: ${PAYHERE_CHECKOUT_URL:https://sandbox.payhere.lk/pay/checkout}
+  return-url: ${PAYHERE_RETURN_URL:http://localhost:3000/payment/success}
+  cancel-url: ${PAYHERE_CANCEL_URL:http://localhost:3000/payment/cancel}
+  notify-url: ${PAYHERE_NOTIFY_URL:http://localhost:8085/payments/notify}
+  sandbox: ${PAYHERE_SANDBOX:true}
 
 server:
   port: ${SERVER_PORT:8085}

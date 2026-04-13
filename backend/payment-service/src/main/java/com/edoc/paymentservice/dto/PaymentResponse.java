@@ -14,12 +14,11 @@ import java.util.UUID;
 @AllArgsConstructor
 public class PaymentResponse {
 
-    private UUID id;
-    private UUID appointmentId;
-    private UUID patientId;
+    private UUID paymentId;
+    private String orderId;
     private BigDecimal amount;
     private String currency;
     private PaymentStatus status;
-    private String payhereOrderId;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }
