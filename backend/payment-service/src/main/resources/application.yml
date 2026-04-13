@@ -12,5 +12,10 @@ spring:
       hibernate:
         format_sql: true
 
+payhere:
+  merchant:
+    id: ${PAYHERE_MERCHANT_ID:your_merchant_id}
+    secret: ${PAYHERE_MERCHANT_SECRET:your_merchant_secret}
+
 server:
   port: ${SERVER_PORT:8085}
