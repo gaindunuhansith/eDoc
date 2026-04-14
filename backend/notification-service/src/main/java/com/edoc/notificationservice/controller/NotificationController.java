@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.edoc.notificationservice.dto.EmailNotificationRequest;
 import com.edoc.notificationservice.dto.NotificationResponse;
+import com.edoc.notificationservice.dto.SmsNotificationRequest;
 import com.edoc.notificationservice.service.NotificationService;
 
 @RestController
@@ -24,6 +25,15 @@ public class NotificationController {
     @PostMapping("/email")
     public ResponseEntity<NotificationResponse> sendEmail(@RequestBody EmailNotificationRequest request) {
         NotificationResponse response = notificationService.sendEmail(request);
+        if ("SUCCESS".equals(response.status())) {
+            return ResponseEntity.ok(response);
+        }
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(response);
+    }
+
+    @PostMapping("/sms")
+    public ResponseEntity<NotificationResponse> sendSms(@RequestBody SmsNotificationRequest request) {
+        NotificationResponse response = notificationService.sendSms(request);
         if ("SUCCESS".equals(response.status())) {
             return ResponseEntity.ok(response);
         }
