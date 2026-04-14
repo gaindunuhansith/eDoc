@@ -1,0 +1,103 @@
+package com.edoc.appointmentservice.controller;
+
+import com.edoc.appointmentservice.dto.AppointmentRequest;
+import com.edoc.appointmentservice.dto.AppointmentStatusUpdate;
+import com.edoc.appointmentservice.model.Appointment;
+import com.edoc.appointmentservice.service.AppointmentService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/appointments")
+@RequiredArgsConstructor
+@CrossOrigin(origins = "*")
+public class AppointmentController {
+
+    private final AppointmentService appointmentService;
+
+    // ─── BOOK ─────────────────────────────────────────────────────────────────
+
+    // POST /api/appointments
+    @PostMapping
+    public ResponseEntity<Appointment> bookAppointment(
+            @Valid @RequestBody AppointmentRequest request) {
+        Appointment appointment = appointmentService.bookAppointment(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(appointment);
+    }
+
+    // ─── GET ──────────────────────────────────────────────────────────────────
+
+    // GET /api/appointments/{id}
+    @GetMapping("/{id}")
+    public ResponseEntity<Appointment> getAppointmentById(@PathVariable String id) {
+        return ResponseEntity.ok(appointmentService.getAppointmentById(id));
+    }
+
+    // GET /api/appointments/patient/{patientId}
+    @GetMapping("/patient/{patientId}")
+    public ResponseEntity<List<Appointment>> getAppointmentsByPatient(
+            @PathVariable String patientId) {
+        return ResponseEntity.ok(appointmentService.getAppointmentsByPatient(patientId));
+    }
+
+    // GET /api/appointments/doctor/{doctorId}
+    @GetMapping("/doctor/{doctorId}")
+    public ResponseEntity<List<Appointment>> getAppointmentsByDoctor(
+            @PathVariable String doctorId) {
+        return ResponseEntity.ok(appointmentService.getAppointmentsByDoctor(doctorId));
+    }
+
+    // GET /api/appointments/doctor/{doctorId}/pending
+    // Doctor sees all pending appointments they need to accept/reject
+    @GetMapping("/doctor/{doctorId}/pending")
+    public ResponseEntity<List<Appointment>> getPendingAppointments(
+            @PathVariable String doctorId) {
+        return ResponseEntity.ok(appointmentService.getPendingAppointmentsForDoctor(doctorId));
+    }
+
+    // GET /api/appointments/patient/{patientId}/status/{status}
+    // Patient filters their appointments by status
+    @GetMapping("/patient/{patientId}/status/{status}")
+    public ResponseEntity<List<Appointment>> getPatientAppointmentsByStatus(
+            @PathVariable String patientId,
+            @PathVariable Appointment.AppointmentStatus status) {
+        return ResponseEntity.ok(
+                appointmentService.getAppointmentsByPatientAndStatus(patientId, status)
+        );
+    }
+
+    // ─── UPDATE ───────────────────────────────────────────────────────────────
+
+    // PATCH /api/appointments/{id}/status
+    // Doctor uses this to CONFIRM, REJECT, COMPLETE, or add notes
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<Appointment> updateAppointmentStatus(
+            @PathVariable String id,
+            @RequestBody AppointmentStatusUpdate update) {
+        return ResponseEntity.ok(appointmentService.updateAppointmentStatus(id, update));
+    }
+
+    // PUT /api/appointments/{id}
+    // Patient modifies their appointment (date/time change)
+    @PutMapping("/{id}")
+    public ResponseEntity<Appointment> modifyAppointment(
+            @PathVariable String id,
+            @Valid @RequestBody AppointmentRequest request) {
+        return ResponseEntity.ok(appointmentService.modifyAppointment(id, request));
+    }
+
+    // ─── CANCEL ───────────────────────────────────────────────────────────────
+
+    // DELETE /api/appointments/{id}/cancel
+    @DeleteMapping("/{id}/cancel")
+    public ResponseEntity<Appointment> cancelAppointment(
+            @PathVariable String id,
+            @RequestParam(required = false) String reason) {
+        return ResponseEntity.ok(appointmentService.cancelAppointment(id, reason));
+    }
+}
