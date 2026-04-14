@@ -1,11 +1,14 @@
 package com.edoc.patientservice.controller;
 
+import com.edoc.patientservice.dto.MedicalHistoryRequest;
+import com.edoc.patientservice.dto.MedicalHistoryResponse;
 import com.edoc.patientservice.dto.MedicalReportRequest;
 import com.edoc.patientservice.dto.MedicalReportResponse;
 import com.edoc.patientservice.dto.PatientCreateRequest;
 import com.edoc.patientservice.dto.PatientResponse;
 import com.edoc.patientservice.dto.PatientUpdateRequest;
 import com.edoc.patientservice.dto.PrescriptionResponse;
+import com.edoc.patientservice.entity.MedicalHistory;
 import com.edoc.patientservice.entity.MedicalReport;
 import com.edoc.patientservice.entity.Patient;
 import com.edoc.patientservice.service.PatientService;
@@ -82,6 +85,26 @@ public class PatientController {
                 .collect(Collectors.toList());
     }
 
+    @PostMapping("/{id}/history")
+    @ResponseStatus(HttpStatus.CREATED)
+    public MedicalHistoryResponse addMedicalHistory(@PathVariable Long id,
+                                                    @Valid @RequestBody MedicalHistoryRequest request) {
+        MedicalHistory history = new MedicalHistory();
+        history.setCondition(request.getCondition());
+        history.setDiagnosis(request.getDiagnosis());
+        history.setVisitDate(request.getVisitDate());
+        history.setNotes(request.getNotes());
+
+        return toMedicalHistoryResponse(patientService.addMedicalHistory(id, history));
+    }
+
+    @GetMapping("/{id}/history")
+    public List<MedicalHistoryResponse> getMedicalHistory(@PathVariable Long id) {
+        return patientService.getMedicalHistory(id).stream()
+                .map(this::toMedicalHistoryResponse)
+                .collect(Collectors.toList());
+    }
+
     @GetMapping("/{id}/prescriptions")
     public List<PrescriptionResponse> getPrescriptions(@PathVariable Long id) {
         return patientService.getPrescriptions(id);
@@ -110,6 +133,20 @@ public class PatientController {
         response.setReportUrl(report.getReportUrl());
         response.setNotes(report.getNotes());
         response.setCreatedAt(report.getCreatedAt());
+        return response;
+    }
+
+    private MedicalHistoryResponse toMedicalHistoryResponse(MedicalHistory history) {
+        MedicalHistoryResponse response = new MedicalHistoryResponse();
+        response.setId(history.getId());
+        if (history.getPatient() != null) {
+            response.setPatientId(history.getPatient().getId());
+        }
+        response.setCondition(history.getCondition());
+        response.setDiagnosis(history.getDiagnosis());
+        response.setVisitDate(history.getVisitDate());
+        response.setNotes(history.getNotes());
+        response.setCreatedAt(history.getCreatedAt());
         return response;
     }
 }

@@ -2,8 +2,10 @@ package com.edoc.patientservice.service;
 
 import com.edoc.patientservice.client.DoctorServiceClient;
 import com.edoc.patientservice.dto.PrescriptionResponse;
+import com.edoc.patientservice.entity.MedicalHistory;
 import com.edoc.patientservice.entity.MedicalReport;
 import com.edoc.patientservice.entity.Patient;
+import com.edoc.patientservice.repository.MedicalHistoryRepository;
 import com.edoc.patientservice.repository.MedicalReportRepository;
 import com.edoc.patientservice.repository.PatientRepository;
 import java.util.List;
@@ -18,13 +20,16 @@ public class PatientService {
 
     private final PatientRepository patientRepository;
     private final MedicalReportRepository medicalReportRepository;
+    private final MedicalHistoryRepository medicalHistoryRepository;
     private final DoctorServiceClient doctorServiceClient;
 
     public PatientService(PatientRepository patientRepository,
                           MedicalReportRepository medicalReportRepository,
+                          MedicalHistoryRepository medicalHistoryRepository,
                           DoctorServiceClient doctorServiceClient) {
         this.patientRepository = patientRepository;
         this.medicalReportRepository = medicalReportRepository;
+        this.medicalHistoryRepository = medicalHistoryRepository;
         this.doctorServiceClient = doctorServiceClient;
     }
 
@@ -68,10 +73,22 @@ public class PatientService {
         return medicalReportRepository.save(report);
     }
 
+    public MedicalHistory addMedicalHistory(Long patientId, MedicalHistory history) {
+        Patient patient = findPatientOrThrow(patientId);
+        history.setPatient(patient);
+        return medicalHistoryRepository.save(history);
+    }
+
     @Transactional(readOnly = true)
     public List<MedicalReport> getMedicalReports(Long patientId) {
         findPatientOrThrow(patientId);
         return medicalReportRepository.findByPatientId(patientId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<MedicalHistory> getMedicalHistory(Long patientId) {
+        findPatientOrThrow(patientId);
+        return medicalHistoryRepository.findByPatientId(patientId);
     }
 
     @Transactional(readOnly = true)

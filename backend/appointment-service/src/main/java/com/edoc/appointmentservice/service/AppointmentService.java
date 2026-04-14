@@ -1,6 +1,8 @@
 package com.edoc.appointmentservice.service;
 
 import com.edoc.appointmentservice.client.DoctorServiceClient;
+import com.edoc.appointmentservice.client.NotificationServiceClient;
+import com.edoc.appointmentservice.client.PatientServiceClient;
 import com.edoc.appointmentservice.dto.AppointmentRequest;
 import com.edoc.appointmentservice.dto.AppointmentStatusUpdate;
 import com.edoc.appointmentservice.model.Appointment;
@@ -20,6 +22,8 @@ public class AppointmentService {
 
     private final AppointmentRepository appointmentRepository;
     private final DoctorServiceClient doctorServiceClient;
+    private final PatientServiceClient patientServiceClient;
+    private final NotificationServiceClient notificationServiceClient;
 
     // ─── BOOK APPOINTMENT ────────────────────────────────────────────────────
 
@@ -79,7 +83,11 @@ public class AppointmentService {
         );
 
         // Step 6: Save and return
-        return appointmentRepository.save(appointment);
+        Appointment saved = appointmentRepository.save(appointment);
+
+        notifyBooking(saved, doctorData);
+
+        return saved;
     }
 
     // ─── GET APPOINTMENTS ────────────────────────────────────────────────────
@@ -139,7 +147,13 @@ public class AppointmentService {
             );
         }
 
-        return appointmentRepository.save(appointment);
+        Appointment saved = appointmentRepository.save(appointment);
+
+        if (update.getStatus() == Appointment.AppointmentStatus.COMPLETED) {
+            notifyCompletion(saved);
+        }
+
+        return saved;
     }
 
     // ─── CANCEL APPOINTMENT ──────────────────────────────────────────────────
@@ -227,5 +241,111 @@ public class AppointmentService {
         );
 
         return appointmentRepository.save(existing);
+    }
+
+    private void notifyBooking(Appointment appointment, Map doctorData) {
+        try {
+            Map patientData = patientServiceClient.getPatientById(appointment.getPatientId());
+
+            String patientEmail = getString(patientData, "email");
+            String patientPhone = getString(patientData, "phone");
+            String patientName = getFullName(patientData, "firstName", "lastName");
+
+            String doctorEmail = getString(doctorData, "email");
+            String doctorPhone = getString(doctorData, "phoneNumber");
+            String doctorName = getFullName(doctorData, "firstName", "lastName");
+
+            String subject = "Appointment booked";
+            String message = String.format(
+                    "Appointment booked for %s on %s (%s) with Dr. %s.",
+                    appointment.getTimeSlot(),
+                    appointment.getAppointmentDate(),
+                    appointment.getDayOfWeek(),
+                    appointment.getDoctorName() != null ? appointment.getDoctorName() : doctorName
+            );
+
+            if (patientEmail != null || patientPhone != null) {
+                String patientMessage = patientName == null
+                        ? message
+                        : "Hello " + patientName + ", " + message;
+                notificationServiceClient.sendEmail(patientEmail, subject, patientMessage);
+                notificationServiceClient.sendSms(patientPhone, patientMessage);
+            }
+
+            if (doctorEmail != null || doctorPhone != null) {
+                String doctorMessage = doctorName == null
+                        ? message
+                        : "Hello Dr. " + doctorName + ", " + message;
+                notificationServiceClient.sendEmail(doctorEmail, subject, doctorMessage);
+                notificationServiceClient.sendSms(doctorPhone, doctorMessage);
+            }
+        } catch (Exception ex) {
+            log.warn("Notification send failed for booking {}", appointment.getId(), ex);
+        }
+    }
+
+    private void notifyCompletion(Appointment appointment) {
+        try {
+            Map patientData = patientServiceClient.getPatientById(appointment.getPatientId());
+            Map doctorData = doctorServiceClient.getDoctorById(appointment.getDoctorId());
+
+            String patientEmail = getString(patientData, "email");
+            String patientPhone = getString(patientData, "phone");
+            String patientName = getFullName(patientData, "firstName", "lastName");
+
+            String doctorEmail = getString(doctorData, "email");
+            String doctorPhone = getString(doctorData, "phoneNumber");
+            String doctorName = getFullName(doctorData, "firstName", "lastName");
+
+            String subject = "Consultation completed";
+            String message = String.format(
+                    "Consultation completed for %s on %s (%s) with Dr. %s.",
+                    appointment.getTimeSlot(),
+                    appointment.getAppointmentDate(),
+                    appointment.getDayOfWeek(),
+                    appointment.getDoctorName() != null ? appointment.getDoctorName() : doctorName
+            );
+
+            if (patientEmail != null || patientPhone != null) {
+                String patientMessage = patientName == null
+                        ? message
+                        : "Hello " + patientName + ", " + message;
+                notificationServiceClient.sendEmail(patientEmail, subject, patientMessage);
+                notificationServiceClient.sendSms(patientPhone, patientMessage);
+            }
+
+            if (doctorEmail != null || doctorPhone != null) {
+                String doctorMessage = doctorName == null
+                        ? message
+                        : "Hello Dr. " + doctorName + ", " + message;
+                notificationServiceClient.sendEmail(doctorEmail, subject, doctorMessage);
+                notificationServiceClient.sendSms(doctorPhone, doctorMessage);
+            }
+        } catch (Exception ex) {
+            log.warn("Notification send failed for completion {}", appointment.getId(), ex);
+        }
+    }
+
+    private String getString(Map data, String key) {
+        if (data == null) {
+            return null;
+        }
+        Object value = data.get(key);
+        return value == null ? null : String.valueOf(value);
+    }
+
+    private String getFullName(Map data, String firstNameKey, String lastNameKey) {
+        String first = getString(data, firstNameKey);
+        String last = getString(data, lastNameKey);
+        if (first == null && last == null) {
+            return null;
+        }
+        if (first == null) {
+            return last;
+        }
+        if (last == null) {
+            return first;
+        }
+        return first + " " + last;
     }
 }
