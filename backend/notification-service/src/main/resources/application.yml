@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: notification-service
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5435}/${DB_NAME:notification_db}
+    username: ${DB_USER:user}
+    password: ${DB_PASSWORD:password}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+
+server:
+  port: ${SERVER_PORT:8083}
+
+doctor-service:
+  base-url: ${DOCTOR_SERVICE_URL:http://localhost:8082}
+
+resend:
+  api-key: ${RESEND_API_KEY:}
+  from-email: ${RESEND_FROM_EMAIL:noreply@edoc.lk}
+  api-url: ${RESEND_API_URL:https://api.resend.com/emails}
+
+vonage:
+  api-key: ${VONAGE_API_KEY:}
+  api-secret: ${VONAGE_API_SECRET:}
+  sms-from: ${VONAGE_SMS_FROM:eDoc}
