@@ -17,6 +17,7 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 @Component
+// Resend API client for outbound emails.
 public class ResendEmailClient {
 
     private final String apiKey;

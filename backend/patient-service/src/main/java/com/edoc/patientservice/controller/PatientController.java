@@ -37,6 +37,7 @@ public class PatientController {
 
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
+    // Patient self-registration and profile creation.
     public PatientResponse registerPatient(@Valid @RequestBody PatientCreateRequest request) {
         Patient patient = new Patient();
         patient.setFirstName(request.getFirstName());
@@ -50,11 +51,13 @@ public class PatientController {
     }
 
     @GetMapping("/{id}")
+    // Read a patient profile by id.
     public PatientResponse getPatient(@PathVariable Long id) {
         return toPatientResponse(patientService.getPatient(id));
     }
 
     @PutMapping("/{id}")
+    // Update profile fields supplied in the request.
     public PatientResponse updatePatient(@PathVariable Long id, @Valid @RequestBody PatientUpdateRequest request) {
         Patient updates = new Patient();
         updates.setFirstName(request.getFirstName());
@@ -69,6 +72,7 @@ public class PatientController {
 
     @PostMapping("/{id}/reports")
     @ResponseStatus(HttpStatus.CREATED)
+    // Upload a patient medical report record (URL + notes).
     public MedicalReportResponse addMedicalReport(@PathVariable Long id, @Valid @RequestBody MedicalReportRequest request) {
         MedicalReport report = new MedicalReport();
         report.setReportName(request.getReportName());
@@ -79,6 +83,7 @@ public class PatientController {
     }
 
     @GetMapping("/{id}/reports")
+    // List all reports for a patient.
     public List<MedicalReportResponse> getMedicalReports(@PathVariable Long id) {
         return patientService.getMedicalReports(id).stream()
                 .map(this::toMedicalReportResponse)
@@ -87,6 +92,7 @@ public class PatientController {
 
     @PostMapping("/{id}/history")
     @ResponseStatus(HttpStatus.CREATED)
+    // Add a medical history entry (conditions, visit info, notes).
     public MedicalHistoryResponse addMedicalHistory(@PathVariable Long id,
                                                     @Valid @RequestBody MedicalHistoryRequest request) {
         MedicalHistory history = new MedicalHistory();
@@ -99,6 +105,7 @@ public class PatientController {
     }
 
     @GetMapping("/{id}/history")
+    // List medical history entries for a patient.
     public List<MedicalHistoryResponse> getMedicalHistory(@PathVariable Long id) {
         return patientService.getMedicalHistory(id).stream()
                 .map(this::toMedicalHistoryResponse)
@@ -106,6 +113,7 @@ public class PatientController {
     }
 
     @GetMapping("/{id}/prescriptions")
+    // View prescriptions pulled from doctor-service.
     public List<PrescriptionResponse> getPrescriptions(@PathVariable Long id) {
         return patientService.getPrescriptions(id);
     }

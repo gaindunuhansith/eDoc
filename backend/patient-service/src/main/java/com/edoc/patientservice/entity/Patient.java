@@ -16,6 +16,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "patients")
+// Patient profile and relationships to reports/history.
 public class Patient {
 
     @Id

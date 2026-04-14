@@ -2,6 +2,7 @@ package com.edoc.patientservice.dto;
 
 import java.time.Instant;
 
+// Prescription data returned to patient views.
 public class PrescriptionResponse {
 
     private Long id;

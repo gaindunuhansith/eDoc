@@ -13,6 +13,7 @@ import java.time.Instant;
 
 @Entity
 @Table(name = "medical_reports")
+// Uploaded report metadata linked to a patient.
 public class MedicalReport {
 
     @Id
