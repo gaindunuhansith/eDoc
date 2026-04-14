@@ -1,7 +1,8 @@
 package com.edoc.paymentservice.dto;
 
-import com.edoc.paymentservice.entity.PaymentStatus;
+import com.edoc.paymentservice.model.enums.PaymentStatus;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -12,14 +13,14 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class PaymentResponse {
 
-    private UUID id;
-    private UUID appointmentId;
-    private UUID patientId;
+    private UUID paymentId;
+    private String orderId;
     private BigDecimal amount;
     private String currency;
     private PaymentStatus status;
-    private String payhereOrderId;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

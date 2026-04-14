@@ -3,12 +3,14 @@ package com.edoc.paymentservice.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class NotificationRequest {
 
     @NotBlank(message = "Merchant ID is required")
@@ -18,6 +20,10 @@ public class NotificationRequest {
     @NotBlank(message = "Order ID is required")
     @JsonProperty("order_id")
     private String orderId;
+
+    @NotBlank(message = "Payment ID is required")
+    @JsonProperty("payment_id")
+    private String paymentId;
 
     @NotBlank(message = "PayHere amount is required")
     @JsonProperty("payhere_amount")
@@ -34,4 +40,16 @@ public class NotificationRequest {
     @NotBlank(message = "Signature is required")
     @JsonProperty("md5sig")
     private String md5sig;
+
+    @JsonProperty("custom_1")
+    private String custom1;
+
+    @JsonProperty("custom_2")
+    private String custom2;
+
+    @JsonProperty("method")
+    private String method;
+
+    @JsonProperty("status_message")
+    private String statusMessage;
 }
