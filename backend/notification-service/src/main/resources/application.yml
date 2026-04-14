@@ -22,3 +22,8 @@ resend:
   api-key: ${RESEND_API_KEY:}
   from-email: ${RESEND_FROM_EMAIL:noreply@edoc.lk}
   api-url: ${RESEND_API_URL:https://api.resend.com/emails}
+
+vonage:
+  api-key: ${VONAGE_API_KEY:}
+  api-secret: ${VONAGE_API_SECRET:}
+  sms-from: ${VONAGE_SMS_FROM:eDoc}
