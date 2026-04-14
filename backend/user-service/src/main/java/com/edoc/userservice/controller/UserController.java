@@ -1,5 +1,6 @@
 package com.edoc.userservice.controller;
 
+import com.edoc.userservice.dto.PatchUserRequest;
 import com.edoc.userservice.dto.UpdateUserRequest;
 import com.edoc.userservice.dto.UserResponse;
 import com.edoc.userservice.service.IUserService;
@@ -8,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -37,6 +39,11 @@ public class UserController {
             @Valid @RequestBody UpdateUserRequest request
     ) {
         return ResponseEntity.ok(userService.updateByUserId(userId, request));
+    }
+
+    @PatchMapping("/me")
+    public ResponseEntity<UserResponse> patchCurrentUser(@Valid @RequestBody PatchUserRequest request) {
+        return ResponseEntity.ok(userService.patchCurrentUser(request));
     }
 
     @DeleteMapping("/me")
