@@ -20,7 +20,7 @@ services:
       POSTGRES_PASSWORD: password
       PGDATA: /data/postgres
     ports:
-      - "5435:5432"
+      - "5436:5432"
     volumes:
       - patient-db-data:/data/postgres
   
