@@ -36,14 +36,14 @@ public class VonageSmsClient {
         }
 
         try {
-            var response = vonageClient.getMessagesClient().sendMessage(
+                vonageClient.getMessagesClient().sendMessage(
                     SmsTextRequest.builder()
                             .from(smsFrom)
                             .to(to)
                             .text(text)
                             .build()
             );
-            return SmsSendResult.success(response.getMessageUuid());
+                return SmsSendResult.success(null);
         } catch (Exception ex) {
             return SmsSendResult.failure("Vonage request failed: " + ex.getMessage());
         }
