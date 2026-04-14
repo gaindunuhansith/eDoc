@@ -14,6 +14,7 @@ import java.time.LocalDate;
 
 @Entity
 @Table(name = "medical_history")
+// Structured medical history entries for a patient.
 public class MedicalHistory {
 
     @Id

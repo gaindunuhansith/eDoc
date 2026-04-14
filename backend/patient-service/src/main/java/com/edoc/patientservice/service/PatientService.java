@@ -34,6 +34,7 @@ public class PatientService {
     }
 
     public Patient registerPatient(Patient patient) {
+        // Persist a new patient profile.
         return patientRepository.save(patient);
     }
 
@@ -43,6 +44,7 @@ public class PatientService {
     }
 
     public Patient updatePatient(Long id, Patient updates) {
+        // Apply only fields provided in the update request.
         Patient existing = findPatientOrThrow(id);
 
         if (updates.getFirstName() != null) {
@@ -68,12 +70,14 @@ public class PatientService {
     }
 
     public MedicalReport addMedicalReport(Long patientId, MedicalReport report) {
+        // Attach report to patient before saving.
         Patient patient = findPatientOrThrow(patientId);
         report.setPatient(patient);
         return medicalReportRepository.save(report);
     }
 
     public MedicalHistory addMedicalHistory(Long patientId, MedicalHistory history) {
+        // Attach history entry to patient before saving.
         Patient patient = findPatientOrThrow(patientId);
         history.setPatient(patient);
         return medicalHistoryRepository.save(history);
@@ -81,18 +85,21 @@ public class PatientService {
 
     @Transactional(readOnly = true)
     public List<MedicalReport> getMedicalReports(Long patientId) {
+        // Ensure patient exists before querying reports.
         findPatientOrThrow(patientId);
         return medicalReportRepository.findByPatientId(patientId);
     }
 
     @Transactional(readOnly = true)
     public List<MedicalHistory> getMedicalHistory(Long patientId) {
+        // Ensure patient exists before querying history.
         findPatientOrThrow(patientId);
         return medicalHistoryRepository.findByPatientId(patientId);
     }
 
     @Transactional(readOnly = true)
     public List<PrescriptionResponse> getPrescriptions(Long patientId) {
+        // Fetch prescriptions from doctor-service.
         findPatientOrThrow(patientId);
         return doctorServiceClient.getPrescriptions(patientId);
     }

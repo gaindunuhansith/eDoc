@@ -3,6 +3,7 @@ package com.edoc.patientservice.dto;
 import java.time.Instant;
 import java.time.LocalDate;
 
+// Medical history details returned to clients.
 public class MedicalHistoryResponse {
 
     private Long id;

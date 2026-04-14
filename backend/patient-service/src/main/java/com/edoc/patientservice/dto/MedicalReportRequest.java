@@ -3,6 +3,7 @@ package com.edoc.patientservice.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+// Payload for uploading a medical report record.
 public class MedicalReportRequest {
 
     @NotBlank

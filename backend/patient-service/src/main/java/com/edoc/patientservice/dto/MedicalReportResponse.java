@@ -2,6 +2,7 @@ package com.edoc.patientservice.dto;
 
 import java.time.Instant;
 
+// Medical report details returned to clients.
 public class MedicalReportResponse {
 
     private Long id;

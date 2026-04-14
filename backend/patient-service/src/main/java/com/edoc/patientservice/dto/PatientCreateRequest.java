@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 
+// Required fields for patient registration.
 public class PatientCreateRequest {
 
     @NotBlank

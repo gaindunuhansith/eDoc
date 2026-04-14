@@ -3,6 +3,7 @@ package com.edoc.patientservice.dto;
 import java.time.Instant;
 import java.time.LocalDate;
 
+// Patient profile data returned to clients.
 public class PatientResponse {
 
     private Long id;

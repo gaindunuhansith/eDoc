@@ -23,6 +23,7 @@ public class NotificationController {
     }
 
     @PostMapping("/email")
+    // Send a single email notification via the configured provider.
     public ResponseEntity<NotificationResponse> sendEmail(@RequestBody EmailNotificationRequest request) {
         NotificationResponse response = notificationService.sendEmail(request);
         if ("SUCCESS".equals(response.status())) {
@@ -32,6 +33,7 @@ public class NotificationController {
     }
 
     @PostMapping("/sms")
+    // Send a single SMS notification via the configured provider.
     public ResponseEntity<NotificationResponse> sendSms(@RequestBody SmsNotificationRequest request) {
         NotificationResponse response = notificationService.sendSms(request);
         if ("SUCCESS".equals(response.status())) {

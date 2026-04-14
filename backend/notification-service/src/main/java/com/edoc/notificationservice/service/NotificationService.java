@@ -26,6 +26,7 @@ public class NotificationService {
     }
 
     public NotificationResponse sendEmail(EmailNotificationRequest request) {
+        // Send email and persist a notification audit log.
         ResendSendResult result = resendEmailClient.sendEmail(request.to(), request.subject(), request.body());
 
         NotificationLog log = new NotificationLog();
@@ -46,6 +47,7 @@ public class NotificationService {
     }
 
     public NotificationResponse sendSms(SmsNotificationRequest request) {
+        // Send SMS and persist a notification audit log.
         SmsSendResult result = vonageSmsClient.sendSms(request.to(), request.text());
 
         NotificationLog log = new NotificationLog();

@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 
+// Payload for adding a medical history entry.
 public class MedicalHistoryRequest {
 
     @NotBlank
