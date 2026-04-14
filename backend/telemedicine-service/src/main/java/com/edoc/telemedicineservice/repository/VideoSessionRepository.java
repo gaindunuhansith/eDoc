@@ -1,6 +1,6 @@
-package com.edoc.telemedicine.repository;
+package com.edoc.telemedicineservice.repository;
 
-import com.edoc.telemedicine.entity.VideoSession;
+import com.edoc.telemedicineservice.model.VideoSession;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

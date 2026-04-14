@@ -1,4 +1,4 @@
-package com.edoc.telemedicine.entity;
+package com.edoc.telemedicineservice.model;
 
 public enum SessionStatus {
     SCHEDULED,

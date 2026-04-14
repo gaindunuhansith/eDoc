@@ -1,8 +1,8 @@
-package com.edoc.telemedicine.service;
+package com.edoc.telemedicineservice.service;
 
-import com.edoc.telemedicine.entity.SessionStatus;
-import com.edoc.telemedicine.entity.VideoSession;
-import com.edoc.telemedicine.repository.VideoSessionRepository;
+import com.edoc.telemedicineservice.model.SessionStatus;
+import com.edoc.telemedicineservice.model.VideoSession;
+import com.edoc.telemedicineservice.repository.VideoSessionRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;

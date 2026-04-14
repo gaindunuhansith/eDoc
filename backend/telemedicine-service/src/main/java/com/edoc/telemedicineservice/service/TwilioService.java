@@ -1,4 +1,4 @@
-package com.edoc.telemedicine.service;
+package com.edoc.telemedicineservice.service;
 
 import com.twilio.Twilio;
 import com.twilio.jwt.accesstoken.AccessToken;

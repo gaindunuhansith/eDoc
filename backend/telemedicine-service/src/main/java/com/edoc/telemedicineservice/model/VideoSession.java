@@ -1,4 +1,4 @@
-package com.edoc.telemedicine.entity;
+package com.edoc.telemedicineservice.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
