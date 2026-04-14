@@ -44,7 +44,7 @@ services:
       POSTGRES_PASSWORD: password
       PGDATA: /data/postgres
     ports:
-      - "5438:5432"
+      - "5440:5432"
     volumes:
       - user-db-data:/data/postgres
   
