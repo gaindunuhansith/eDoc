@@ -5,6 +5,7 @@ import com.edoc.patientservice.dto.MedicalReportResponse;
 import com.edoc.patientservice.dto.PatientCreateRequest;
 import com.edoc.patientservice.dto.PatientResponse;
 import com.edoc.patientservice.dto.PatientUpdateRequest;
+import com.edoc.patientservice.dto.PrescriptionResponse;
 import com.edoc.patientservice.entity.MedicalReport;
 import com.edoc.patientservice.entity.Patient;
 import com.edoc.patientservice.service.PatientService;
@@ -79,6 +80,11 @@ public class PatientController {
         return patientService.getMedicalReports(id).stream()
                 .map(this::toMedicalReportResponse)
                 .collect(Collectors.toList());
+    }
+
+    @GetMapping("/{id}/prescriptions")
+    public List<PrescriptionResponse> getPrescriptions(@PathVariable Long id) {
+        return patientService.getPrescriptions(id);
     }
 
     private PatientResponse toPatientResponse(Patient patient) {

@@ -1,5 +1,7 @@
 package com.edoc.patientservice.service;
 
+import com.edoc.patientservice.client.DoctorServiceClient;
+import com.edoc.patientservice.dto.PrescriptionResponse;
 import com.edoc.patientservice.entity.MedicalReport;
 import com.edoc.patientservice.entity.Patient;
 import com.edoc.patientservice.repository.MedicalReportRepository;
@@ -16,10 +18,14 @@ public class PatientService {
 
     private final PatientRepository patientRepository;
     private final MedicalReportRepository medicalReportRepository;
+    private final DoctorServiceClient doctorServiceClient;
 
-    public PatientService(PatientRepository patientRepository, MedicalReportRepository medicalReportRepository) {
+    public PatientService(PatientRepository patientRepository,
+                          MedicalReportRepository medicalReportRepository,
+                          DoctorServiceClient doctorServiceClient) {
         this.patientRepository = patientRepository;
         this.medicalReportRepository = medicalReportRepository;
+        this.doctorServiceClient = doctorServiceClient;
     }
 
     public Patient registerPatient(Patient patient) {
@@ -66,6 +72,12 @@ public class PatientService {
     public List<MedicalReport> getMedicalReports(Long patientId) {
         findPatientOrThrow(patientId);
         return medicalReportRepository.findByPatientId(patientId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PrescriptionResponse> getPrescriptions(Long patientId) {
+        findPatientOrThrow(patientId);
+        return doctorServiceClient.getPrescriptions(patientId);
     }
 
     private Patient findPatientOrThrow(Long id) {
