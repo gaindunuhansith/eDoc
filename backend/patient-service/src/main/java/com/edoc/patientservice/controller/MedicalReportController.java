@@ -65,6 +65,12 @@ public class MedicalReportController {
         return medicalReportService.getReportFileForPatient(currentPatientProvider.getCurrentPatientId(), id);
     }
 
+    @GetMapping("/patients/me/reports/{id}/download")
+    // Alias of /file to keep client URLs flexible without duplicating logic.
+    public ResponseEntity<Resource> downloadMyReportAlias(@PathVariable Long id) {
+        return medicalReportService.getReportFileForPatient(currentPatientProvider.getCurrentPatientId(), id);
+    }
+
     @GetMapping("/internal/patients/{id}/reports")
     // Internal lookup for another service to read reports.
     public List<MedicalReportResponseDTO> getReportsInternal(@PathVariable Long id) {
@@ -75,6 +81,13 @@ public class MedicalReportController {
     // Internal file access endpoint for doctor-service and other backend services.
     public ResponseEntity<Resource> downloadReportInternal(@PathVariable Long patientId,
                                                            @PathVariable Long reportId) {
+        return medicalReportService.getReportFileInternal(patientId, reportId);
+    }
+
+    @GetMapping("/internal/patients/{patientId}/reports/{reportId}/download")
+    // Alias of the internal /file endpoint used by doctor-service integrations.
+    public ResponseEntity<Resource> downloadReportInternalAlias(@PathVariable Long patientId,
+                                                                @PathVariable Long reportId) {
         return medicalReportService.getReportFileInternal(patientId, reportId);
     }
 

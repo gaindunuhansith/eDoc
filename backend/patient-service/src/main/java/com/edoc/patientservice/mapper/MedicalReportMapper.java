@@ -15,7 +15,7 @@ public class MedicalReportMapper {
             response.setPatientId(report.getPatient().getId());
         }
         response.setReportName(report.getReportName());
-        response.setReportUrl(report.getReportUrl());
+        // Do not expose server file paths in API responses.
         response.setNotes(report.getNotes());
         response.setCreatedAt(report.getCreatedAt());
         return response;
