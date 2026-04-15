@@ -55,10 +55,13 @@ public class ResendEmailClient {
 
         try {
             String effectiveTo = (testRecipient != null && !testRecipient.isBlank()) ? testRecipient : to;
+            if (effectiveTo == null || effectiveTo.isBlank()) {
+                return ResendSendResult.failure("Recipient email is missing.");
+            }
 
             Map<String, Object> payload = Map.of(
                     "from", fromEmail,
-                "to", List.of(effectiveTo),
+                    "to", List.of(effectiveTo),
                     "subject", subject,
                     "text", body
             );
