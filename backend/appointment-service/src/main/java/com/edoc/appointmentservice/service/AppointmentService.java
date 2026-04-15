@@ -91,7 +91,9 @@ public class AppointmentService {
                 startTime
         );
 
-        return appointmentRepository.save(appointment);
+        Appointment savedAppointment = appointmentRepository.save(appointment);
+        notifyBooking(savedAppointment, doctorData);
+        return savedAppointment;
     }
 
     // ─── GET ─────────────────────────────────────────────────────────────────
@@ -172,7 +174,19 @@ public class AppointmentService {
             );
         }
 
-        return appointmentRepository.save(appointment);
+        Appointment savedAppointment = appointmentRepository.save(appointment);
+
+        if (update.getStatus() == Appointment.AppointmentStatus.CONFIRMED) {
+            notifyAppointmentConfirmed(savedAppointment);
+        }
+        if (update.getStatus() == Appointment.AppointmentStatus.CANCELLED) {
+            notifyAppointmentCancelled(savedAppointment);
+        }
+        if (update.getStatus() == Appointment.AppointmentStatus.COMPLETED) {
+            notifyCompletion(savedAppointment);
+        }
+
+        return savedAppointment;
     }
 
     // ─── UPDATE PAYMENT STATUS ───────────────────────────────────────────────
@@ -372,6 +386,60 @@ public class AppointmentService {
             }
         } catch (Exception ex) {
             log.warn("Notification send failed for booking {}", appointment.getId(), ex);
+        }
+    }
+
+    private void notifyAppointmentConfirmed(Appointment appointment) {
+        try {
+            Map patientData = patientServiceClient.getPatientById(appointment.getPatientId());
+            String patientEmail = getString(patientData, "email");
+            String patientPhone = getString(patientData, "phone");
+            String patientName = getFullName(patientData, "firstName", "lastName");
+
+            String subject = "Appointment confirmed";
+            String message = String.format(
+                    "Your appointment on %s (%s) at %s has been confirmed.",
+                    appointment.getAppointmentDate(),
+                    appointment.getDayOfWeek(),
+                    appointment.getTimeSlot()
+            );
+
+            if (patientEmail != null || patientPhone != null) {
+                String patientMessage = patientName == null
+                        ? message
+                        : "Hello " + patientName + ", " + message;
+                notificationServiceClient.sendEmail(patientEmail, subject, patientMessage);
+                notificationServiceClient.sendSms(patientPhone, patientMessage);
+            }
+        } catch (Exception ex) {
+            log.warn("Notification send failed for confirmation {}", appointment.getId(), ex);
+        }
+    }
+
+    private void notifyAppointmentCancelled(Appointment appointment) {
+        try {
+            Map patientData = patientServiceClient.getPatientById(appointment.getPatientId());
+            String patientEmail = getString(patientData, "email");
+            String patientPhone = getString(patientData, "phone");
+            String patientName = getFullName(patientData, "firstName", "lastName");
+
+            String subject = "Appointment cancelled";
+            String message = String.format(
+                    "Your appointment on %s (%s) at %s has been cancelled.",
+                    appointment.getAppointmentDate(),
+                    appointment.getDayOfWeek(),
+                    appointment.getTimeSlot()
+            );
+
+            if (patientEmail != null || patientPhone != null) {
+                String patientMessage = patientName == null
+                        ? message
+                        : "Hello " + patientName + ", " + message;
+                notificationServiceClient.sendEmail(patientEmail, subject, patientMessage);
+                notificationServiceClient.sendSms(patientPhone, patientMessage);
+            }
+        } catch (Exception ex) {
+            log.warn("Notification send failed for cancellation {}", appointment.getId(), ex);
         }
     }
 
