@@ -35,7 +35,20 @@ services:
       - "5435:5432"
     volumes:
       - notification-db-data:/data/postgres
-  user-db:
+  telemedicine-db:
+    image: postgres:16-alpine
+    container_name: telemedicine-db
+    environment:
+      POSTGRES_DB: telemedicine_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      PGDATA: /data/postgres
+    ports:
+      - "5438:5432"
+    volumes:
+      - telemedicine-db-data:/data/postgres
+  
+user-db:
     image: postgres:16-alpine
     container_name: user-db
     environment:
@@ -52,5 +65,6 @@ volumes:
   payment-db-data:
   patient-db-data:
   notification-db-data:
+  telemedicine-db-data:
   user-db-data:
-  
+

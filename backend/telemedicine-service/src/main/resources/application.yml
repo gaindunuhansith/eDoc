@@ -1,0 +1,24 @@
+﻿spring:
+  application:
+    name: telemedicine-service
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5438}/${DB_NAME:telemedicine_db}
+    username: ${DB_USER:user}
+    password: ${DB_PASSWORD:password}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+
+server:
+  port: ${SERVER_PORT:8086}
+
+telemedicine:
+  video-provider: twilio
+  twilio:
+    account-sid: ${TWILIO_ACCOUNT_SID:}
+    auth-token: ${TWILIO_AUTH_TOKEN:}
+    api-key-sid: ${TWILIO_API_KEY_SID:}
+    api-secret: ${TWILIO_API_SECRET:}
