@@ -3,6 +3,7 @@ package com.edoc.telemedicineservice.controller;
 import com.edoc.telemedicineservice.dto.VideoSessionRequest;
 import com.edoc.telemedicineservice.model.VideoSession;
 import com.edoc.telemedicineservice.service.TelemedicineService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,13 +21,22 @@ public class TelemedicineController {
      * Create a video session associated with an appointment.
      */
     @PostMapping("/sessions")
+    @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<VideoSession> createSession(@RequestBody VideoSessionRequest request) {
         VideoSession session = telemedicineService.createSession(
                 request.getAppointmentId(),
                 request.getDoctorId(),
                 request.getPatientId()
         );
-        return ResponseEntity.ok(session);
+        return ResponseEntity.status(HttpStatus.CREATED).body(session);
+    }
+
+    /**
+     * Read a video session by appointment id.
+     */
+    @GetMapping("/sessions/{appointmentId}")
+    public ResponseEntity<VideoSession> getSession(@PathVariable String appointmentId) {
+        return ResponseEntity.ok(telemedicineService.getSession(appointmentId));
     }
 
     /**
@@ -56,5 +66,14 @@ public class TelemedicineController {
     public ResponseEntity<VideoSession> endSession(@PathVariable String appointmentId) {
         VideoSession session = telemedicineService.endSession(appointmentId);
         return ResponseEntity.ok(session);
+    }
+
+    /**
+     * Delete a video session by appointment id.
+     */
+    @DeleteMapping("/sessions/{appointmentId}")
+    public ResponseEntity<Void> deleteSession(@PathVariable String appointmentId) {
+        telemedicineService.deleteSession(appointmentId);
+        return ResponseEntity.noContent().build();
     }
 }

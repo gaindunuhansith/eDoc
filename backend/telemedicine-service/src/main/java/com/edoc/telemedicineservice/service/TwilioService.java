@@ -18,18 +18,23 @@ public class TwilioService {
     @Value("${telemedicine.twilio.auth-token}")
     private String authToken;
 
-    @Value("${telemedicine.twilio.api-key}")
-    private String apiKey;
+    @Value("${telemedicine.twilio.api-key-sid}")
+    private String apiKeySid;
 
     @Value("${telemedicine.twilio.api-secret}")
     private String apiSecret;
 
     @PostConstruct
     public void init() {
-        Twilio.init(accountSid, authToken);
+        if (hasText(accountSid) && hasText(authToken)) {
+            Twilio.init(accountSid, authToken);
+        }
     }
 
     public String createRoom(String roomName) {
+        if (!hasBaseCredentials()) {
+            return "local-room-" + roomName;
+        }
         try {
             Room room = Room.creator()
                     .setUniqueName(roomName)
@@ -44,14 +49,30 @@ public class TwilioService {
     }
 
     public String generateToken(String roomName, String identity) {
+        if (!hasTokenCredentials()) {
+            return "local-token-" + identity + "-" + roomName;
+        }
+
         VideoGrant grant = new VideoGrant().setRoom(roomName);
 
         AccessToken token = new AccessToken.Builder(
                 accountSid,
-                apiKey,
+                apiKeySid,
                 apiSecret
         ).identity(identity).grant(grant).build();
 
         return token.toJwt();
+    }
+
+    private boolean hasBaseCredentials() {
+        return hasText(accountSid) && hasText(authToken);
+    }
+
+    private boolean hasTokenCredentials() {
+        return hasBaseCredentials() && hasText(apiKeySid) && hasText(apiSecret);
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 }

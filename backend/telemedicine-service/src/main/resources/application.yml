@@ -18,7 +18,7 @@ server:
 telemedicine:
   video-provider: twilio
   twilio:
-    account-sid: ${TWILIO_ACCOUNT_SID}
-    auth-token: ${TWILIO_AUTH_TOKEN}
-    api-key-sid: 
-    api-secret: 
+    account-sid: ${TWILIO_ACCOUNT_SID:}
+    auth-token: ${TWILIO_AUTH_TOKEN:}
+    api-key-sid: ${TWILIO_API_KEY_SID:}
+    api-secret: ${TWILIO_API_SECRET:}
