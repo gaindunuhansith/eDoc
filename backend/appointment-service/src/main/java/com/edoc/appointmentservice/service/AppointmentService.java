@@ -290,6 +290,34 @@ public class AppointmentService {
         return appointmentRepository.save(existing);
     }
 
+    // Delete a completed appointment - patient cleans up their history
+    public void deleteCompletedAppointment(String id, String patientId) {
+        Appointment appointment = getAppointmentById(id);
+
+        // Security check - make sure the patient owns this appointment
+        if (!appointment.getPatientId().equals(patientId)) {
+            throw new RuntimeException(
+                    "You are not authorized to delete this appointment."
+            );
+        }
+
+        // Only COMPLETED or CANCELLED appointments can be deleted
+        // We never delete PENDING or CONFIRMED - those are active
+        if (appointment.getStatus() == Appointment.AppointmentStatus.PENDING) {
+            throw new RuntimeException(
+                    "Cannot delete a PENDING appointment. Cancel it first."
+            );
+        }
+
+        if (appointment.getStatus() == Appointment.AppointmentStatus.CONFIRMED) {
+            throw new RuntimeException(
+                    "Cannot delete a CONFIRMED appointment. Cancel it first."
+            );
+        }
+
+        appointmentRepository.delete(appointment);
+    }
+
     private void notifyBooking(Appointment appointment, Map doctorData) {
         try {
             Map patientData = patientServiceClient.getPatientById(appointment.getPatientId());
