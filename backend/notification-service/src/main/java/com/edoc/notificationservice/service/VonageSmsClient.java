@@ -7,6 +7,7 @@ import com.vonage.client.VonageClient;
 import com.vonage.client.messages.sms.SmsTextRequest;
 
 @Component
+// Vonage API client for outbound SMS.
 public class VonageSmsClient {
 
     private final String apiKey;

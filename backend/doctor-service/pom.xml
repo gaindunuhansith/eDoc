@@ -66,6 +66,12 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- WebClient - for calling patient-service -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+
         <!-- Validation - @NotBlank, @Email etc -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -15,5 +15,9 @@ spring:
 server:
   port: ${SERVER_PORT:8084}
 
+app:
+  storage:
+    reports-dir: ${REPORTS_DIR:uploads/reports}
+
 doctor-service:
   base-url: ${DOCTOR_SERVICE_URL:http://localhost:8082}

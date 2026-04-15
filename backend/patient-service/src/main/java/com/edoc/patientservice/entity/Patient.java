@@ -16,6 +16,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "patients")
+// Patient profile and relationships to reports/history.
 public class Patient {
 
     @Id
@@ -45,6 +46,9 @@ public class Patient {
 
     @OneToMany(mappedBy = "patient", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MedicalReport> medicalReports = new ArrayList<>();
+
+    @OneToMany(mappedBy = "patient", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<MedicalHistory> medicalHistory = new ArrayList<>();
 
     @PrePersist
     void onCreate() {
@@ -123,5 +127,13 @@ public class Patient {
 
     public void setMedicalReports(List<MedicalReport> medicalReports) {
         this.medicalReports = medicalReports;
+    }
+
+    public List<MedicalHistory> getMedicalHistory() {
+        return medicalHistory;
+    }
+
+    public void setMedicalHistory(List<MedicalHistory> medicalHistory) {
+        this.medicalHistory = medicalHistory;
     }
 }
