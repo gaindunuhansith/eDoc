@@ -18,17 +18,31 @@ public class PatientServiceClient {
 
     private final WebClient.Builder webClientBuilder;
 
-    public Map getPatientById(String patientId) {
+    public Map<String, Object> getPatientById(String patientId) {
         try {
             return webClientBuilder.build()
                     .get()
-                    .uri(patientServiceUrl + "/patients/" + patientId)
+                    .uri(patientServiceUrl + "/internal/patients/" + patientId)
                     .retrieve()
                     .bodyToMono(Map.class)
                     .block();
         } catch (Exception ex) {
             log.error("Error fetching patient with id: {}", patientId, ex);
             throw new RuntimeException("Could not fetch patient details. Patient service may be down.");
+        }
+    }
+
+    public Map<String, Object> getPatientStatusById(String patientId) {
+        try {
+            return webClientBuilder.build()
+                    .get()
+                    .uri(patientServiceUrl + "/internal/patients/" + patientId + "/status")
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .block();
+        } catch (Exception ex) {
+            log.error("Error fetching patient status with id: {}", patientId, ex);
+            throw new RuntimeException("Could not validate patient status. Patient service may be down.");
         }
     }
 }
