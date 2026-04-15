@@ -1,5 +1,6 @@
 package com.edoc.patientservice.dto.patient;
 
+import com.edoc.patientservice.entity.PatientStatus;
 import java.time.Instant;
 import java.time.LocalDate;
 
@@ -14,6 +15,10 @@ public class PatientResponseDTO {
     private LocalDate dateOfBirth;
     private String address;
     private Instant createdAt;
+    private PatientStatus status;
+    private Instant deactivatedAt;
+    private Long deactivatedBy;
+    private String deactivationReason;
 
     public Long getId() {
         return id;
@@ -77,5 +82,37 @@ public class PatientResponseDTO {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public PatientStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(PatientStatus status) {
+        this.status = status;
+    }
+
+    public Instant getDeactivatedAt() {
+        return deactivatedAt;
+    }
+
+    public void setDeactivatedAt(Instant deactivatedAt) {
+        this.deactivatedAt = deactivatedAt;
+    }
+
+    public Long getDeactivatedBy() {
+        return deactivatedBy;
+    }
+
+    public void setDeactivatedBy(Long deactivatedBy) {
+        this.deactivatedBy = deactivatedBy;
+    }
+
+    public String getDeactivationReason() {
+        return deactivationReason;
+    }
+
+    public void setDeactivationReason(String deactivationReason) {
+        this.deactivationReason = deactivationReason;
     }
 }

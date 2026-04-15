@@ -4,6 +4,7 @@ import com.edoc.patientservice.dto.history.MedicalHistoryRequestDTO;
 import com.edoc.patientservice.dto.history.MedicalHistoryResponseDTO;
 import com.edoc.patientservice.entity.MedicalHistory;
 import com.edoc.patientservice.entity.Patient;
+import com.edoc.patientservice.entity.PatientStatus;
 import com.edoc.patientservice.mapper.MedicalHistoryMapper;
 import com.edoc.patientservice.repository.MedicalHistoryRepository;
 import com.edoc.patientservice.repository.PatientRepository;
@@ -42,6 +43,7 @@ public class MedicalHistoryService {
     public MedicalHistoryResponseDTO addHistoryInternal(Long patientId, MedicalHistoryRequestDTO request) {
         // Create a history entry for internal systems.
         Patient patient = findPatientOrThrow(patientId);
+        assertPatientActiveForWrite(patient);
         MedicalHistory history = medicalHistoryMapper.toEntity(request);
         history.setPatient(patient);
         return medicalHistoryMapper.toResponse(medicalHistoryRepository.save(history));
@@ -56,5 +58,11 @@ public class MedicalHistoryService {
     private Patient findPatientOrThrow(Long patientId) {
         return patientRepository.findById(patientId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient not found"));
+    }
+
+    private void assertPatientActiveForWrite(Patient patient) {
+        if (patient.getStatus() != PatientStatus.ACTIVE) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Patient is inactive");
+        }
     }
 }
