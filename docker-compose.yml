@@ -56,11 +56,10 @@ services:
       POSTGRES_PASSWORD: password
       PGDATA: /data/postgres
     ports:
-      - "5441:5432"
+      - "5442:5432"
     volumes:
       - feedback-db-data:/data/postgres
-  
-user-db:
+  user-db:
     image: postgres:16-alpine
     container_name: user-db
     environment:
@@ -69,7 +68,7 @@ user-db:
       POSTGRES_PASSWORD: password
       PGDATA: /data/postgres
     ports:
-      - "5438:5432"
+      - "5440:5432"
     volumes:
       - user-db-data:/data/postgres
   
