@@ -135,6 +135,17 @@ spring:
                 methods: GET
                 statuses: BAD_GATEWAY,GATEWAY_TIMEOUT,SERVICE_UNAVAILABLE
 
+        - id: ai-service
+          uri: http://localhost:8090
+          predicates:
+            - Path=/api/v1/ai/**
+          filters:
+            - name: Retry
+              args:
+                retries: 2
+                methods: GET,POST,PUT,DELETE,PATCH,OPTIONS
+                statuses: BAD_GATEWAY,GATEWAY_TIMEOUT,SERVICE_UNAVAILABLE
+
 server:
   port: 8080
   forward-headers-strategy: framework
