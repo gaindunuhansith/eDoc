@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 @Service
@@ -30,7 +31,11 @@ public class AppointmentService {
 
     public Appointment bookAppointment(AppointmentRequest request) {
 
-        // Step 1: Check the slot isn't already taken
+        // Step 1: Validate patient exists and is active.
+        Map<String, Object> patientStatus = patientServiceClient.getPatientStatusById(request.getPatientId());
+        assertPatientActiveForBooking(request.getPatientId(), patientStatus);
+
+        // Step 2: Check the slot isn't already taken
         boolean slotTaken = appointmentRepository
                 .existsByDoctorIdAndAppointmentDateAndTimeSlotAndStatusNot(
                         request.getDoctorId(),
@@ -45,10 +50,10 @@ public class AppointmentService {
             );
         }
 
-        // Step 2: Fetch doctor details from doctor-service
+        // Step 3: Fetch doctor details from doctor-service
         Map doctorData = doctorServiceClient.getDoctorById(request.getDoctorId());
 
-        // Step 3: Build the appointment object
+        // Step 4: Build the appointment object
         Appointment appointment = new Appointment();
         appointment.setPatientId(request.getPatientId());
         appointment.setDoctorId(request.getDoctorId());
@@ -64,7 +69,7 @@ public class AppointmentService {
         // Payment starts as NOT_REQUIRED until doctor confirms
         appointment.setPaymentStatus(Appointment.PaymentStatus.NOT_REQUIRED);
 
-        // Step 4: Snapshot doctor details into the appointment
+        // Step 5: Snapshot doctor details into the appointment
         if (doctorData != null) {
             appointment.setDoctorName(
                     doctorData.get("firstName") + " " + doctorData.get("lastName")
@@ -77,7 +82,7 @@ public class AppointmentService {
             }
         }
 
-        // Step 5: Mark the slot as booked in doctor-service
+        // Step 6: Mark the slot as booked in doctor-service
         // Extract start time from "09:00-09:30" → "09:00"
         String startTime = request.getTimeSlot().split("-")[0];
         doctorServiceClient.markSlotAsBooked(
@@ -316,6 +321,17 @@ public class AppointmentService {
         }
 
         appointmentRepository.delete(appointment);
+    }
+
+    private void assertPatientActiveForBooking(String patientId, Map<String, Object> patientStatus) {
+        if (patientStatus == null || patientStatus.get("status") == null) {
+            throw new RuntimeException("Patient status could not be validated for booking.");
+        }
+
+        String status = patientStatus.get("status").toString().toUpperCase(Locale.ROOT);
+        if (!"ACTIVE".equals(status)) {
+            throw new RuntimeException("Cannot book appointment: patient is " + status + ".");
+        }
     }
 
     private void notifyBooking(Appointment appointment, Map doctorData) {

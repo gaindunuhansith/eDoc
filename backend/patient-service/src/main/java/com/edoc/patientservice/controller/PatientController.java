@@ -2,6 +2,7 @@ package com.edoc.patientservice.controller;
 
 import com.edoc.patientservice.dto.patient.PatientRequestDTO;
 import com.edoc.patientservice.dto.patient.PatientResponseDTO;
+import com.edoc.patientservice.dto.patient.PatientStatusResponseDTO;
 import com.edoc.patientservice.dto.patient.PatientStatusUpdateRequestDTO;
 import com.edoc.patientservice.service.CurrentPatientProvider;
 import com.edoc.patientservice.service.PatientService;
@@ -56,6 +57,12 @@ public class PatientController {
     // Internal lookup for other services by patient id.
     public PatientResponseDTO getPatientInternal(@PathVariable Long id) {
         return patientService.getPatient(id);
+    }
+
+    @GetMapping("/internal/patients/{id}/status")
+    // Internal lightweight status lookup for booking and authorization checks.
+    public PatientStatusResponseDTO getPatientStatusInternal(@PathVariable Long id) {
+        return patientService.getPatientStatus(id);
     }
 
     @PatchMapping("/internal/patients/{id}/status")

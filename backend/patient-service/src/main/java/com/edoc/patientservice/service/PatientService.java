@@ -2,6 +2,7 @@ package com.edoc.patientservice.service;
 
 import com.edoc.patientservice.dto.patient.PatientRequestDTO;
 import com.edoc.patientservice.dto.patient.PatientResponseDTO;
+import com.edoc.patientservice.dto.patient.PatientStatusResponseDTO;
 import com.edoc.patientservice.dto.patient.PatientStatusUpdateRequestDTO;
 import com.edoc.patientservice.entity.Patient;
 import com.edoc.patientservice.entity.PatientStatus;
@@ -36,6 +37,15 @@ public class PatientService {
     public PatientResponseDTO getPatient(Long id) {
         // Return a patient profile by id.
         return patientMapper.toResponse(findPatientOrThrow(id));
+    }
+
+    @Transactional(readOnly = true)
+    public PatientStatusResponseDTO getPatientStatus(Long id) {
+        Patient patient = findPatientOrThrow(id);
+        PatientStatusResponseDTO response = new PatientStatusResponseDTO();
+        response.setId(patient.getId());
+        response.setStatus(patient.getStatus());
+        return response;
     }
 
     public PatientResponseDTO updatePatient(Long id, PatientRequestDTO request) {
