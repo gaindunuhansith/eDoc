@@ -1,13 +1,7 @@
 package com.edoc.feedbackservice.dto;
 
 import jakarta.validation.constraints.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class FeedbackRequestDTO {
 
     @NotNull(message = "Appointment ID is required")
@@ -19,4 +13,22 @@ public class FeedbackRequestDTO {
 
     @Size(max = 500, message = "Comment must not exceed 500 characters")
     private String comment;
+
+    public FeedbackRequestDTO() {}
+
+    public FeedbackRequestDTO(Long appointmentId, int rating, String comment) {
+        this.appointmentId = appointmentId;
+        this.rating = rating;
+        this.comment = comment;
+    }
+
+    // Getters and Setters
+    public Long getAppointmentId() { return appointmentId; }
+    public void setAppointmentId(Long appointmentId) { this.appointmentId = appointmentId; }
+
+    public int getRating() { return rating; }
+    public void setRating(int rating) { this.rating = rating; }
+
+    public String getComment() { return comment; }
+    public void setComment(String comment) { this.comment = comment; }
 }

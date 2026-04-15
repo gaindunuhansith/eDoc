@@ -6,7 +6,7 @@ import com.edoc.feedbackservice.entity.Feedback;
 import com.edoc.feedbackservice.exception.FeedbackNotFoundException;
 import com.edoc.feedbackservice.mapper.FeedbackMapper;
 import com.edoc.feedbackservice.repository.FeedbackRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class FeedbackService {
 
     private final FeedbackRepository feedbackRepository;
@@ -26,6 +25,13 @@ public class FeedbackService {
     private final String doctorServiceUrl = "http://localhost:8082";
     private final String patientServiceUrl = "http://localhost:8084";
     private final String notificationServiceUrl = "http://localhost:8083";
+
+    @Autowired
+    public FeedbackService(FeedbackRepository feedbackRepository, FeedbackMapper feedbackMapper, RestTemplate restTemplate) {
+        this.feedbackRepository = feedbackRepository;
+        this.feedbackMapper = feedbackMapper;
+        this.restTemplate = restTemplate;
+    }
 
     public FeedbackResponseDTO submitFeedback(FeedbackRequestDTO request, Long patientId) {
         // Validate appointment exists (call appointment-service)
