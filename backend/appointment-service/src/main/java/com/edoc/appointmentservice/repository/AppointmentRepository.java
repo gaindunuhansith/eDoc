@@ -36,4 +36,17 @@ public interface AppointmentRepository extends MongoRepository<Appointment, Stri
 
     // Get all appointments for a patient on a specific date
     List<Appointment> findByPatientIdAndAppointmentDate(String patientId, LocalDate date);
+
+    // NEW - for payment service to find unpaid confirmed appointments
+    List<Appointment> findByDoctorIdAndStatusAndPaymentStatus(
+            String doctorId,
+            Appointment.AppointmentStatus status,
+            Appointment.PaymentStatus paymentStatus
+    );
+
+    // NEW - get all appointments with a specific payment status
+    List<Appointment> findByPatientIdAndPaymentStatus(
+            String patientId,
+            Appointment.PaymentStatus paymentStatus
+    );
 }

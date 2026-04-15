@@ -55,6 +55,10 @@ public class Appointment {
     // Cancellation reason - filled if appointment is cancelled
     private String cancellationReason;
 
+    private PaymentStatus paymentStatus;   // tracks if consultation fee is paid
+    private String paymentId;             // ID from payment service after payment
+    private LocalDateTime paymentDate;    // when payment was completed
+
     // Enum for appointment type
     public enum AppointmentType {
         IN_PERSON,
@@ -70,5 +74,13 @@ public class Appointment {
         COMPLETED,      // Consultation done
         CANCELLED,      // Cancelled by patient or doctor
         NO_SHOW         // Patient didn't show up
+    }
+
+    // NEW - Payment status enum
+    public enum PaymentStatus {
+        NOT_REQUIRED,   // default before doctor confirms
+        PENDING,        // doctor confirmed - payment now required
+        PAID,           // payment service confirmed payment
+        REFUNDED        // if appointment cancelled after payment
     }
 }

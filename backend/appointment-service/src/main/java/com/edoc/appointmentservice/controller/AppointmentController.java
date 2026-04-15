@@ -2,6 +2,7 @@ package com.edoc.appointmentservice.controller;
 
 import com.edoc.appointmentservice.dto.AppointmentRequest;
 import com.edoc.appointmentservice.dto.AppointmentStatusUpdate;
+import com.edoc.appointmentservice.dto.PaymentStatusUpdate;
 import com.edoc.appointmentservice.model.Appointment;
 import com.edoc.appointmentservice.service.AppointmentService;
 import jakarta.validation.Valid;
@@ -71,6 +72,15 @@ public class AppointmentController {
         );
     }
 
+    // NEW - payment service or admin checks which confirmed appointments are unpaid
+    @GetMapping("/doctor/{doctorId}/unpaid")
+    public ResponseEntity<List<Appointment>> getUnpaidConfirmedAppointments(
+            @PathVariable String doctorId) {
+        return ResponseEntity.ok(
+                appointmentService.getUnpaidConfirmedAppointments(doctorId)
+        );
+    }
+
     // ─── UPDATE ───────────────────────────────────────────────────────────────
 
     // PATCH /api/appointments/{id}/status
@@ -89,6 +99,14 @@ public class AppointmentController {
             @PathVariable String id,
             @Valid @RequestBody AppointmentRequest request) {
         return ResponseEntity.ok(appointmentService.modifyAppointment(id, request));
+    }
+
+    // NEW - payment service calls this after payment is confirmed
+    @PatchMapping("/{id}/payment")
+    public ResponseEntity<Appointment> updatePaymentStatus(
+            @PathVariable String id,
+            @Valid @RequestBody PaymentStatusUpdate update) {
+        return ResponseEntity.ok(appointmentService.updatePaymentStatus(id, update));
     }
 
     // ─── CANCEL ───────────────────────────────────────────────────────────────
