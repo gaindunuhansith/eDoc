@@ -1,16 +1,14 @@
-package com.edoc.patientservice.dto;
+package com.edoc.patientservice.dto.report;
 
 import java.time.Instant;
-import java.time.LocalDate;
 
-// Medical history details returned to clients.
-public class MedicalHistoryResponse {
+// Medical report details returned to clients.
+public class MedicalReportResponseDTO {
 
     private Long id;
     private Long patientId;
-    private String condition;
-    private String diagnosis;
-    private LocalDate visitDate;
+    private String reportName;
+    private String reportUrl;
     private String notes;
     private Instant createdAt;
 
@@ -30,28 +28,20 @@ public class MedicalHistoryResponse {
         this.patientId = patientId;
     }
 
-    public String getCondition() {
-        return condition;
+    public String getReportName() {
+        return reportName;
     }
 
-    public void setCondition(String condition) {
-        this.condition = condition;
+    public void setReportName(String reportName) {
+        this.reportName = reportName;
     }
 
-    public String getDiagnosis() {
-        return diagnosis;
+    public String getReportUrl() {
+        return reportUrl;
     }
 
-    public void setDiagnosis(String diagnosis) {
-        this.diagnosis = diagnosis;
-    }
-
-    public LocalDate getVisitDate() {
-        return visitDate;
-    }
-
-    public void setVisitDate(LocalDate visitDate) {
-        this.visitDate = visitDate;
+    public void setReportUrl(String reportUrl) {
+        this.reportUrl = reportUrl;
     }
 
     public String getNotes() {

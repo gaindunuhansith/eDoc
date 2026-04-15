@@ -1,30 +1,27 @@
-package com.edoc.patientservice.dto;
+package com.edoc.patientservice.dto.patient;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import java.time.Instant;
 import java.time.LocalDate;
 
-// Required fields for patient registration.
-public class PatientCreateRequest {
+// Patient profile data returned to API callers.
+public class PatientResponseDTO {
 
-    @NotBlank
-    @Size(max = 100)
+    private Long id;
     private String firstName;
-
-    @NotBlank
-    @Size(max = 100)
     private String lastName;
-
-    @NotBlank
-    @Email
-    @Size(max = 150)
     private String email;
-    @Size(max = 50)
     private String phone;
     private LocalDate dateOfBirth;
-    @Size(max = 500)
     private String address;
+    private Instant createdAt;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
 
     public String getFirstName() {
         return firstName;
@@ -72,5 +69,13 @@ public class PatientCreateRequest {
 
     public void setAddress(String address) {
         this.address = address;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
     }
 }

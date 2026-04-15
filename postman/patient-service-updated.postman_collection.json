@@ -1,0 +1,259 @@
+{
+  "info": {
+    "name": "Patient Service - Updated Endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Patient",
+      "item": [
+        {
+          "name": "Register Patient",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/patients/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["patients", "register"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Nimal\",\n  \"lastName\": \"Perera\",\n  \"email\": \"nimal@example.com\",\n  \"phone\": \"+94771234567\",\n  \"dateOfBirth\": \"1990-02-10\",\n  \"address\": \"Colombo\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Current Patient",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/patients/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["patients", "me"]
+            }
+          }
+        },
+        {
+          "name": "Update Current Patient",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/patients/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["patients", "me"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Nimal\",\n  \"lastName\": \"Perera\",\n  \"email\": \"nimal@example.com\",\n  \"phone\": \"+94771234567\",\n  \"dateOfBirth\": \"1990-02-10\",\n  \"address\": \"Colombo\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Internal Get Patient",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/internal/patients/{{patientId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["internal", "patients", "{{patientId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Medical Reports",
+      "item": [
+        {
+          "name": "Upload Report",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/patients/me/reports",
+              "host": ["{{baseUrl}}"],
+              "path": ["patients", "me", "reports"]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "description": "Select the report file"
+                },
+                {
+                  "key": "metadata",
+                  "type": "text",
+                  "value": "{\"reportName\": \"Blood Test\", \"notes\": \"April checkup\"}",
+                  "description": "JSON metadata for the report"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List My Reports",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/patients/me/reports",
+              "host": ["{{baseUrl}}"],
+              "path": ["patients", "me", "reports"]
+            }
+          }
+        },
+        {
+          "name": "Get My Report",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/patients/me/reports/{{reportId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["patients", "me", "reports", "{{reportId}}"]
+            }
+          }
+        },
+        {
+          "name": "Download My Report File",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/patients/me/reports/{{reportId}}/file",
+              "host": ["{{baseUrl}}"],
+              "path": ["patients", "me", "reports", "{{reportId}}", "file"]
+            }
+          }
+        },
+        {
+          "name": "Internal List Reports",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/internal/patients/{{patientId}}/reports",
+              "host": ["{{baseUrl}}"],
+              "path": ["internal", "patients", "{{patientId}}", "reports"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Medical History",
+      "item": [
+        {
+          "name": "Get My History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/patients/me/history",
+              "host": ["{{baseUrl}}"],
+              "path": ["patients", "me", "history"]
+            }
+          }
+        },
+        {
+          "name": "Internal Add History",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/internal/patients/{{patientId}}/history",
+              "host": ["{{baseUrl}}"],
+              "path": ["internal", "patients", "{{patientId}}", "history"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"condition\": \"Hypertension\",\n  \"diagnosis\": \"Stage 1\",\n  \"visitDate\": \"2026-04-15\",\n  \"notes\": \"Follow-up in 3 months\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Internal Get History",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/internal/patients/{{patientId}}/history",
+              "host": ["{{baseUrl}}"],
+              "path": ["internal", "patients", "{{patientId}}", "history"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8084"
+    },
+    {
+      "key": "patientId",
+      "value": "1"
+    },
+    {
+      "key": "reportId",
+      "value": "1"
+    },
+    {
+      "key": "jwt",
+      "value": ""
+    }
+  ]
+}

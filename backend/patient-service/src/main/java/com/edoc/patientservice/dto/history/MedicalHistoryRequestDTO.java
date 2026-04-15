@@ -1,11 +1,11 @@
-package com.edoc.patientservice.dto;
+package com.edoc.patientservice.dto.history;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 
-// Payload for adding a medical history entry.
-public class MedicalHistoryRequest {
+// Payload for creating a medical history entry.
+public class MedicalHistoryRequestDTO {
 
     @NotBlank
     @Size(max = 200)
