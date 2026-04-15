@@ -1,8 +1,12 @@
 package com.edoc.doctorservice.service;
 
 import com.edoc.doctorservice.dto.DoctorRegistrationRequest;
+import com.edoc.doctorservice.model.Availability;
 import com.edoc.doctorservice.model.Doctor;
+import com.edoc.doctorservice.model.Prescription;
+import com.edoc.doctorservice.repository.AvailabilityRepository;
 import com.edoc.doctorservice.repository.DoctorRepository;
+import com.edoc.doctorservice.repository.PrescriptionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -14,6 +18,8 @@ import java.util.List;
 public class DoctorService {
 
     private final DoctorRepository doctorRepository;
+    private final AvailabilityRepository availabilityRepository;
+    private final PrescriptionRepository prescriptionRepository;
     private final PasswordEncoder passwordEncoder;
 
     // Register a new doctor
@@ -89,5 +95,26 @@ public class DoctorService {
     // Get all doctors (for admin)
     public List<Doctor> getAllDoctors() {
         return doctorRepository.findAll();
+    }
+
+    // Delete doctor and all their related data - admin only
+    public void deleteDoctor(String id) {
+        // This throws automatically if doctor doesn't exist
+        Doctor doctor = getDoctorById(id);
+
+        // Delete all availability schedules linked to this doctor
+        List<Availability> availabilities = availabilityRepository.findByDoctorId(id);
+        if (!availabilities.isEmpty()) {
+            availabilityRepository.deleteAll(availabilities);
+        }
+
+        // Delete all prescriptions issued by this doctor
+        List<Prescription> prescriptions = prescriptionRepository.findByDoctorId(id);
+        if (!prescriptions.isEmpty()) {
+            prescriptionRepository.deleteAll(prescriptions);
+        }
+
+        // Finally delete the doctor account itself
+        doctorRepository.delete(doctor);
     }
 }

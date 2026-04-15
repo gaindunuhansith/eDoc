@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/doctors")
@@ -23,8 +24,8 @@ public class DoctorController {
     @PostMapping("/register")
     public ResponseEntity<Doctor> registerDoctor(
             @Valid @RequestBody DoctorRegistrationRequest request) {
-        Doctor doctor = doctorService.registerDoctor(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(doctor);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(doctorService.registerDoctor(request));
     }
 
     // GET /api/doctors/{id}
@@ -64,5 +65,18 @@ public class DoctorController {
     @GetMapping("/admin/all")
     public ResponseEntity<List<Doctor>> getAllDoctorsForAdmin() {
         return ResponseEntity.ok(doctorService.getAllDoctors());
+    }
+
+    // DELETE /api/doctors/{id} - admin removes a doctor
+    // This also removes their availability and prescriptions
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String, String>> deleteDoctor(@PathVariable String id) {
+        doctorService.deleteDoctor(id);
+        return ResponseEntity.ok(
+                Map.of(
+                        "message", "Doctor and all associated data deleted successfully",
+                        "doctorId", id
+                )
+        );
     }
 }

@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/appointments")
@@ -27,8 +28,8 @@ public class AppointmentController {
     @PostMapping
     public ResponseEntity<Appointment> bookAppointment(
             @Valid @RequestBody AppointmentRequest request) {
-        Appointment appointment = appointmentService.bookAppointment(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(appointment);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(appointmentService.bookAppointment(request));
     }
 
     // ─── GET ──────────────────────────────────────────────────────────────────
@@ -58,7 +59,9 @@ public class AppointmentController {
     @GetMapping("/doctor/{doctorId}/pending")
     public ResponseEntity<List<Appointment>> getPendingAppointments(
             @PathVariable String doctorId) {
-        return ResponseEntity.ok(appointmentService.getPendingAppointmentsForDoctor(doctorId));
+        return ResponseEntity.ok(
+                appointmentService.getPendingAppointmentsForDoctor(doctorId)
+        );
     }
 
     // GET /api/appointments/patient/{patientId}/status/{status}
@@ -89,7 +92,9 @@ public class AppointmentController {
     public ResponseEntity<Appointment> updateAppointmentStatus(
             @PathVariable String id,
             @RequestBody AppointmentStatusUpdate update) {
-        return ResponseEntity.ok(appointmentService.updateAppointmentStatus(id, update));
+        return ResponseEntity.ok(
+                appointmentService.updateAppointmentStatus(id, update)
+        );
     }
 
     // PUT /api/appointments/{id}
@@ -117,5 +122,22 @@ public class AppointmentController {
             @PathVariable String id,
             @RequestParam(required = false) String reason) {
         return ResponseEntity.ok(appointmentService.cancelAppointment(id, reason));
+    }
+
+    // ─── DELETE ───────────────────────────────────────────────────────────────
+
+    // Patient permanently removes a completed or cancelled appointment
+    // from their history - requires patientId as security check
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String, String>> deleteCompletedAppointment(
+            @PathVariable String id,
+            @RequestParam String patientId) {
+        appointmentService.deleteCompletedAppointment(id, patientId);
+        return ResponseEntity.ok(
+                Map.of(
+                        "message", "Appointment deleted successfully",
+                        "appointmentId", id
+                )
+        );
     }
 }
