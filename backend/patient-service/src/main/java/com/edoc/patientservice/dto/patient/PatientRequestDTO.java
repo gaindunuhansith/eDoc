@@ -1,24 +1,31 @@
-package com.edoc.patientservice.dto;
+package com.edoc.patientservice.dto.patient;
 
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 
-public class PatientUpdateRequest {
+// Payload for patient registration and profile updates.
+public class PatientRequestDTO {
 
+    @NotBlank
     @Size(max = 100)
     private String firstName;
 
+    @NotBlank
     @Size(max = 100)
     private String lastName;
 
+    @NotBlank
     @Email
     @Size(max = 150)
     private String email;
 
     @Size(max = 50)
     private String phone;
+
     private LocalDate dateOfBirth;
+
     @Size(max = 500)
     private String address;
 

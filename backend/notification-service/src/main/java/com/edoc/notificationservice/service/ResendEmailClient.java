@@ -17,20 +17,24 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 @Component
+// Resend API client for outbound emails.
 public class ResendEmailClient {
 
     private final String apiKey;
     private final String fromEmail;
     private final String apiUrl;
-        private final RestTemplate restTemplate;
+    private final String testRecipient;
+    private final RestTemplate restTemplate;
 
     public ResendEmailClient(
             @Value("${resend.api-key:}") String apiKey,
             @Value("${resend.from-email:}") String fromEmail,
-            @Value("${resend.api-url:https://api.resend.com/emails}") String apiUrl) {
+            @Value("${resend.api-url:https://api.resend.com/emails}") String apiUrl,
+            @Value("${resend.test-recipient:}") String testRecipient) {
         this.apiKey = apiKey;
         this.fromEmail = fromEmail;
         this.apiUrl = apiUrl;
+        this.testRecipient = testRecipient;
         this.restTemplate = buildRestTemplate();
     }
 
@@ -50,9 +54,14 @@ public class ResendEmailClient {
         }
 
         try {
+            String effectiveTo = (testRecipient != null && !testRecipient.isBlank()) ? testRecipient : to;
+            if (effectiveTo == null || effectiveTo.isBlank()) {
+                return ResendSendResult.failure("Recipient email is missing.");
+            }
+
             Map<String, Object> payload = Map.of(
                     "from", fromEmail,
-                    "to", List.of(to),
+                    "to", List.of(effectiveTo),
                     "subject", subject,
                     "text", body
             );
