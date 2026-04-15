@@ -24,7 +24,7 @@ public class FeedbackController {
 
     @PostMapping("/submit")
     public ResponseEntity<FeedbackResponseDTO> submitFeedback(@Valid @RequestBody FeedbackRequestDTO request,
-                                                              @RequestHeader("userId") Long patientId) {
+                                                              @RequestParam Long patientId) {
         FeedbackResponseDTO response = feedbackService.submitFeedback(request, patientId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -38,6 +38,12 @@ public class FeedbackController {
     @GetMapping("/patient/{patientId}")
     public ResponseEntity<List<FeedbackResponseDTO>> getFeedbackForPatient(@PathVariable Long patientId) {
         List<FeedbackResponseDTO> feedbacks = feedbackService.getFeedbackForPatient(patientId);
+        return ResponseEntity.ok(feedbacks);
+    }
+
+    @GetMapping("/appointment/{appointmentId}")
+    public ResponseEntity<List<FeedbackResponseDTO>> getFeedbackForAppointment(@PathVariable Long appointmentId) {
+        List<FeedbackResponseDTO> feedbacks = feedbackService.getFeedbackForAppointment(appointmentId);
         return ResponseEntity.ok(feedbacks);
     }
 

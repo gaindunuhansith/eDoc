@@ -11,12 +11,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class FeedbackServiceTest {
@@ -26,9 +24,6 @@ class FeedbackServiceTest {
 
     @Mock
     private FeedbackMapper feedbackMapper;
-
-    @Mock
-    private RestTemplate restTemplate;
 
     @InjectMocks
     private FeedbackService feedbackService;
@@ -40,11 +35,11 @@ class FeedbackServiceTest {
 
     @Test
     void submitFeedback_shouldSaveAndReturnResponse() {
-        FeedbackRequestDTO request = new FeedbackRequestDTO(1L, 5, "Good");
+        FeedbackRequestDTO request = new FeedbackRequestDTO(1L, 2L, 5, "Good");
         Feedback feedback = new Feedback();
         FeedbackResponseDTO response = new FeedbackResponseDTO();
 
-        when(feedbackMapper.toEntity(request, 1L, 1L)).thenReturn(feedback);
+        when(feedbackMapper.toEntity(request, 1L)).thenReturn(feedback);
         when(feedbackRepository.save(feedback)).thenReturn(feedback);
         when(feedbackMapper.toResponseDTO(feedback)).thenReturn(response);
 

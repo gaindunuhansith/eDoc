@@ -8,10 +8,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class FeedbackMapper {
 
-    public Feedback toEntity(FeedbackRequestDTO dto, Long patientId, Long doctorId) {
+    public Feedback toEntity(FeedbackRequestDTO dto, Long patientId) {
         Feedback feedback = new Feedback();
         feedback.setPatientId(patientId);
-        feedback.setDoctorId(doctorId);
+        feedback.setDoctorId(dto.getDoctorId());
         feedback.setAppointmentId(dto.getAppointmentId());
         feedback.setRating(dto.getRating());
         feedback.setComment(dto.getComment());
