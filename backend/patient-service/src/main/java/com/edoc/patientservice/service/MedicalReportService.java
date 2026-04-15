@@ -4,6 +4,7 @@ import com.edoc.patientservice.dto.report.MedicalReportRequestDTO;
 import com.edoc.patientservice.dto.report.MedicalReportResponseDTO;
 import com.edoc.patientservice.entity.MedicalReport;
 import com.edoc.patientservice.entity.Patient;
+import com.edoc.patientservice.entity.PatientStatus;
 import com.edoc.patientservice.mapper.MedicalReportMapper;
 import com.edoc.patientservice.repository.MedicalReportRepository;
 import com.edoc.patientservice.repository.PatientRepository;
@@ -56,6 +57,7 @@ public class MedicalReportService {
         }
 
         Patient patient = findPatientOrThrow(patientId);
+        assertPatientActiveForWrite(patient);
         String storedPath = storeReportFile(file);
 
         MedicalReport report = new MedicalReport();
@@ -143,6 +145,12 @@ public class MedicalReportService {
     private Patient findPatientOrThrow(Long patientId) {
         return patientRepository.findById(patientId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient not found"));
+    }
+
+    private void assertPatientActiveForWrite(Patient patient) {
+        if (patient.getStatus() != PatientStatus.ACTIVE) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Patient is inactive");
+        }
     }
 
     private MedicalReport findReportOrThrow(Long reportId) {
