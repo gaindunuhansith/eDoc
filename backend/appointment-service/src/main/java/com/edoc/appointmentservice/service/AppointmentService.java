@@ -5,6 +5,7 @@ import com.edoc.appointmentservice.client.NotificationServiceClient;
 import com.edoc.appointmentservice.client.PatientServiceClient;
 import com.edoc.appointmentservice.dto.AppointmentRequest;
 import com.edoc.appointmentservice.dto.AppointmentStatusUpdate;
+import com.edoc.appointmentservice.dto.PaymentStatusUpdate;
 import com.edoc.appointmentservice.model.Appointment;
 import com.edoc.appointmentservice.repository.AppointmentRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +26,7 @@ public class AppointmentService {
     private final PatientServiceClient patientServiceClient;
     private final NotificationServiceClient notificationServiceClient;
 
-    // ─── BOOK APPOINTMENT ────────────────────────────────────────────────────
+    // ─── BOOK ────────────────────────────────────────────────────────────────
 
     public Appointment bookAppointment(AppointmentRequest request) {
 
@@ -60,6 +61,9 @@ public class AppointmentService {
         appointment.setCreatedAt(LocalDateTime.now());
         appointment.setUpdatedAt(LocalDateTime.now());
 
+        // Payment starts as NOT_REQUIRED until doctor confirms
+        appointment.setPaymentStatus(Appointment.PaymentStatus.NOT_REQUIRED);
+
         // Step 4: Snapshot doctor details into the appointment
         if (doctorData != null) {
             appointment.setDoctorName(
@@ -82,15 +86,10 @@ public class AppointmentService {
                 startTime
         );
 
-        // Step 6: Save and return
-        Appointment saved = appointmentRepository.save(appointment);
-
-        notifyBooking(saved, doctorData);
-
-        return saved;
+        return appointmentRepository.save(appointment);
     }
 
-    // ─── GET APPOINTMENTS ────────────────────────────────────────────────────
+    // ─── GET ─────────────────────────────────────────────────────────────────
 
     public Appointment getAppointmentById(String id) {
         return appointmentRepository.findById(id)
@@ -116,6 +115,16 @@ public class AppointmentService {
         return appointmentRepository.findByPatientIdAndStatus(patientId, status);
     }
 
+    // Get appointments that are confirmed but not yet paid
+    // Payment service can use this to find pending payments
+    public List<Appointment> getUnpaidConfirmedAppointments(String doctorId) {
+        return appointmentRepository.findByDoctorIdAndStatusAndPaymentStatus(
+                doctorId,
+                Appointment.AppointmentStatus.CONFIRMED,
+                Appointment.PaymentStatus.PENDING
+        );
+    }
+
     // ─── UPDATE STATUS ───────────────────────────────────────────────────────
 
     public Appointment updateAppointmentStatus(String id, AppointmentStatusUpdate update) {
@@ -134,11 +143,22 @@ public class AppointmentService {
             appointment.setVideoSessionLink(update.getVideoSessionLink());
         }
 
-        // If being cancelled, store the reason and free up the slot
+        // When doctor CONFIRMS → payment becomes required
+        if (update.getStatus() == Appointment.AppointmentStatus.CONFIRMED) {
+            appointment.setPaymentStatus(Appointment.PaymentStatus.PENDING);
+        }
+
+        // When cancelled after payment → refund
         if (update.getStatus() == Appointment.AppointmentStatus.CANCELLED) {
             appointment.setCancellationReason(update.getCancellationReason());
 
-            // Free up the slot in doctor-service
+            // If already paid, mark as refunded
+            if (appointment.getPaymentStatus() == Appointment.PaymentStatus.PAID) {
+                appointment.setPaymentStatus(Appointment.PaymentStatus.REFUNDED);
+            } else {
+                appointment.setPaymentStatus(Appointment.PaymentStatus.NOT_REQUIRED);
+            }
+
             String startTime = appointment.getTimeSlot().split("-")[0];
             doctorServiceClient.markSlotAsFree(
                     appointment.getDoctorId(),
@@ -147,16 +167,37 @@ public class AppointmentService {
             );
         }
 
-        Appointment saved = appointmentRepository.save(appointment);
-
-        if (update.getStatus() == Appointment.AppointmentStatus.COMPLETED) {
-            notifyCompletion(saved);
-        }
-
-        return saved;
+        return appointmentRepository.save(appointment);
     }
 
-    // ─── CANCEL APPOINTMENT ──────────────────────────────────────────────────
+    // ─── UPDATE PAYMENT STATUS ───────────────────────────────────────────────
+    // Called by payment-service after successful payment
+
+    public Appointment updatePaymentStatus(String id, PaymentStatusUpdate update) {
+        Appointment appointment = getAppointmentById(id);
+
+        // Can only pay for CONFIRMED appointments
+        if (appointment.getStatus() != Appointment.AppointmentStatus.CONFIRMED) {
+            throw new RuntimeException(
+                    "Payment can only be made for CONFIRMED appointments. " +
+                            "Current status: " + appointment.getStatus()
+            );
+        }
+
+        // Can only pay if payment is still pending
+        if (appointment.getPaymentStatus() == Appointment.PaymentStatus.PAID) {
+            throw new RuntimeException("This appointment has already been paid.");
+        }
+
+        appointment.setPaymentStatus(update.getPaymentStatus());
+        appointment.setPaymentId(update.getPaymentId());
+        appointment.setPaymentDate(LocalDateTime.now());
+        appointment.setUpdatedAt(LocalDateTime.now());
+
+        return appointmentRepository.save(appointment);
+    }
+
+    // ─── CANCEL ──────────────────────────────────────────────────────────────
 
     public Appointment cancelAppointment(String id, String reason) {
         Appointment appointment = getAppointmentById(id);
@@ -173,7 +214,13 @@ public class AppointmentService {
         appointment.setCancellationReason(reason);
         appointment.setUpdatedAt(LocalDateTime.now());
 
-        // Free up the slot in doctor-service
+        // Handle payment refund if already paid
+        if (appointment.getPaymentStatus() == Appointment.PaymentStatus.PAID) {
+            appointment.setPaymentStatus(Appointment.PaymentStatus.REFUNDED);
+        } else {
+            appointment.setPaymentStatus(Appointment.PaymentStatus.NOT_REQUIRED);
+        }
+
         String startTime = appointment.getTimeSlot().split("-")[0];
         doctorServiceClient.markSlotAsFree(
                 appointment.getDoctorId(),
@@ -184,7 +231,7 @@ public class AppointmentService {
         return appointmentRepository.save(appointment);
     }
 
-    // ─── MODIFY APPOINTMENT ──────────────────────────────────────────────────
+    // ─── MODIFY ──────────────────────────────────────────────────────────────
 
     public Appointment modifyAppointment(String id, AppointmentRequest request) {
         Appointment existing = getAppointmentById(id);
