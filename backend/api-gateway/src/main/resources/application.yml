@@ -1,0 +1,64 @@
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      httpclient:
+        connect-timeout: 3000
+        response-timeout: 10s
+      routes:
+        - id: user-service-users
+          uri: http://localhost:8088
+          predicates:
+            - Path=/api/v1/users/**
+        - id: user-service-admin
+          uri: http://localhost:8088
+          predicates:
+            - Path=/api/v1/admin/**
+
+        - id: patient-service
+          uri: http://localhost:8084
+          predicates:
+            - Path=/patients/**
+
+        - id: doctor-service-doctors
+          uri: http://localhost:8082
+          predicates:
+            - Path=/api/doctors/**
+        - id: doctor-service-prescriptions
+          uri: http://localhost:8082
+          predicates:
+            - Path=/api/prescriptions/**
+
+        - id: appointment-service
+          uri: http://localhost:8081
+          predicates:
+            - Path=/api/appointments/**
+
+        - id: payment-service
+          uri: http://localhost:8085
+          predicates:
+            - Path=/payments/**
+
+        - id: notification-service
+          uri: http://localhost:8083
+          predicates:
+            - Path=/notifications/**
+
+        - id: telemedicine-service
+          uri: http://localhost:8086
+          predicates:
+            - Path=/api/telemedicine/**
+
+        - id: feedback-service
+          uri: http://localhost:8089
+          predicates:
+            - Path=/api/feedback/**
+
+server:
+  port: 8080
+  forward-headers-strategy: framework
+
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO
