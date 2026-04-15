@@ -47,6 +47,18 @@ services:
       - "5438:5432"
     volumes:
       - telemedicine-db-data:/data/postgres
+  feedback-db:
+    image: postgres:16-alpine
+    container_name: feedback-db
+    environment:
+      POSTGRES_DB: feedback_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      PGDATA: /data/postgres
+    ports:
+      - "5441:5432"
+    volumes:
+      - feedback-db-data:/data/postgres
   
 user-db:
     image: postgres:16-alpine
@@ -66,5 +78,6 @@ volumes:
   patient-db-data:
   notification-db-data:
   telemedicine-db-data:
+  feedback-db-data:
   user-db-data:
 
