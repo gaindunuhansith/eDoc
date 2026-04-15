@@ -94,6 +94,20 @@ public class MedicalReportService {
         if (!report.getPatient().getId().equals(patientId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Report not found");
         }
+        return buildFileResponse(report);
+    }
+
+    @Transactional(readOnly = true)
+    public ResponseEntity<Resource> getReportFileInternal(Long patientId, Long reportId) {
+        // Internal endpoint uses patientId ownership checks before exposing file bytes.
+        MedicalReport report = findReportOrThrow(reportId);
+        if (!report.getPatient().getId().equals(patientId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Report not found");
+        }
+        return buildFileResponse(report);
+    }
+
+    private ResponseEntity<Resource> buildFileResponse(MedicalReport report) {
         if (report.getReportUrl() == null || report.getReportUrl().isBlank()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Report file missing");
         }

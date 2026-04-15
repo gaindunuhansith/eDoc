@@ -18,12 +18,21 @@ public class RequestPatientProvider implements CurrentPatientProvider {
     @Override
     public Long getCurrentPatientId() {
         Principal principal = request.getUserPrincipal();
-        if (principal == null || principal.getName() == null || principal.getName().isBlank()) {
+        String idValue = null;
+        if (principal != null && principal.getName() != null && !principal.getName().isBlank()) {
+            idValue = principal.getName();
+        }
+
+        if (idValue == null) {
+            idValue = request.getHeader("X-Patient-Id");
+        }
+
+        if (idValue == null || idValue.isBlank()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Patient identity is missing.");
         }
 
         try {
-            return Long.parseLong(principal.getName());
+            return Long.parseLong(idValue);
         } catch (NumberFormatException ex) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Patient identity is invalid.");
         }
