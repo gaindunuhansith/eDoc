@@ -1,14 +1,14 @@
-package com.edoc.patientservice.dto;
+package com.edoc.patientservice.dto.report;
 
 import java.time.Instant;
 
 // Medical report details returned to clients.
-public class MedicalReportResponse {
+// File content is accessed through dedicated /file or /download endpoints using report id.
+public class MedicalReportResponseDTO {
 
     private Long id;
     private Long patientId;
     private String reportName;
-    private String reportUrl;
     private String notes;
     private Instant createdAt;
 
@@ -34,14 +34,6 @@ public class MedicalReportResponse {
 
     public void setReportName(String reportName) {
         this.reportName = reportName;
-    }
-
-    public String getReportUrl() {
-        return reportUrl;
-    }
-
-    public void setReportUrl(String reportUrl) {
-        this.reportUrl = reportUrl;
     }
 
     public String getNotes() {

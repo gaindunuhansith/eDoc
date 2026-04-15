@@ -1,10 +1,10 @@
-package com.edoc.patientservice.dto;
+package com.edoc.patientservice.dto.history;
 
 import java.time.Instant;
 import java.time.LocalDate;
 
-// Medical history details returned to clients.
-public class MedicalHistoryResponse {
+// Medical history entry returned to clients.
+public class MedicalHistoryResponseDTO {
 
     private Long id;
     private Long patientId;

@@ -1,16 +1,13 @@
-package com.edoc.patientservice.dto;
+package com.edoc.patientservice.dto.report;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-// Payload for uploading a medical report record.
-public class MedicalReportRequest {
+// Metadata sent alongside a medical report file upload.
+public class MedicalReportRequestDTO {
 
-    @NotBlank
     @Size(max = 200)
     private String reportName;
-    @Size(max = 1000)
-    private String reportUrl;
+
     @Size(max = 2000)
     private String notes;
 
@@ -20,14 +17,6 @@ public class MedicalReportRequest {
 
     public void setReportName(String reportName) {
         this.reportName = reportName;
-    }
-
-    public String getReportUrl() {
-        return reportUrl;
-    }
-
-    public void setReportUrl(String reportUrl) {
-        this.reportUrl = reportUrl;
     }
 
     public String getNotes() {
