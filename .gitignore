@@ -149,3 +149,18 @@ log/
 .scannerwork/
 
 mock-frontend 
+
+# PYTHON
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+bin/
+lib/
+include/
+venv/
+.venv/
+uv.lock
+.uv/
