@@ -34,6 +34,10 @@ public class PatientMapper {
         response.setDateOfBirth(patient.getDateOfBirth());
         response.setAddress(patient.getAddress());
         response.setCreatedAt(patient.getCreatedAt());
+        response.setStatus(patient.getStatus());
+        response.setDeactivatedAt(patient.getDeactivatedAt());
+        response.setDeactivatedBy(patient.getDeactivatedBy());
+        response.setDeactivationReason(patient.getDeactivationReason());
         return response;
     }
 }

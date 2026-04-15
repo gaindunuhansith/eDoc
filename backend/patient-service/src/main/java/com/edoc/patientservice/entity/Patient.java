@@ -3,6 +3,8 @@ package com.edoc.patientservice.entity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -44,6 +46,19 @@ public class Patient {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private PatientStatus status;
+
+    @Column(name = "deactivated_at")
+    private Instant deactivatedAt;
+
+    @Column(name = "deactivated_by")
+    private Long deactivatedBy;
+
+    @Column(name = "deactivation_reason", length = 500)
+    private String deactivationReason;
+
     @OneToMany(mappedBy = "patient", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MedicalReport> medicalReports = new ArrayList<>();
 
@@ -54,6 +69,9 @@ public class Patient {
     void onCreate() {
         if (createdAt == null) {
             createdAt = Instant.now();
+        }
+        if (status == null) {
+            status = PatientStatus.ACTIVE;
         }
     }
 
@@ -119,6 +137,38 @@ public class Patient {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public PatientStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(PatientStatus status) {
+        this.status = status;
+    }
+
+    public Instant getDeactivatedAt() {
+        return deactivatedAt;
+    }
+
+    public void setDeactivatedAt(Instant deactivatedAt) {
+        this.deactivatedAt = deactivatedAt;
+    }
+
+    public Long getDeactivatedBy() {
+        return deactivatedBy;
+    }
+
+    public void setDeactivatedBy(Long deactivatedBy) {
+        this.deactivatedBy = deactivatedBy;
+    }
+
+    public String getDeactivationReason() {
+        return deactivationReason;
+    }
+
+    public void setDeactivationReason(String deactivationReason) {
+        this.deactivationReason = deactivationReason;
     }
 
     public List<MedicalReport> getMedicalReports() {
