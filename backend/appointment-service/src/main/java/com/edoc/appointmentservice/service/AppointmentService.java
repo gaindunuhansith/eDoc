@@ -51,7 +51,7 @@ public class AppointmentService {
         }
 
         // Step 3: Fetch doctor details from doctor-service
-        Map doctorData = doctorServiceClient.getDoctorById(request.getDoctorId());
+        Map<?, ?> doctorData = doctorServiceClient.getDoctorById(request.getDoctorId());
 
         // Step 4: Build the appointment object
         Appointment appointment = new Appointment();
@@ -348,9 +348,9 @@ public class AppointmentService {
         }
     }
 
-    private void notifyBooking(Appointment appointment, Map doctorData) {
+    private void notifyBooking(Appointment appointment, Map<?, ?> doctorData) {
         try {
-            Map patientData = patientServiceClient.getPatientById(appointment.getPatientId());
+            Map<?, ?> patientData = patientServiceClient.getPatientById(appointment.getPatientId());
 
             String patientEmail = getString(patientData, "email");
             String patientPhone = getString(patientData, "phone");
@@ -391,7 +391,7 @@ public class AppointmentService {
 
     private void notifyAppointmentConfirmed(Appointment appointment) {
         try {
-            Map patientData = patientServiceClient.getPatientById(appointment.getPatientId());
+            Map<?, ?> patientData = patientServiceClient.getPatientById(appointment.getPatientId());
             String patientEmail = getString(patientData, "email");
             String patientPhone = getString(patientData, "phone");
             String patientName = getFullName(patientData, "firstName", "lastName");
@@ -418,7 +418,7 @@ public class AppointmentService {
 
     private void notifyAppointmentCancelled(Appointment appointment) {
         try {
-            Map patientData = patientServiceClient.getPatientById(appointment.getPatientId());
+            Map<?, ?> patientData = patientServiceClient.getPatientById(appointment.getPatientId());
             String patientEmail = getString(patientData, "email");
             String patientPhone = getString(patientData, "phone");
             String patientName = getFullName(patientData, "firstName", "lastName");
@@ -445,8 +445,8 @@ public class AppointmentService {
 
     private void notifyCompletion(Appointment appointment) {
         try {
-            Map patientData = patientServiceClient.getPatientById(appointment.getPatientId());
-            Map doctorData = doctorServiceClient.getDoctorById(appointment.getDoctorId());
+            Map<?, ?> patientData = patientServiceClient.getPatientById(appointment.getPatientId());
+            Map<?, ?> doctorData = doctorServiceClient.getDoctorById(appointment.getDoctorId());
 
             String patientEmail = getString(patientData, "email");
             String patientPhone = getString(patientData, "phone");
@@ -485,7 +485,7 @@ public class AppointmentService {
         }
     }
 
-    private String getString(Map data, String key) {
+    private String getString(Map<?, ?> data, String key) {
         if (data == null) {
             return null;
         }
@@ -493,7 +493,7 @@ public class AppointmentService {
         return value == null ? null : String.valueOf(value);
     }
 
-    private String getFullName(Map data, String firstNameKey, String lastNameKey) {
+    private String getFullName(Map<?, ?> data, String firstNameKey, String lastNameKey) {
         String first = getString(data, firstNameKey);
         String last = getString(data, lastNameKey);
         if (first == null && last == null) {

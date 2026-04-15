@@ -21,7 +21,7 @@ public class DoctorServiceClient {
 
     // Get doctor details by ID from doctor-service
     // Returns a Map because we don't want to duplicate the Doctor model here
-    public Map getDoctorById(String doctorId) {
+    public Map<?, ?> getDoctorById(String doctorId) {
         try {
             return webClientBuilder.build()
                     .get()
