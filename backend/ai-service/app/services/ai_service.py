@@ -1,44 +1,52 @@
 from fastapi import HTTPException
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
-from app.schemas.ai import MedicalAnalysis
+from app.schemas.ai import PatientAnalysisResponse, DoctorAnalysisResponse, AdminAnalysisResponse
 from app.core.config import settings
 
 class AIService:
     def __init__(self):
         if not settings.GROQ_API_KEY:
             raise ValueError("GROQ_API_KEY is missing from environment variables.")
-        self.llm = ChatGroq(
+        self.llm_versatile = ChatGroq(
             api_key=settings.GROQ_API_KEY,
             model="llama-3.3-70b-versatile", 
             temperature=0.0
         )
-        self.system_prompt = """You are an advanced medical diagnostic assistant for eDoc.
-Your goal is to carefully analyze the user's symptoms and their medical history to offer a preliminary diagnosis and suggest next steps. 
-You must also confidently recommend the appropriate medical specialty the patient should consult.
 
-You MUST format your output as a JSON object adhering to the schema requested.
-Do not output markdown code blocks wrapping the JSON, just output the raw JSON."""
-
-    def analyze_symptoms(self, symptoms: str, patient_profile: dict = None, patient_history: list = None, extra_context: str = None) -> MedicalAnalysis:
-        human_prompt = f"Symptoms: {symptoms}"
+    def analyze_for_patient(self, symptoms: str, description: str = None, profile: dict = None, history: list = None) -> PatientAnalysisResponse:
+        system = "You are a friendly, empathetic medical AI assistant for patients. Analyze their symptoms and history to provide a clear, non-jargon preliminary diagnosis and recommend the medical specialty they need."
+        human = f"Symptoms: {symptoms}\nDescription: {description}\n\nProfile: {profile}\nHistory: {history}"
         
-        if patient_profile:
-            human_prompt += f"\n\nPatient Details:\n{patient_profile}"
-        if patient_history:
-            human_prompt += f"\n\nMedical History:\n{patient_history}"
-        if extra_context:
-            human_prompt += f"\n\nAdditional Context:\n{extra_context}"
-            
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", self.system_prompt),
-            ("human", human_prompt)
-        ])
-        
-        structured_llm = self.llm.with_structured_output(MedicalAnalysis)
-        chain = prompt | structured_llm
+        prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
+        chain = prompt | self.llm_versatile.with_structured_output(PatientAnalysisResponse)
         
         try:
-            return chain.invoke({"symptoms": symptoms})
+            return chain.invoke({})
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"AI Processing Error: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Patient AI Error: {str(e)}")
+
+    def analyze_for_doctor(self, notes: str, profile: dict = None, history: list = None, reports: list = None, prescriptions: list = None) -> DoctorAnalysisResponse:
+        system = "You are an advanced clinical diagnostic AI assisting a doctor. Provide a highly technical differential diagnosis, clinical analysis, and recommend medical investigations based on the data provided."
+        human = f"Doctor's Notes: {notes}\n\nProfile: {profile}\nHistory: {history}\nReports Metadata: {reports}\nPast Prescriptions: {prescriptions}"
+        
+        prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
+        chain = prompt | self.llm_versatile.with_structured_output(DoctorAnalysisResponse)
+        
+        try:
+            return chain.invoke({})
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Doctor AI Error: {str(e)}")
+
+    def analyze_for_admin(self, query: str, appointments: list = None, payments: list = None) -> AdminAnalysisResponse:
+        system = "You are a healthcare business intelligence AI. Analyze the provided operational data (appointments and payments) based on the query to extract actionable business insights."
+        # Truncate lists if too massive in a real scenario, but pass them for now
+        human = f"Query: {query}\n\nAppointments Data: {appointments}\nPayments Data: {payments}"
+        
+        prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
+        chain = prompt | self.llm_versatile.with_structured_output(AdminAnalysisResponse)
+        
+        try:
+            return chain.invoke({})
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Admin AI Error: {str(e)}")
