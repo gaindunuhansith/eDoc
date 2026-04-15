@@ -1,17 +1,37 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional, Any
 
-class AIRequest(BaseModel):
-    patient_id: Optional[int] = None
+# --- PATIENT ---
+class PatientAnalysisRequest(BaseModel):
+    patient_id: str
     symptoms: str
-    context: Optional[str] = None
+    description: Optional[str] = None
 
-class MedicalAnalysis(BaseModel):
-    analysis: str = Field(description="A detailed medical analysis based on symptoms and patient history.")
-    recommended_actions: List[str] = Field(description="3-5 recommended actions for the patient to take.")
-    recommended_specialty: str = Field(description="The exact medical specialty required to treat these symptoms. For example: 'Cardiologist', 'Neurologist', 'General Practitioner', 'Dermatologist', 'Pediatrician', 'Orthopedist'. Use precisely one word if possible, or standard titles.")
-
-class AIResponse(BaseModel):
+class PatientAnalysisResponse(BaseModel):
     patient_summary: Optional[dict] = None
-    analysis: MedicalAnalysis
-    recommended_doctors: List[dict] = []
+    analysis: str = Field(description="Patient-friendly medical analysis.")
+    recommended_actions: List[str] = Field(description="Actions patient should take.")
+    recommended_specialty: str = Field(description="The precise recommended specialist type (e.g. Neurologist).")
+    available_doctors: List[dict] = []
+    service_errors: List[str] = []
+
+# --- DOCTOR ---
+class DoctorAnalysisRequest(BaseModel):
+    patient_id: str
+    professional_notes: str
+
+class DoctorAnalysisResponse(BaseModel):
+    patient_summary: Optional[dict] = None
+    clinical_analysis: str = Field(description="Technical and clinical analysis of the patient's condition for the doctor.")
+    differential_diagnosis: List[str] = Field(description="Potential alternative technical diagnoses.")
+    investigation_recommendations: List[str] = Field(description="Recommended laboratory or imaging tests.")
+    service_errors: List[str] = []
+
+# --- ADMIN ---
+class AdminAnalysisRequest(BaseModel):
+    query: str = Field(description="What the admin wants to analyze (e.g. 'Trend of specialities booked this month').")
+
+class AdminAnalysisResponse(BaseModel):
+    operational_insight: str = Field(description="Business and operational analysis derived from appointments and payments.")
+    actionable_metrics: List[str] = Field(description="Key bullet points for admin to address.")
+    service_errors: List[str] = []
