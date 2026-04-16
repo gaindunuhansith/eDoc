@@ -13,7 +13,8 @@ spring:
         format_sql: true
 
 jwt:
-  secret: ${JWT_SECRET:change-this-default-jwt-secret-key-to-at-least-32-bytes}
+  private-key-path: ${JWT_PRIVATE_KEY_PATH:file:./keys/jwt-private.pem}
+  public-key-path: ${JWT_PUBLIC_KEY_PATH:file:./keys/jwt-public.pem}
   expiration: ${JWT_EXPIRATION:86400000}
 
 microservices:
