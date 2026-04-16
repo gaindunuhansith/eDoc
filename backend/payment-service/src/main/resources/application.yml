@@ -18,7 +18,7 @@ payhere:
   checkout-url: ${PAYHERE_CHECKOUT_URL:https://sandbox.payhere.lk/pay/checkout}
   return-url: ${PAYHERE_RETURN_URL:https://app.example.com/payment/success}
   cancel-url: ${PAYHERE_CANCEL_URL:https://app.example.com/payment/cancel}
-  notify-url: ${PAYHERE_NOTIFY_URL:https://api.example.com/payments/notify}
+  notify-url: ${PAYHERE_NOTIFY_URL:https://api.example.com/api/v1/payments/notify}
   sandbox: ${PAYHERE_SANDBOX:true}
 
 services:

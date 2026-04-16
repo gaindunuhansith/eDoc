@@ -34,7 +34,7 @@ public class GatewaySecurityConfig {
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
                 .authorizeExchange(auth -> auth
                         .pathMatchers(HttpMethod.OPTIONS).permitAll()
-                        .pathMatchers("/api/v1/users/login", "/api/v1/users/register").permitAll()
+                        .pathMatchers("/api/v1/users/login", "/api/v1/users/register", "/api/v1/payments/notify").permitAll()
                         .anyExchange().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtDecoder(jwtDecoder)));

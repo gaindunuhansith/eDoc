@@ -56,7 +56,7 @@ public class IpRateLimitingFilter implements GlobalFilter, Ordered {
         if ("/api/v1/users/login".equals(path) || "/api/v1/users/register".equals(path)) {
             return "auth";
         }
-        if (path.startsWith("/payments")) {
+        if (path.startsWith("/api/v1/payments")) {
             return "payments";
         }
         return "default";
