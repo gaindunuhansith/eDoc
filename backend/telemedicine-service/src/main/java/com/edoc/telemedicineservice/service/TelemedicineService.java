@@ -1,5 +1,7 @@
 package com.edoc.telemedicineservice.service;
 
+import com.edoc.telemedicineservice.client.AppointmentServiceClient;
+import com.edoc.telemedicineservice.client.NotificationServiceClient;
 import com.edoc.telemedicineservice.model.SessionStatus;
 import com.edoc.telemedicineservice.model.VideoSession;
 import com.edoc.telemedicineservice.repository.VideoSessionRepository;
@@ -17,16 +19,34 @@ public class TelemedicineService {
 
     private final VideoSessionRepository sessionRepository;
     private final TwilioService twilioService;
+    private final AppointmentServiceClient appointmentClient;
+    private final NotificationServiceClient notificationClient;
 
-    public TelemedicineService(VideoSessionRepository sessionRepository, TwilioService twilioService) {
+    public TelemedicineService(VideoSessionRepository sessionRepository,
+                             TwilioService twilioService,
+                             AppointmentServiceClient appointmentClient,
+                             NotificationServiceClient notificationClient) {
         this.sessionRepository = sessionRepository;
         this.twilioService = twilioService;
+        this.appointmentClient = appointmentClient;
+        this.notificationClient = notificationClient;
     }
 
-    public VideoSession createSession(String appointmentId, String doctorId, String patientId) {
+    public VideoSession createSession(String appointmentId, String doctorId, String patientId, String authorizationHeader) {
         validateRequired("appointmentId", appointmentId);
         validateRequired("doctorId", doctorId);
         validateRequired("patientId", patientId);
+
+        // Validate appointment exists and is confirmed
+        AppointmentServiceClient.AppointmentDTO appointment = appointmentClient.getAppointment(appointmentId, authorizationHeader);
+        if (appointment.getStatus() != AppointmentServiceClient.AppointmentStatus.CONFIRMED) {
+            throw new ResponseStatusException(BAD_REQUEST, "Appointment must be confirmed to start telemedicine session");
+        }
+
+        // Validate doctor and patient IDs match
+        if (!doctorId.equals(appointment.getDoctorId()) || !patientId.equals(appointment.getPatientId())) {
+            throw new ResponseStatusException(BAD_REQUEST, "Doctor or patient ID does not match appointment details");
+        }
 
         Optional<VideoSession> existingSession = sessionRepository.findByAppointmentId(appointmentId);
         if (existingSession.isPresent()) {
@@ -62,17 +82,65 @@ public class TelemedicineService {
         return twilioService.generateToken(roomName, userId);
     }
 
-    public VideoSession startSession(String appointmentId) {
+    public VideoSession startSession(String appointmentId, String authorizationHeader) {
         VideoSession session = findByAppointmentIdOrThrow(appointmentId);
         session.setStatus(SessionStatus.ONGOING);
         session.setStartTime(LocalDateTime.now());
+
+        // Send notifications to both participants
+        try {
+            AppointmentServiceClient.AppointmentDTO appointment = appointmentClient.getAppointment(appointmentId, authorizationHeader);
+            String doctorMessage = "Your telemedicine session with " + appointment.getDoctorName() + " has started.";
+            String patientMessage = "Your telemedicine session has started. Please join the video call.";
+
+            notificationClient.sendEmail(appointment.getPatientEmail(),
+                "Telemedicine Session Started", patientMessage, authorizationHeader);
+            notificationClient.sendEmail(appointment.getDoctorEmail(),
+                "Telemedicine Session Started", doctorMessage, authorizationHeader);
+
+            // Send SMS notifications as well
+            notificationClient.sendSms(appointment.getPatientEmail(), patientMessage, authorizationHeader);
+            notificationClient.sendSms(appointment.getDoctorEmail(), doctorMessage, authorizationHeader);
+        } catch (Exception ex) {
+            // Log error but don't fail the session start
+            System.err.println("Failed to send session start notifications: " + ex.getMessage());
+        }
+
         return sessionRepository.save(session);
     }
 
-    public VideoSession endSession(String appointmentId) {
+    public VideoSession endSession(String appointmentId, String authorizationHeader) {
         VideoSession session = findByAppointmentIdOrThrow(appointmentId);
         session.setStatus(SessionStatus.COMPLETED);
         session.setEndTime(LocalDateTime.now());
+
+        // Update appointment status to COMPLETED
+        try {
+            appointmentClient.updateAppointmentStatus(appointmentId,
+                new AppointmentServiceClient.AppointmentStatusUpdate(
+                    AppointmentServiceClient.AppointmentStatus.COMPLETED,
+                    "Telemedicine session completed successfully"), authorizationHeader);
+        } catch (Exception ex) {
+            System.err.println("Failed to update appointment status: " + ex.getMessage());
+        }
+
+        // Send completion notifications
+        try {
+            AppointmentServiceClient.AppointmentDTO appointment = appointmentClient.getAppointment(appointmentId, authorizationHeader);
+            String completionMessage = "Your telemedicine session has been completed. Thank you for using eDoc.";
+
+            notificationClient.sendEmail(appointment.getPatientEmail(),
+                "Telemedicine Session Completed", completionMessage, authorizationHeader);
+            notificationClient.sendEmail(appointment.getDoctorEmail(),
+                "Telemedicine Session Completed", completionMessage, authorizationHeader);
+
+            // Send SMS notifications
+            notificationClient.sendSms(appointment.getPatientEmail(), completionMessage, authorizationHeader);
+            notificationClient.sendSms(appointment.getDoctorEmail(), completionMessage, authorizationHeader);
+        } catch (Exception ex) {
+            System.err.println("Failed to send session completion notifications: " + ex.getMessage());
+        }
+
         return sessionRepository.save(session);
     }
 
