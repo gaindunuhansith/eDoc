@@ -2,7 +2,6 @@ package com.edoc.feedbackservice.client;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
@@ -55,34 +54,7 @@ public class NotificationServiceClient {
         }
     }
 
-    private static class EmailRequest {
-        private String to;
-        private String subject;
-        private String body;
+    private record EmailRequest(String to, String subject, String body) {}
 
-        public EmailRequest(String to, String subject, String body) {
-            this.to = to;
-            this.subject = subject;
-            this.body = body;
-        }
-
-        // Getters
-        public String getTo() { return to; }
-        public String getSubject() { return subject; }
-        public String getBody() { return body; }
-    }
-
-    private static class SmsRequest {
-        private String to;
-        private String message;
-
-        public SmsRequest(String to, String message) {
-            this.to = to;
-            this.message = message;
-        }
-
-        // Getters
-        public String getTo() { return to; }
-        public String getMessage() { return message; }
-    }
+    private record SmsRequest(String to, String message) {}
 }
