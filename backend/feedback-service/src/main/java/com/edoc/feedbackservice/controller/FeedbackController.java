@@ -24,8 +24,9 @@ public class FeedbackController {
 
     @PostMapping("/submit")
     public ResponseEntity<FeedbackResponseDTO> submitFeedback(@Valid @RequestBody FeedbackRequestDTO request,
-                                                              @RequestParam Long patientId) {
-        FeedbackResponseDTO response = feedbackService.submitFeedback(request, patientId);
+                                                              @RequestParam Long patientId,
+                                                              @RequestHeader("Authorization") String authHeader) {
+        FeedbackResponseDTO response = feedbackService.submitFeedback(request, patientId, authHeader);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
