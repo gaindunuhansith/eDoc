@@ -1,0 +1,30 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: appointment-service
+  data:
+    mongodb:
+      uri: ${MONGO_URI}
+      database: edoc_appointment_db
+
+jwt:
+  secret: eDocSecretKey2026SuperSecureKeyForJWTTokenGeneration
+  expiration: 86400000
+
+doctor:
+  service:
+    url: http://localhost:8082
+
+patient:
+  service:
+    url: http://localhost:8084
+
+notification:
+  service:
+    url: http://localhost:8083
+
+logging:
+  level:
+    com.edoc: DEBUG
