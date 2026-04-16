@@ -29,17 +29,15 @@ public class Patient {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "first_name", nullable = false, length = 100)
-    private String firstName;
-
-    @Column(name = "last_name", nullable = false, length = 100)
-    private String lastName;
-
-    @Column(nullable = false, unique = true, length = 150)
-    private String email;
+    @Column(name = "user_id", nullable = false, unique = true)
+    private Long userId;
 
     @Column(length = 50)
     private String phone;
+
+    private Double height;
+
+    private Double weight;
 
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;

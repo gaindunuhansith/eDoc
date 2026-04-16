@@ -1,25 +1,10 @@
 package com.edoc.patientservice.dto.patient;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 
 // Payload for patient registration and profile updates.
 public class PatientRequestDTO {
-
-    @NotBlank
-    @Size(max = 100)
-    private String firstName;
-
-    @NotBlank
-    @Size(max = 100)
-    private String lastName;
-
-    @NotBlank
-    @Email
-    @Size(max = 150)
-    private String email;
 
     @Size(max = 50)
     private String phone;
@@ -44,29 +29,9 @@ public class PatientRequestDTO {
     @Size(max = 50)
     private String emergencyContactPhone;
 
-    public String getFirstName() {
-        return firstName;
-    }
+    private Double height;
 
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
+    private Double weight;
 
     public String getPhone() {
         return phone;
@@ -130,5 +95,21 @@ public class PatientRequestDTO {
 
     public void setEmergencyContactPhone(String emergencyContactPhone) {
         this.emergencyContactPhone = emergencyContactPhone;
+    }
+
+    public Double getHeight() {
+        return height;
+    }
+
+    public void setHeight(Double height) {
+        this.height = height;
+    }
+
+    public Double getWeight() {
+        return weight;
+    }
+
+    public void setWeight(Double weight) {
+        this.weight = weight;
     }
 }
