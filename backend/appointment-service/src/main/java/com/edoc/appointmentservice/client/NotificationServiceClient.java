@@ -18,20 +18,28 @@ public class NotificationServiceClient {
 
     private final WebClient.Builder webClientBuilder;
 
-    public void sendNotification(String type, String email, String phone, Map<String, Object> data) {
+    public void sendToPatient(String type, String patientId, Map<String, Object> data) {
+        send(new NotificationRequest(type, patientId, null, null, data));
+    }
+
+    public void sendToDoctor(String type, String doctorId, Map<String, Object> data) {
+        send(new NotificationRequest(type, null, doctorId, null, data));
+    }
+
+    private void send(NotificationRequest request) {
         try {
             webClientBuilder.build()
                     .post()
                     .uri(notificationServiceUrl + "/notifications/send")
-                    .bodyValue(new NotificationRequest(type, email, phone, data))
+                    .bodyValue(request)
                     .retrieve()
                     .bodyToMono(Void.class)
                     .block();
         } catch (Exception ex) {
-            log.error("Failed to send notification type={} to email={} phone={}", type, email, phone, ex);
+            log.error("Failed to send notification type={}", request.type(), ex);
         }
     }
 
-    private record NotificationRequest(String type, String email, String phone, Map<String, Object> data) {}
+    private record NotificationRequest(String type, String patientId, String doctorId, Long userId, Map<String, Object> data) {}
 }
 

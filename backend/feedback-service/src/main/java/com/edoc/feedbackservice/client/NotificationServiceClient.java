@@ -19,8 +19,8 @@ public class NotificationServiceClient {
         this.restClient = restClientBuilder.build();
     }
 
-    public void sendNotification(String type, String email, String phone, Map<String, Object> data) {
-        NotificationRequest request = new NotificationRequest(type, email, phone, data);
+    public void sendToUser(String type, Long userId, Map<String, Object> data) {
+        NotificationRequest request = new NotificationRequest(type, null, null, userId, data);
         try {
             restClient.post()
                     .uri(notificationServiceBaseUrl + "/notifications/send")
@@ -36,5 +36,5 @@ public class NotificationServiceClient {
         }
     }
 
-    private record NotificationRequest(String type, String email, String phone, Map<String, Object> data) {}
+    private record NotificationRequest(String type, String patientId, String doctorId, Long userId, Map<String, Object> data) {}
 }

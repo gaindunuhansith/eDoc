@@ -61,14 +61,10 @@ public class FeedbackService {
 
     private void sendFeedbackNotification(Feedback feedback, String authHeader) {
         try {
-            UserServiceClient.UserDTO doctor = userServiceClient.getUserById(feedback.getDoctorId(), authHeader);
-
             Map<String, Object> data = new HashMap<>();
-            data.put("doctorName", doctor.getFirstName() + " " + doctor.getLastName());
             data.put("rating", feedback.getRating());
             data.put("comment", feedback.getComment());
-
-            notificationServiceClient.sendNotification("FEEDBACK_RECEIVED", doctor.getEmail(), null, data);
+            notificationServiceClient.sendToUser("FEEDBACK_RECEIVED", feedback.getDoctorId(), data);
         } catch (Exception error) {
             System.err.println("Failed to send feedback notification: " + error.getMessage());
         }
