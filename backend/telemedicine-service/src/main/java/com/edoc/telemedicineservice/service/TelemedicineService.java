@@ -37,13 +37,11 @@ public class TelemedicineService {
         validateRequired("doctorId", doctorId);
         validateRequired("patientId", patientId);
 
-        // Validate appointment exists and is confirmed
         AppointmentServiceClient.AppointmentDTO appointment = appointmentClient.getAppointment(appointmentId, authorizationHeader);
         if (appointment.getStatus() != AppointmentServiceClient.AppointmentStatus.CONFIRMED) {
             throw new ResponseStatusException(BAD_REQUEST, "Appointment must be confirmed to start telemedicine session");
         }
 
-        // Validate doctor and patient IDs match
         if (!doctorId.equals(appointment.getDoctorId()) || !patientId.equals(appointment.getPatientId())) {
             throw new ResponseStatusException(BAD_REQUEST, "Doctor or patient ID does not match appointment details");
         }
@@ -87,7 +85,6 @@ public class TelemedicineService {
         session.setStatus(SessionStatus.ONGOING);
         session.setStartTime(LocalDateTime.now());
 
-        // Send notifications to both participants
         try {
             AppointmentServiceClient.AppointmentDTO appointment = appointmentClient.getAppointment(appointmentId, authorizationHeader);
             String doctorMessage = "Your telemedicine session with " + appointment.getDoctorName() + " has started.";
@@ -98,11 +95,11 @@ public class TelemedicineService {
             notificationClient.sendEmail(appointment.getDoctorEmail(),
                 "Telemedicine Session Started", doctorMessage, authorizationHeader);
 
-            // Send SMS notifications as well
+
             notificationClient.sendSms(appointment.getPatientEmail(), patientMessage, authorizationHeader);
             notificationClient.sendSms(appointment.getDoctorEmail(), doctorMessage, authorizationHeader);
         } catch (Exception ex) {
-            // Log error but don't fail the session start
+
             System.err.println("Failed to send session start notifications: " + ex.getMessage());
         }
 
@@ -114,7 +111,6 @@ public class TelemedicineService {
         session.setStatus(SessionStatus.COMPLETED);
         session.setEndTime(LocalDateTime.now());
 
-        // Update appointment status to COMPLETED
         try {
             appointmentClient.updateAppointmentStatus(appointmentId,
                 new AppointmentServiceClient.AppointmentStatusUpdate(
@@ -124,7 +120,7 @@ public class TelemedicineService {
             System.err.println("Failed to update appointment status: " + ex.getMessage());
         }
 
-        // Send completion notifications
+
         try {
             AppointmentServiceClient.AppointmentDTO appointment = appointmentClient.getAppointment(appointmentId, authorizationHeader);
             String completionMessage = "Your telemedicine session has been completed. Thank you for using eDoc.";
@@ -134,7 +130,6 @@ public class TelemedicineService {
             notificationClient.sendEmail(appointment.getDoctorEmail(),
                 "Telemedicine Session Completed", completionMessage, authorizationHeader);
 
-            // Send SMS notifications
             notificationClient.sendSms(appointment.getPatientEmail(), completionMessage, authorizationHeader);
             notificationClient.sendSms(appointment.getDoctorEmail(), completionMessage, authorizationHeader);
         } catch (Exception ex) {

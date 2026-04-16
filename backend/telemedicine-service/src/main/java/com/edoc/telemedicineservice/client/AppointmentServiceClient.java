@@ -55,7 +55,6 @@ public class AppointmentServiceClient {
         }
     }
 
-    // DTOs for appointment service communication
     public static class AppointmentDTO {
         private String id;
         private String patientId;
@@ -65,7 +64,6 @@ public class AppointmentServiceClient {
         private String doctorEmail;
         private AppointmentStatus status;
 
-        // Getters and setters
         public String getId() { return id; }
         public void setId(String id) { this.id = id; }
 

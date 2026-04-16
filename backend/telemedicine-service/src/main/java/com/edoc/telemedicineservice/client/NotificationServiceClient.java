@@ -64,7 +64,6 @@ public class NotificationServiceClient {
         }
     }
 
-    // DTOs for notification service communication
     public record EmailNotificationRequest(String to, String subject, String body) {}
 
     public record SmsNotificationRequest(String to, String text) {}

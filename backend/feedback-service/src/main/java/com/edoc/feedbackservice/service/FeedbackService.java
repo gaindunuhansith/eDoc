@@ -37,7 +37,7 @@ public class FeedbackService {
     }
 
     public FeedbackResponseDTO submitFeedback(FeedbackRequestDTO request, Long patientId, String authHeader) {
-        // Validate appointment exists and patient is authorized
+
         AppointmentServiceClient.AppointmentDTO appointment = appointmentServiceClient.getAppointment(request.getAppointmentId(), authHeader);
 
         if (appointment == null) {
@@ -48,11 +48,10 @@ public class FeedbackService {
             throw new RuntimeException("Patient not authorized for this appointment");
         }
 
-        // Save feedback
         Feedback feedback = feedbackMapper.toEntity(request, patientId);
         Feedback saved = feedbackRepository.save(feedback);
 
-        // Send notification to doctor asynchronously
+
         sendFeedbackNotification(saved, authHeader);
 
         return feedbackMapper.toResponseDTO(saved);
@@ -60,7 +59,7 @@ public class FeedbackService {
 
     private void sendFeedbackNotification(Feedback feedback, String authHeader) {
         try {
-            // Get doctor details
+
             UserServiceClient.UserDTO doctor = userServiceClient.getUserById(feedback.getDoctorId(), authHeader);
 
             String subject = "New Feedback Received";

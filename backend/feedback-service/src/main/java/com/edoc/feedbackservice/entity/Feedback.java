@@ -21,7 +21,7 @@ public class Feedback {
     private Long appointmentId;
 
     @Column(name = "rating", nullable = false)
-    private int rating; // 1-5
+    private int rating;
 
     @Column(name = "comment", length = 500)
     private String comment;
@@ -33,7 +33,7 @@ public class Feedback {
     @Column(name = "status", nullable = false)
     private FeedbackStatus status;
 
-    // Getters and Setters
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

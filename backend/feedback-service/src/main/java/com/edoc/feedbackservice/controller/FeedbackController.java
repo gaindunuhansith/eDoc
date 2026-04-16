@@ -48,7 +48,6 @@ public class FeedbackController {
         return ResponseEntity.ok(feedbacks);
     }
 
-    // Internal endpoints for cross-service communication
     @GetMapping("/internal/doctor/{doctorId}")
     public ResponseEntity<List<FeedbackResponseDTO>> getFeedbackForDoctorInternal(@PathVariable Long doctorId,
                                                                                    @RequestHeader("Authorization") String authHeader) {
