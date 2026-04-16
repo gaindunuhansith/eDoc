@@ -48,6 +48,28 @@ public class FeedbackController {
         return ResponseEntity.ok(feedbacks);
     }
 
+    // Internal endpoints for cross-service communication
+    @GetMapping("/internal/doctor/{doctorId}")
+    public ResponseEntity<List<FeedbackResponseDTO>> getFeedbackForDoctorInternal(@PathVariable Long doctorId,
+                                                                                   @RequestHeader("Authorization") String authHeader) {
+        List<FeedbackResponseDTO> feedbacks = feedbackService.getFeedbackForDoctor(doctorId);
+        return ResponseEntity.ok(feedbacks);
+    }
+
+    @GetMapping("/internal/patient/{patientId}")
+    public ResponseEntity<List<FeedbackResponseDTO>> getFeedbackForPatientInternal(@PathVariable Long patientId,
+                                                                                    @RequestHeader("Authorization") String authHeader) {
+        List<FeedbackResponseDTO> feedbacks = feedbackService.getFeedbackForPatient(patientId);
+        return ResponseEntity.ok(feedbacks);
+    }
+
+    @GetMapping("/internal/appointment/{appointmentId}")
+    public ResponseEntity<List<FeedbackResponseDTO>> getFeedbackForAppointmentInternal(@PathVariable Long appointmentId,
+                                                                                        @RequestHeader("Authorization") String authHeader) {
+        List<FeedbackResponseDTO> feedbacks = feedbackService.getFeedbackForAppointment(appointmentId);
+        return ResponseEntity.ok(feedbacks);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<FeedbackResponseDTO> getFeedbackById(@PathVariable Long id) {
         FeedbackResponseDTO feedback = feedbackService.getFeedbackById(id);

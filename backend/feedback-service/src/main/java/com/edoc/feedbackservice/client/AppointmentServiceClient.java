@@ -4,39 +4,39 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
-import reactor.core.publisher.Mono;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
 @Service
 public class AppointmentServiceClient {
 
-    private final WebClient webClient;
+    private final RestClient restClient;
 
-    @Value("${appointment.service.url}")
-    private String appointmentServiceUrl;
+    @Value("${appointment.service.base-url}")
+    private String appointmentServiceBaseUrl;
 
-    public AppointmentServiceClient(WebClient.Builder webClientBuilder) {
-        this.webClient = webClientBuilder.build();
+    public AppointmentServiceClient(RestClient.Builder restClientBuilder) {
+        this.restClient = restClientBuilder.build();
     }
 
-    public Mono<AppointmentDTO> getAppointment(Long appointmentId, String authHeader) {
-        return webClient.get()
-                .uri(appointmentServiceUrl + "/{appointmentId}", appointmentId)
-                .header(HttpHeaders.AUTHORIZATION, authHeader)
-                .retrieve()
-                .bodyToMono(AppointmentDTO.class)
-                .doOnError(error -> {
-                    if (error instanceof WebClientResponseException e) {
-                        if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
-                            System.out.println("Appointment not found: " + appointmentId);
-                        } else {
-                            System.err.println("Error calling appointment service: " + e.getMessage());
-                        }
-                    } else {
-                        System.err.println("Unexpected error calling appointment service: " + error.getMessage());
-                    }
-                });
+    public AppointmentDTO getAppointment(Long appointmentId, String authHeader) {
+        try {
+            return restClient.get()
+                    .uri(appointmentServiceBaseUrl + "/api/appointments/{appointmentId}", appointmentId)
+                    .header(HttpHeaders.AUTHORIZATION, authHeader)
+                    .retrieve()
+                    .body(AppointmentDTO.class);
+        } catch (RestClientResponseException ex) {
+            if (ex.getStatusCode() == HttpStatus.NOT_FOUND) {
+                System.out.println("Appointment not found: " + appointmentId);
+            } else {
+                System.err.println("Error calling appointment service: " + ex.getMessage());
+            }
+            throw ex;
+        } catch (Exception ex) {
+            System.err.println("Unexpected error calling appointment service: " + ex.getMessage());
+            throw new RuntimeException("Unable to validate appointment");
+        }
     }
 
     public static class AppointmentDTO {

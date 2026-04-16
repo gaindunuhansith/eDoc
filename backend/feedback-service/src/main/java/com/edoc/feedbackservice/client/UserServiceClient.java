@@ -4,39 +4,39 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
-import reactor.core.publisher.Mono;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
 @Service
 public class UserServiceClient {
 
-    private final WebClient webClient;
+    private final RestClient restClient;
 
-    @Value("${user.service.url}")
-    private String userServiceUrl;
+    @Value("${user.service.base-url}")
+    private String userServiceBaseUrl;
 
-    public UserServiceClient(WebClient.Builder webClientBuilder) {
-        this.webClient = webClientBuilder.build();
+    public UserServiceClient(RestClient.Builder restClientBuilder) {
+        this.restClient = restClientBuilder.build();
     }
 
-    public Mono<UserDTO> getUserById(Long userId, String authHeader) {
-        return webClient.get()
-                .uri(userServiceUrl + "/{userId}", userId)
-                .header(HttpHeaders.AUTHORIZATION, authHeader)
-                .retrieve()
-                .bodyToMono(UserDTO.class)
-                .doOnError(error -> {
-                    if (error instanceof WebClientResponseException e) {
-                        if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
-                            System.out.println("User not found: " + userId);
-                        } else {
-                            System.err.println("Error calling user service: " + e.getMessage());
-                        }
-                    } else {
-                        System.err.println("Unexpected error calling user service: " + error.getMessage());
-                    }
-                });
+    public UserDTO getUserById(Long userId, String authHeader) {
+        try {
+            return restClient.get()
+                    .uri(userServiceBaseUrl + "/api/users/{userId}", userId)
+                    .header(HttpHeaders.AUTHORIZATION, authHeader)
+                    .retrieve()
+                    .body(UserDTO.class);
+        } catch (RestClientResponseException ex) {
+            if (ex.getStatusCode() == HttpStatus.NOT_FOUND) {
+                System.out.println("User not found: " + userId);
+            } else {
+                System.err.println("Error calling user service: " + ex.getMessage());
+            }
+            throw ex;
+        } catch (Exception ex) {
+            System.err.println("Unexpected error calling user service: " + ex.getMessage());
+            throw new RuntimeException("Unable to get user information");
+        }
     }
 
     public static class UserDTO {

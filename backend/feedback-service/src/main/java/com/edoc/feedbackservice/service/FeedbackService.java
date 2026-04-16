@@ -11,7 +11,6 @@ import com.edoc.feedbackservice.mapper.FeedbackMapper;
 import com.edoc.feedbackservice.repository.FeedbackRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -39,12 +38,7 @@ public class FeedbackService {
 
     public FeedbackResponseDTO submitFeedback(FeedbackRequestDTO request, Long patientId, String authHeader) {
         // Validate appointment exists and patient is authorized
-        AppointmentServiceClient.AppointmentDTO appointment = appointmentServiceClient.getAppointment(request.getAppointmentId(), authHeader)
-                .onErrorResume(error -> {
-                    System.err.println("Failed to validate appointment: " + error.getMessage());
-                    throw new RuntimeException("Unable to validate appointment");
-                })
-                .block();
+        AppointmentServiceClient.AppointmentDTO appointment = appointmentServiceClient.getAppointment(request.getAppointmentId(), authHeader);
 
         if (appointment == null) {
             throw new RuntimeException("Appointment not found");
@@ -65,17 +59,18 @@ public class FeedbackService {
     }
 
     private void sendFeedbackNotification(Feedback feedback, String authHeader) {
-        // Get doctor details
-        userServiceClient.getUserById(feedback.getDoctorId(), authHeader)
-                .flatMap(doctor -> {
-                    String subject = "New Feedback Received";
-                    String body = String.format("Dear Dr. %s %s,\n\nYou have received new feedback from a patient.\nRating: %d/5\nComment: %s\n\nBest regards,\neDoc Team",
-                            doctor.getFirstName(), doctor.getLastName(), feedback.getRating(), feedback.getComment());
+        try {
+            // Get doctor details
+            UserServiceClient.UserDTO doctor = userServiceClient.getUserById(feedback.getDoctorId(), authHeader);
 
-                    return notificationServiceClient.sendEmail(doctor.getEmail(), subject, body, authHeader);
-                })
-                .doOnError(error -> System.err.println("Failed to send feedback notification: " + error.getMessage()))
-                .subscribe(); // Fire and forget
+            String subject = "New Feedback Received";
+            String body = String.format("Dear Dr. %s %s,\n\nYou have received new feedback from a patient.\nRating: %d/5\nComment: %s\n\nBest regards,\neDoc Team",
+                    doctor.getFirstName(), doctor.getLastName(), feedback.getRating(), feedback.getComment());
+
+            notificationServiceClient.sendEmail(doctor.getEmail(), subject, body, authHeader);
+        } catch (Exception error) {
+            System.err.println("Failed to send feedback notification: " + error.getMessage());
+        }
     }
 
     public List<FeedbackResponseDTO> getFeedbackForDoctor(Long doctorId) {
