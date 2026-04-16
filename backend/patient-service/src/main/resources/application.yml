@@ -23,4 +23,4 @@ doctor-service:
   base-url: ${DOCTOR_SERVICE_URL:http://localhost:8082}
 
 jwt:
-  public-key: ${JWT_PUBLIC_KEY:}
+  public-key-path: ${JWT_PUBLIC_KEY_PATH:secrets/public.pem}

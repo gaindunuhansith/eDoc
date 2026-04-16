@@ -160,4 +160,4 @@ logging:
     org.springframework.cloud.gateway: INFO
 
 jwt:
-  public-key: ${JWT_PUBLIC_KEY:}
+  public-key-path: ${JWT_PUBLIC_KEY_PATH:secrets/public.pem}
