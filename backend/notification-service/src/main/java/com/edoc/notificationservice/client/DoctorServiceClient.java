@@ -17,8 +17,8 @@ public class DoctorServiceClient {
     @Value("${doctor-service.base-url}")
     private String doctorServiceBaseUrl;
 
-    public DoctorServiceClient(RestClient.Builder restClientBuilder) {
-        this.restClient = restClientBuilder.build();
+    public DoctorServiceClient() {
+        this.restClient = RestClient.builder().build();
     }
 
     public DoctorContact getDoctorById(String doctorId) {
