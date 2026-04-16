@@ -15,6 +15,9 @@ public class MedicalHistoryMapper {
         history.setDiagnosis(request.getDiagnosis());
         history.setVisitDate(request.getVisitDate());
         history.setNotes(request.getNotes());
+        history.setDoctorId(request.getDoctorId());
+        history.setAppointmentId(request.getAppointmentId());
+        history.setDoctorNameSnapshot(request.getDoctorNameSnapshot());
         return history;
     }
 
@@ -28,6 +31,9 @@ public class MedicalHistoryMapper {
         response.setDiagnosis(history.getDiagnosis());
         response.setVisitDate(history.getVisitDate());
         response.setNotes(history.getNotes());
+        response.setDoctorId(history.getDoctorId());
+        response.setAppointmentId(history.getAppointmentId());
+        response.setDoctorNameSnapshot(history.getDoctorNameSnapshot());
         response.setCreatedAt(history.getCreatedAt());
         return response;
     }

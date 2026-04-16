@@ -64,7 +64,12 @@ public class MedicalReportService {
         report.setPatient(patient);
         report.setReportName(resolveReportName(file, request));
         report.setReportUrl(storedPath);
-        report.setNotes(request != null ? request.getNotes() : null);
+        if (request != null) {
+            report.setNotes(request.getNotes());
+            report.setReportType(request.getReportType());
+            report.setDoctorId(request.getDoctorId());
+            report.setAppointmentId(request.getAppointmentId());
+        }
         report.setCreatedAt(Instant.now());
 
         return medicalReportMapper.toResponse(medicalReportRepository.save(report));

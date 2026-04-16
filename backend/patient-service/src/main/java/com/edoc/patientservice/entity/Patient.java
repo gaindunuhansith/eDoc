@@ -59,6 +59,24 @@ public class Patient {
     @Column(name = "deactivation_reason", length = 500)
     private String deactivationReason;
 
+    @Column(length = 20)
+    private String gender;
+
+    @Column(name = "blood_group", length = 10)
+    private String bloodGroup;
+
+    @Column(name = "nic_number", length = 20)
+    private String nicNumber;
+
+    @Column(columnDefinition = "TEXT")
+    private String allergies;
+
+    @Column(name = "emergency_contact_phone", length = 50)
+    private String emergencyContactPhone;
+
+    @Column(name = "updated_at")
+    private Instant updatedAt;
+
     @OneToMany(mappedBy = "patient", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MedicalReport> medicalReports = new ArrayList<>();
 
@@ -70,9 +88,17 @@ public class Patient {
         if (createdAt == null) {
             createdAt = Instant.now();
         }
+        if (updatedAt == null) {
+            updatedAt = createdAt;
+        }
         if (status == null) {
             status = PatientStatus.ACTIVE;
         }
+    }
+
+    @jakarta.persistence.PreUpdate
+    void onUpdate() {
+        updatedAt = Instant.now();
     }
 
     public Long getId() {
@@ -185,5 +211,53 @@ public class Patient {
 
     public void setMedicalHistory(List<MedicalHistory> medicalHistory) {
         this.medicalHistory = medicalHistory;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public String getBloodGroup() {
+        return bloodGroup;
+    }
+
+    public void setBloodGroup(String bloodGroup) {
+        this.bloodGroup = bloodGroup;
+    }
+
+    public String getNicNumber() {
+        return nicNumber;
+    }
+
+    public void setNicNumber(String nicNumber) {
+        this.nicNumber = nicNumber;
+    }
+
+    public String getAllergies() {
+        return allergies;
+    }
+
+    public void setAllergies(String allergies) {
+        this.allergies = allergies;
+    }
+
+    public String getEmergencyContactPhone() {
+        return emergencyContactPhone;
+    }
+
+    public void setEmergencyContactPhone(String emergencyContactPhone) {
+        this.emergencyContactPhone = emergencyContactPhone;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }
