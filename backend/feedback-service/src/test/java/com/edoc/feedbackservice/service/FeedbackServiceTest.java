@@ -43,7 +43,7 @@ class FeedbackServiceTest {
         when(feedbackRepository.save(feedback)).thenReturn(feedback);
         when(feedbackMapper.toResponseDTO(feedback)).thenReturn(response);
 
-        FeedbackResponseDTO result = feedbackService.submitFeedback(request, 1L);
+        FeedbackResponseDTO result = feedbackService.submitFeedback(request, 1L, "Bearer token");
 
         assertNotNull(result);
         verify(feedbackRepository).save(feedback);
