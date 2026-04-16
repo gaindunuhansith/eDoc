@@ -1,4 +1,4 @@
-﻿spring:
+spring:
   application:
     name: telemedicine-service
   profiles:
@@ -37,7 +37,7 @@ user:
     url: http://localhost:8088
 
 jwt:
-  public-key-path: ${JWT_PUBLIC_KEY_PATH:backend/user-service/secrets/public.pem}
+  public-key-path: ${JWT_PUBLIC_KEY_PATH:classpath:secrets/public.pem}
 
 ---
 spring:
