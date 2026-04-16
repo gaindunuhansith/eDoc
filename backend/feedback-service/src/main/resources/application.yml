@@ -1,6 +1,8 @@
 spring:
   application:
     name: feedback-service
+  profiles:
+    active: test
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5442}/${DB_NAME:feedback_db}
     username: ${DB_USER:user}
@@ -11,6 +13,34 @@ spring:
     properties:
       hibernate:
         format_sql: true
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+  h2:
+    console:
+      enabled: true
+
+# Service URLs - following patient service pattern
+appointment:
+  service:
+    base-url: ${APPOINTMENT_SERVICE_URL:http://localhost:8081}
+notification:
+  service:
+    base-url: ${NOTIFICATION_SERVICE_URL:http://localhost:8083}
+user:
+  service:
+    base-url: ${USER_SERVICE_URL:http://localhost:8088}
 
 server:
   port: ${SERVER_PORT:8089}

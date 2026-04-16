@@ -1,5 +1,8 @@
 package com.edoc.feedbackservice.service;
 
+import com.edoc.feedbackservice.client.AppointmentServiceClient;
+import com.edoc.feedbackservice.client.NotificationServiceClient;
+import com.edoc.feedbackservice.client.UserServiceClient;
 import com.edoc.feedbackservice.dto.FeedbackRequestDTO;
 import com.edoc.feedbackservice.dto.FeedbackResponseDTO;
 import com.edoc.feedbackservice.entity.Feedback;
@@ -25,6 +28,15 @@ class FeedbackServiceTest {
     @Mock
     private FeedbackMapper feedbackMapper;
 
+    @Mock
+    private AppointmentServiceClient appointmentServiceClient;
+
+    @Mock
+    private NotificationServiceClient notificationServiceClient;
+
+    @Mock
+    private UserServiceClient userServiceClient;
+
     @InjectMocks
     private FeedbackService feedbackService;
 
@@ -39,11 +51,16 @@ class FeedbackServiceTest {
         Feedback feedback = new Feedback();
         FeedbackResponseDTO response = new FeedbackResponseDTO();
 
+        // Mock appointment validation
+        AppointmentServiceClient.AppointmentDTO appointmentDTO = new AppointmentServiceClient.AppointmentDTO();
+        appointmentDTO.setPatientId(1L);
+        when(appointmentServiceClient.getAppointment(1L, "Bearer token")).thenReturn(appointmentDTO);
+
         when(feedbackMapper.toEntity(request, 1L)).thenReturn(feedback);
         when(feedbackRepository.save(feedback)).thenReturn(feedback);
         when(feedbackMapper.toResponseDTO(feedback)).thenReturn(response);
 
-        FeedbackResponseDTO result = feedbackService.submitFeedback(request, 1L);
+        FeedbackResponseDTO result = feedbackService.submitFeedback(request, 1L, "Bearer token");
 
         assertNotNull(result);
         verify(feedbackRepository).save(feedback);
