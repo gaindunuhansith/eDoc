@@ -1,24 +1,17 @@
 "use client";
 
-import type { ComponentProps } from "react";
+import { useState, type ComponentProps } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Blocks,
-  Building2,
-  Calendar,
-  CreditCard,
-  FileText,
   Hexagon,
-  LayoutDashboard,
   LogOut,
   Mail,
   MoreHorizontal,
   Package,
-  Pill,
   Settings,
   User as UserIcon,
-  Users,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -46,32 +39,7 @@ import {
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
-
-const adminNav = [
-  { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
-  { title: "Patients", url: "/admin/patients", icon: Users },
-  { title: "Appointments", url: "/admin/appointments", icon: Calendar },
-  { title: "Reports", url: "/admin/reports", icon: FileText },
-  { title: "Prescriptions", url: "/admin/prescriptions", icon: Pill },
-  { title: "Users", url: "/admin/users", icon: Users },
-];
-
-const doctorNav = [
-  { title: "Dashboard", url: "/doctor", icon: LayoutDashboard },
-  { title: "Patients", url: "/doctor/patients", icon: Users },
-  { title: "Appointments", url: "/doctor/appointments", icon: Calendar },
-  { title: "Reports", url: "/doctor/reports", icon: FileText },
-  { title: "Prescriptions", url: "/doctor/prescriptions", icon: Pill },
-];
-
-const patientNav = [
-  { title: "Dashboard", url: "/patient", icon: LayoutDashboard },
-  { title: "Doctors", url: "/patient/doctors", icon: Building2 },
-  { title: "Appointments", url: "/patient/appointments", icon: Calendar },
-  { title: "Reports", url: "/patient/reports", icon: FileText },
-  { title: "Prescriptions", url: "/patient/prescriptions", icon: Pill },
-  { title: "Payments", url: "/patient/payments", icon: CreditCard },
-];
+import { getNavForPathname } from "@/lib/sidebar-nav";
 
 const marketingItems = [
   { title: "Products", icon: Package },
@@ -87,21 +55,17 @@ export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
   const pathname = usePathname() || "";
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
+  const [showTrialCard, setShowTrialCard] = useState(true);
 
-  let mainNav = patientNav;
-  if (pathname.startsWith("/admin")) {
-    mainNav = adminNav;
-  } else if (pathname.startsWith("/doctor")) {
-    mainNav = doctorNav;
-  }
+  const mainNav = getNavForPathname(pathname);
 
   return (
-    <Sidebar className="border-r bg-[#f8fbff]" {...props}>
+    <Sidebar collapsible="icon" className="border-r bg-[#f8fbff]" {...props}>
       <SidebarHeader
-        className={`pt-6 pb-4 ${isCollapsed ? "px-2 items-center" : "px-6"}`}
+        className={`pt-6 pb-4 ${isCollapsed ? "px-0 flex justify-center" : "px-6"}`}
       >
         <div
-          className={`flex items-center ${isCollapsed ? "justify-center" : "gap-3"} font-semibold text-2xl tracking-tight text-gray-900 w-full`}
+          className={`flex items-center ${isCollapsed ? "justify-center" : "gap-3"} font-semibold text-2xl tracking-tight text-gray-900 ${isCollapsed ? "" : "w-full"}`}
         >
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-900 text-white shrink-0">
             <Hexagon className="h-5 w-5 fill-current" />
@@ -110,7 +74,7 @@ export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-3">
+      <SidebarContent className={isCollapsed ? "px-2" : "px-3"}>
         <SidebarGroup>
           {!isCollapsed && (
             <SidebarGroupLabel className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
@@ -118,7 +82,7 @@ export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
             </SidebarGroupLabel>
           )}
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className={isCollapsed ? "items-center" : ""}>
               {mainNav.map((item) => {
                 const isActive = pathname === item.url;
                 return (
@@ -129,14 +93,14 @@ export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
                       tooltip={item.title}
                       className={
                         isActive
-                          ? "bg-gray-900 text-white hover:bg-gray-800 hover:text-white"
+                          ? "bg-gray-800 text-white data-active:bg-gray-800 data-active:text-white hover:bg-gray-700 hover:text-white"
                           : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                       }
                     >
                       <Link
                         href={item.url}
                         className={
-                          isCollapsed ? "justify-center" : "font-medium"
+                          isCollapsed ? "" : "font-medium"
                         }
                       >
                         <item.icon
@@ -163,13 +127,13 @@ export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
             </SidebarGroupLabel>
           )}
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className={isCollapsed ? "items-center" : ""}>
               {marketingItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     type="button"
                     tooltip={item.title}
-                    className="text-gray-600 font-medium hover:text-gray-900 hover:bg-gray-100"
+                    className={`text-gray-600 hover:text-gray-900 hover:bg-gray-100 ${isCollapsed ? "justify-center" : "font-medium"}`}
                   >
                     <item.icon
                       className={`h-4 w-4 ${isCollapsed ? "" : "mr-2"}`}
@@ -193,13 +157,13 @@ export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
             </SidebarGroupLabel>
           )}
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className={isCollapsed ? "items-center" : ""}>
               {preferenceItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     type="button"
                     tooltip={item.title}
-                    className="text-gray-600 font-medium hover:text-gray-900 hover:bg-gray-100"
+                    className={`text-gray-600 hover:text-gray-900 hover:bg-gray-100 ${isCollapsed ? "justify-center" : "font-medium"}`}
                   >
                     <item.icon
                       className={`h-4 w-4 ${isCollapsed ? "" : "mr-2"}`}
@@ -216,12 +180,17 @@ export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
       <SidebarFooter
         className={`p-4 pb-6 space-y-4 ${isCollapsed ? "items-center px-2" : ""}`}
       >
-        {!isCollapsed && (
+        {!isCollapsed && showTrialCard && (
           <div className="rounded-xl border bg-gray-50 p-4 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-2">
-              <span className="text-gray-400 text-lg leading-none cursor-pointer hover:text-gray-700">
+              <button
+                type="button"
+                onClick={() => setShowTrialCard(false)}
+                aria-label="Dismiss trial card"
+                className="text-gray-400 text-lg leading-none cursor-pointer hover:text-gray-700"
+              >
                 &times;
-              </span>
+              </button>
             </div>
             <div className="flex items-center gap-2 mb-3">
               <div className="rounded-full bg-gray-900 p-1.5 inline-flex">
