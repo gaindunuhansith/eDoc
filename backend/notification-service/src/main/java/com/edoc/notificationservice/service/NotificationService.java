@@ -1,5 +1,8 @@
 package com.edoc.notificationservice.service;
 
+import com.edoc.notificationservice.client.DoctorServiceClient;
+import com.edoc.notificationservice.client.PatientServiceClient;
+import com.edoc.notificationservice.client.UserServiceClient;
 import org.springframework.stereotype.Service;
 
 import com.edoc.notificationservice.dto.EmailNotificationRequest;
@@ -27,13 +30,22 @@ public class NotificationService {
     private final ResendEmailClient resendEmailClient;
     private final VonageSmsClient vonageSmsClient;
     private final NotificationLogRepository notificationLogRepository;
+    private final PatientServiceClient patientServiceClient;
+    private final UserServiceClient userServiceClient;
+    private final DoctorServiceClient doctorServiceClient;
 
     public NotificationService(ResendEmailClient resendEmailClient,
                                VonageSmsClient vonageSmsClient,
-                               NotificationLogRepository notificationLogRepository) {
+                               NotificationLogRepository notificationLogRepository,
+                               PatientServiceClient patientServiceClient,
+                               UserServiceClient userServiceClient,
+                               DoctorServiceClient doctorServiceClient) {
         this.resendEmailClient = resendEmailClient;
         this.vonageSmsClient = vonageSmsClient;
         this.notificationLogRepository = notificationLogRepository;
+        this.patientServiceClient = patientServiceClient;
+        this.userServiceClient = userServiceClient;
+        this.doctorServiceClient = doctorServiceClient;
     }
 
     public NotificationResponse send(NotificationRequestDTO request) {
@@ -41,25 +53,52 @@ public class NotificationService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Notification type is required.");
         }
 
+        // Resolve email and phone from the provided ID
+        String email = null;
+        String phone = null;
+
+        if (request.patientId() != null) {
+            Map<?, ?> patientData = patientServiceClient.getPatientById(request.patientId());
+            if (patientData != null) {
+                phone = patientData.get("phone") instanceof String s ? s : null;
+                Object userIdObj = patientData.get("userId");
+                if (userIdObj != null) {
+                    UserServiceClient.UserContact user = userServiceClient.getUserById(userIdObj.toString());
+                    if (user != null) email = user.email();
+                }
+            }
+        } else if (request.doctorId() != null) {
+            DoctorServiceClient.DoctorContact doctor = doctorServiceClient.getDoctorById(request.doctorId());
+            if (doctor != null) {
+                email = doctor.email();
+                phone = doctor.phoneNumber();
+            }
+        } else if (request.userId() != null) {
+            UserServiceClient.UserContact user = userServiceClient.getUserById(request.userId().toString());
+            if (user != null) email = user.email();
+        }
+
+        if ((email == null || email.isBlank()) && (phone == null || phone.isBlank())) {
+            logger.warn("No contact info resolved for notification type={}, patientId={}, doctorId={}, userId={}",
+                    request.type(), request.patientId(), request.doctorId(), request.userId());
+            return new NotificationResponse("FAILED", null, "No contact information could be resolved.");
+        }
+
         String subject = buildSubject(request.type());
         String message = buildMessage(request.type(), request.data());
 
-        boolean emailRequested = request.email() != null && !request.email().isBlank();
-        boolean smsRequested = request.phone() != null && !request.phone().isBlank();
-
-        if (!emailRequested && !smsRequested) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Either email or phone must be provided.");
-        }
+        boolean emailRequested = email != null && !email.isBlank();
+        boolean smsRequested = phone != null && !phone.isBlank();
 
         NotificationResponse emailResponse = null;
         NotificationResponse smsResponse = null;
 
         if (emailRequested) {
-            emailResponse = sendEmail(new EmailNotificationRequest(request.email(), subject, message));
+            emailResponse = sendEmail(new EmailNotificationRequest(email, subject, message));
         }
 
         if (smsRequested) {
-            smsResponse = sendSms(new SmsNotificationRequest(request.phone(), message));
+            smsResponse = sendSms(new SmsNotificationRequest(phone, message));
         }
 
         int successCount = 0;
@@ -164,19 +203,45 @@ public class NotificationService {
 
     private String buildSubject(NotificationType type) {
         return switch (type) {
-            case APPOINTMENT_BOOKED -> "Appointment Confirmation";
+            case APPOINTMENT_BOOKED -> "Appointment Booked";
+            case APPOINTMENT_CONFIRMED -> "Appointment Confirmed";
+            case APPOINTMENT_CANCELLED -> "Appointment Cancelled";
+            case APPOINTMENT_COMPLETED -> "Consultation Completed";
+            case FEEDBACK_RECEIVED -> "New Feedback Received";
             case PAYMENT_SUCCESS -> "Payment Confirmation";
         };
     }
 
     private String buildMessage(NotificationType type, Map<String, Object> data) {
         return switch (type) {
-            case APPOINTMENT_BOOKED -> "Your appointment with Dr. "
-                    + valueOrDefault(data, "doctorName", "your doctor")
-                    + " is confirmed";
+            case APPOINTMENT_BOOKED -> "Hello " + valueOrDefault(data, "recipientName", "there")
+                    + ", your appointment with Dr. " + valueOrDefault(data, "doctorName", "your doctor")
+                    + " on " + valueOrDefault(data, "date", "the scheduled date")
+                    + " (" + valueOrDefault(data, "dayOfWeek", "") + ")"
+                    + " at " + valueOrDefault(data, "timeSlot", "the scheduled time")
+                    + " has been booked.";
+            case APPOINTMENT_CONFIRMED -> "Hello " + valueOrDefault(data, "patientName", "there")
+                    + ", your appointment on " + valueOrDefault(data, "date", "the scheduled date")
+                    + " (" + valueOrDefault(data, "dayOfWeek", "") + ")"
+                    + " at " + valueOrDefault(data, "timeSlot", "the scheduled time")
+                    + " has been confirmed.";
+            case APPOINTMENT_CANCELLED -> "Hello " + valueOrDefault(data, "patientName", "there")
+                    + ", your appointment on " + valueOrDefault(data, "date", "the scheduled date")
+                    + " (" + valueOrDefault(data, "dayOfWeek", "") + ")"
+                    + " at " + valueOrDefault(data, "timeSlot", "the scheduled time")
+                    + " has been cancelled.";
+            case APPOINTMENT_COMPLETED -> "Hello " + valueOrDefault(data, "recipientName", "there")
+                    + ", your consultation on " + valueOrDefault(data, "date", "the scheduled date")
+                    + " (" + valueOrDefault(data, "dayOfWeek", "") + ")"
+                    + " at " + valueOrDefault(data, "timeSlot", "the scheduled time")
+                    + " has been completed.";
+            case FEEDBACK_RECEIVED -> "Dear Dr. " + valueOrDefault(data, "doctorName", "Doctor")
+                    + ", you have received new feedback from a patient."
+                    + " Rating: " + valueOrDefault(data, "rating", "N/A") + "/5."
+                    + " Comment: " + valueOrDefault(data, "comment", "No comment provided.");
             case PAYMENT_SUCCESS -> "Your payment of Rs. "
                     + valueOrDefault(data, "amount", "0")
-                    + " was successful";
+                    + " was successful.";
         };
     }
 

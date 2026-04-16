@@ -1,10 +1,11 @@
 package com.edoc.feedbackservice.client;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
+
+import java.util.Map;
 
 @Service
 public class NotificationServiceClient {
@@ -18,43 +19,22 @@ public class NotificationServiceClient {
         this.restClient = restClientBuilder.build();
     }
 
-    public void sendEmail(String to, String subject, String body, String authHeader) {
-        EmailRequest emailRequest = new EmailRequest(to, subject, body);
+    public void sendToUser(String type, Long userId, Map<String, Object> data) {
+        NotificationRequest request = new NotificationRequest(type, null, null, userId, data);
         try {
             restClient.post()
-                    .uri(notificationServiceBaseUrl + "/api/notifications/email")
-                    .header(HttpHeaders.AUTHORIZATION, authHeader)
-                    .body(emailRequest)
+                    .uri(notificationServiceBaseUrl + "/notifications/send")
+                    .body(request)
                     .retrieve()
                     .toBodilessEntity();
         } catch (RestClientResponseException ex) {
-            System.err.println("Error sending email notification: " + ex.getMessage());
+            System.err.println("Error sending notification: " + ex.getMessage());
             throw ex;
         } catch (Exception ex) {
-            System.err.println("Unexpected error sending email: " + ex.getMessage());
-            throw new RuntimeException("Failed to send email notification");
+            System.err.println("Unexpected error sending notification: " + ex.getMessage());
+            throw new RuntimeException("Failed to send notification");
         }
     }
 
-    public void sendSms(String to, String message, String authHeader) {
-        SmsRequest smsRequest = new SmsRequest(to, message);
-        try {
-            restClient.post()
-                    .uri(notificationServiceBaseUrl + "/api/notifications/sms")
-                    .header(HttpHeaders.AUTHORIZATION, authHeader)
-                    .body(smsRequest)
-                    .retrieve()
-                    .toBodilessEntity();
-        } catch (RestClientResponseException ex) {
-            System.err.println("Error sending SMS notification: " + ex.getMessage());
-            throw ex;
-        } catch (Exception ex) {
-            System.err.println("Unexpected error sending SMS: " + ex.getMessage());
-            throw new RuntimeException("Failed to send SMS notification");
-        }
-    }
-
-    private record EmailRequest(String to, String subject, String body) {}
-
-    private record SmsRequest(String to, String message) {}
+    private record NotificationRequest(String type, String patientId, String doctorId, Long userId, Map<String, Object> data) {}
 }

@@ -18,6 +18,12 @@ server:
 doctor-service:
   base-url: ${DOCTOR_SERVICE_URL:http://localhost:8082}
 
+patient-service:
+  base-url: ${PATIENT_SERVICE_URL:http://localhost:8084}
+
+user-service:
+  base-url: ${USER_SERVICE_URL:http://localhost:8088}
+
 resend:
   api-key: ${RESEND_API_KEY:}
   from-email: ${RESEND_FROM_EMAIL:onboarding@resend.dev}

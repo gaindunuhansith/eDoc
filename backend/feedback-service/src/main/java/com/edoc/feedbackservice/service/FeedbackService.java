@@ -12,7 +12,9 @@ import com.edoc.feedbackservice.repository.FeedbackRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -59,14 +61,10 @@ public class FeedbackService {
 
     private void sendFeedbackNotification(Feedback feedback, String authHeader) {
         try {
-
-            UserServiceClient.UserDTO doctor = userServiceClient.getUserById(feedback.getDoctorId(), authHeader);
-
-            String subject = "New Feedback Received";
-            String body = String.format("Dear Dr. %s %s,\n\nYou have received new feedback from a patient.\nRating: %d/5\nComment: %s\n\nBest regards,\neDoc Team",
-                    doctor.getFirstName(), doctor.getLastName(), feedback.getRating(), feedback.getComment());
-
-            notificationServiceClient.sendEmail(doctor.getEmail(), subject, body, authHeader);
+            Map<String, Object> data = new HashMap<>();
+            data.put("rating", feedback.getRating());
+            data.put("comment", feedback.getComment());
+            notificationServiceClient.sendToUser("FEEDBACK_RECEIVED", feedback.getDoctorId(), data);
         } catch (Exception error) {
             System.err.println("Failed to send feedback notification: " + error.getMessage());
         }
