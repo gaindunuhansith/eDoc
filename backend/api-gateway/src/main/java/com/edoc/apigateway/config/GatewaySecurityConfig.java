@@ -2,11 +2,12 @@ package com.edoc.apigateway.config;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.KeyFactory;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
-import java.util.Objects;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -42,28 +43,27 @@ public class GatewaySecurityConfig {
     }
 
         @Bean
-        public ReactiveJwtDecoder jwtDecoder(@Value("${jwt.public-key}") String publicKey,
+        public ReactiveJwtDecoder jwtDecoder(@Value("${jwt.public-key-path}") String publicKeyPath,
                                                                                  ResourceLoader resourceLoader) {
-                RSAPublicKey publicKeyObj = loadPublicKey(publicKey, resourceLoader);
+                RSAPublicKey publicKeyObj = loadPublicKey(publicKeyPath, resourceLoader);
                 return NimbusReactiveJwtDecoder.withPublicKey(publicKeyObj)
                                 .signatureAlgorithm(SignatureAlgorithm.RS256)
                                 .build();
         }
 
-        private RSAPublicKey loadPublicKey(String publicKeyOrPath, ResourceLoader resourceLoader) {
+        private RSAPublicKey loadPublicKey(String publicKeyPath, ResourceLoader resourceLoader) {
                 try {
                         String pem;
-                        if (publicKeyOrPath == null) {
-                                throw new IllegalStateException("jwt.public-key must not be null");
+                        if (publicKeyPath == null || publicKeyPath.isBlank()) {
+                                throw new IllegalStateException("jwt.public-key-path must not be null or blank");
                         }
-                        if (publicKeyOrPath.startsWith("file:") || publicKeyOrPath.startsWith("classpath:")) {
-                                Resource resource = resourceLoader.getResource(publicKeyOrPath);
+                        if (publicKeyPath.startsWith("file:") || publicKeyPath.startsWith("classpath:")) {
+                                Resource resource = resourceLoader.getResource(publicKeyPath);
                                 try (InputStream inputStream = resource.getInputStream()) {
                                         pem = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
                                 }
                         } else {
-                                // treat the property as raw PEM content
-                                pem = publicKeyOrPath;
+                                pem = Files.readString(Path.of(publicKeyPath), StandardCharsets.UTF_8);
                         }
 
                         String normalized = pem
