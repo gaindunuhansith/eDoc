@@ -22,11 +22,13 @@ public class TelemedicineController {
      */
     @PostMapping("/sessions")
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<VideoSession> createSession(@RequestBody VideoSessionRequest request) {
+    public ResponseEntity<VideoSession> createSession(@RequestBody VideoSessionRequest request,
+                                                     @RequestHeader(value = "Authorization", required = false) String authorizationHeader) {
         VideoSession session = telemedicineService.createSession(
                 request.getAppointmentId(),
                 request.getDoctorId(),
-                request.getPatientId()
+                request.getPatientId(),
+                authorizationHeader
         );
         return ResponseEntity.status(HttpStatus.CREATED).body(session);
     }
@@ -54,8 +56,9 @@ public class TelemedicineController {
      * Start the video session (Called when someone enters the room)
      */
     @PutMapping("/sessions/{appointmentId}/start")
-    public ResponseEntity<VideoSession> startSession(@PathVariable String appointmentId) {
-        VideoSession session = telemedicineService.startSession(appointmentId);
+    public ResponseEntity<VideoSession> startSession(@PathVariable String appointmentId,
+                                                    @RequestHeader(value = "Authorization", required = false) String authorizationHeader) {
+        VideoSession session = telemedicineService.startSession(appointmentId, authorizationHeader);
         return ResponseEntity.ok(session);
     }
 
@@ -63,8 +66,9 @@ public class TelemedicineController {
      * Complete the video session (Called when the call drops/ends)
      */
     @PutMapping("/sessions/{appointmentId}/complete")
-    public ResponseEntity<VideoSession> endSession(@PathVariable String appointmentId) {
-        VideoSession session = telemedicineService.endSession(appointmentId);
+    public ResponseEntity<VideoSession> endSession(@PathVariable String appointmentId,
+                                                  @RequestHeader(value = "Authorization", required = false) String authorizationHeader) {
+        VideoSession session = telemedicineService.endSession(appointmentId, authorizationHeader);
         return ResponseEntity.ok(session);
     }
 
