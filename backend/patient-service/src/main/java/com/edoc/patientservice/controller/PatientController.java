@@ -30,31 +30,31 @@ public class PatientController {
 
     @PostMapping("/patients/register")
     @ResponseStatus(HttpStatus.CREATED)
-    // Register a new patient account with profile details.
+    // Register a new patient profile linked to the authenticated user-service account.
     public PatientResponseDTO registerPatient(@Valid @RequestBody PatientRequestDTO request) {
-        return patientService.registerPatient(request);
+        return patientService.registerPatient(request, currentPatientProvider.getCurrentPatientId());
     }
 
     @GetMapping("/patients/me")
-    // Read the current patient's profile using the authenticated identity.
+    // Read the current patient's profile using the authenticated user-service identity.
     public PatientResponseDTO getCurrentPatient() {
-        return patientService.getPatient(currentPatientProvider.getCurrentPatientId());
+        return patientService.getPatientByUserId(currentPatientProvider.getCurrentPatientId());
     }
 
     @PutMapping("/patients/me")
     // Update the current patient's profile.
     public PatientResponseDTO updateCurrentPatient(@Valid @RequestBody PatientRequestDTO request) {
-        return patientService.updatePatient(currentPatientProvider.getCurrentPatientId(), request);
+        return patientService.updatePatientByUserId(currentPatientProvider.getCurrentPatientId(), request);
     }
 
     @PatchMapping("/patients/me/status")
     // Change the current patient's account status and keep deactivation audit data.
     public PatientResponseDTO updateCurrentPatientStatus(@Valid @RequestBody PatientStatusUpdateRequestDTO request) {
-        return patientService.changeCurrentPatientStatus(currentPatientProvider.getCurrentPatientId(), request);
+        return patientService.changePatientStatusByUserId(currentPatientProvider.getCurrentPatientId(), request);
     }
 
     @GetMapping("/internal/patients/{id}")
-    // Internal lookup for other services by patient id.
+    // Internal lookup for other services by internal patient id.
     public PatientResponseDTO getPatientInternal(@PathVariable Long id) {
         return patientService.getPatient(id);
     }

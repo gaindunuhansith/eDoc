@@ -26,16 +26,26 @@ public class PatientService {
         this.patientMapper = patientMapper;
     }
 
-    public PatientResponseDTO registerPatient(PatientRequestDTO request) {
-        // Create a new patient record from the registration payload.
+    public PatientResponseDTO registerPatient(PatientRequestDTO request, Long userId) {
+        // Prevent duplicate profiles for the same user-service account.
+        if (patientRepository.existsByUserId(userId)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Patient profile already exists for this user");
+        }
         Patient patient = patientMapper.toEntity(request);
+        patient.setUserId(userId);
         patient.setStatus(PatientStatus.ACTIVE);
         return patientMapper.toResponse(patientRepository.save(patient));
     }
 
     @Transactional(readOnly = true)
+    public PatientResponseDTO getPatientByUserId(Long userId) {
+        // Return a patient profile by user-service userId.
+        return patientMapper.toResponse(findByUserIdOrThrow(userId));
+    }
+
+    @Transactional(readOnly = true)
     public PatientResponseDTO getPatient(Long id) {
-        // Return a patient profile by id.
+        // Return a patient profile by internal patient id (used by internal endpoints).
         return patientMapper.toResponse(findPatientOrThrow(id));
     }
 
@@ -48,17 +58,26 @@ public class PatientService {
         return response;
     }
 
-    public PatientResponseDTO updatePatient(Long id, PatientRequestDTO request) {
-        // Replace profile fields with the provided payload.
-        Patient existing = findPatientOrThrow(id);
+    public PatientResponseDTO updatePatientByUserId(Long userId, PatientRequestDTO request) {
+        // Replace profile fields for the authenticated user's patient record.
+        Patient existing = findByUserIdOrThrow(userId);
         assertActiveForWrite(existing);
         patientMapper.applyUpdates(existing, request);
         return patientMapper.toResponse(patientRepository.save(existing));
     }
 
+    public PatientResponseDTO changePatientStatusByUserId(Long userId, PatientStatusUpdateRequestDTO request) {
+        Patient patient = findByUserIdOrThrow(userId);
+        Long actorId = request.getActedBy() != null ? request.getActedBy() : userId;
+        return applyStatusChange(patient, request, actorId);
+    }
+
     public PatientResponseDTO changePatientStatus(Long id, PatientStatusUpdateRequestDTO request, Long actorId) {
         Patient patient = findPatientOrThrow(id);
+        return applyStatusChange(patient, request, actorId);
+    }
 
+    private PatientResponseDTO applyStatusChange(Patient patient, PatientStatusUpdateRequestDTO request, Long actorId) {
         if (patient.getStatus() == request.getStatus()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Patient already has requested status");
         }
@@ -81,15 +100,15 @@ public class PatientService {
         return patientMapper.toResponse(patientRepository.save(patient));
     }
 
-    public PatientResponseDTO changeCurrentPatientStatus(Long currentPatientId, PatientStatusUpdateRequestDTO request) {
-        Long actorId = request.getActedBy() != null ? request.getActedBy() : currentPatientId;
-        return changePatientStatus(currentPatientId, request, actorId);
-    }
-
     private void assertActiveForWrite(Patient patient) {
         if (patient.getStatus() != PatientStatus.ACTIVE) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Patient is inactive");
         }
+    }
+
+    private Patient findByUserIdOrThrow(Long userId) {
+        return patientRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient profile not found"));
     }
 
     private Patient findPatientOrThrow(Long id) {

@@ -8,9 +8,7 @@ import java.time.LocalDate;
 public class PatientResponseDTO {
 
     private Long id;
-    private String firstName;
-    private String lastName;
-    private String email;
+    private Long userId;
     private String phone;
     private LocalDate dateOfBirth;
     private String address;
@@ -21,6 +19,8 @@ public class PatientResponseDTO {
     private String nicNumber;
     private String allergies;
     private String emergencyContactPhone;
+    private Double height;
+    private Double weight;
     private PatientStatus status;
     private Instant deactivatedAt;
     private Long deactivatedBy;
@@ -34,28 +34,12 @@ public class PatientResponseDTO {
         this.id = id;
     }
 
-    public String getFirstName() {
-        return firstName;
+    public Long getUserId() {
+        return userId;
     }
 
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public String getPhone() {
@@ -88,38 +72,6 @@ public class PatientResponseDTO {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
-    }
-
-    public PatientStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(PatientStatus status) {
-        this.status = status;
-    }
-
-    public Instant getDeactivatedAt() {
-        return deactivatedAt;
-    }
-
-    public void setDeactivatedAt(Instant deactivatedAt) {
-        this.deactivatedAt = deactivatedAt;
-    }
-
-    public Long getDeactivatedBy() {
-        return deactivatedBy;
-    }
-
-    public void setDeactivatedBy(Long deactivatedBy) {
-        this.deactivatedBy = deactivatedBy;
-    }
-
-    public String getDeactivationReason() {
-        return deactivationReason;
-    }
-
-    public void setDeactivationReason(String deactivationReason) {
-        this.deactivationReason = deactivationReason;
     }
 
     public Instant getUpdatedAt() {
@@ -168,5 +120,53 @@ public class PatientResponseDTO {
 
     public void setEmergencyContactPhone(String emergencyContactPhone) {
         this.emergencyContactPhone = emergencyContactPhone;
+    }
+
+    public Double getHeight() {
+        return height;
+    }
+
+    public void setHeight(Double height) {
+        this.height = height;
+    }
+
+    public Double getWeight() {
+        return weight;
+    }
+
+    public void setWeight(Double weight) {
+        this.weight = weight;
+    }
+
+    public PatientStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(PatientStatus status) {
+        this.status = status;
+    }
+
+    public Instant getDeactivatedAt() {
+        return deactivatedAt;
+    }
+
+    public void setDeactivatedAt(Instant deactivatedAt) {
+        this.deactivatedAt = deactivatedAt;
+    }
+
+    public Long getDeactivatedBy() {
+        return deactivatedBy;
+    }
+
+    public void setDeactivatedBy(Long deactivatedBy) {
+        this.deactivatedBy = deactivatedBy;
+    }
+
+    public String getDeactivationReason() {
+        return deactivationReason;
+    }
+
+    public void setDeactivationReason(String deactivationReason) {
+        this.deactivationReason = deactivationReason;
     }
 }

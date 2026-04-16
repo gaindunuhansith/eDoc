@@ -16,9 +16,6 @@ public class PatientMapper {
     }
 
     public void applyUpdates(Patient patient, PatientRequestDTO request) {
-        patient.setFirstName(request.getFirstName());
-        patient.setLastName(request.getLastName());
-        patient.setEmail(request.getEmail());
         patient.setPhone(request.getPhone());
         patient.setDateOfBirth(request.getDateOfBirth());
         patient.setAddress(request.getAddress());
@@ -27,14 +24,14 @@ public class PatientMapper {
         patient.setNicNumber(request.getNicNumber());
         patient.setAllergies(request.getAllergies());
         patient.setEmergencyContactPhone(request.getEmergencyContactPhone());
+        patient.setHeight(request.getHeight());
+        patient.setWeight(request.getWeight());
     }
 
     public PatientResponseDTO toResponse(Patient patient) {
         PatientResponseDTO response = new PatientResponseDTO();
         response.setId(patient.getId());
-        response.setFirstName(patient.getFirstName());
-        response.setLastName(patient.getLastName());
-        response.setEmail(patient.getEmail());
+        response.setUserId(patient.getUserId());
         response.setPhone(patient.getPhone());
         response.setDateOfBirth(patient.getDateOfBirth());
         response.setAddress(patient.getAddress());
@@ -45,6 +42,8 @@ public class PatientMapper {
         response.setNicNumber(patient.getNicNumber());
         response.setAllergies(patient.getAllergies());
         response.setEmergencyContactPhone(patient.getEmergencyContactPhone());
+        response.setHeight(patient.getHeight());
+        response.setWeight(patient.getWeight());
         response.setStatus(patient.getStatus());
         response.setDeactivatedAt(patient.getDeactivatedAt());
         response.setDeactivatedBy(patient.getDeactivatedBy());
