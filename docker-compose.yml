@@ -71,6 +71,30 @@ services:
       - "5440:5432"
     volumes:
       - user-db-data:/data/postgres
+
+  doctor-db:
+    image: mongo:latest
+    container_name: doctor-db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: user
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: doctor_db
+    ports:
+      - "5434:27017"
+    volumes:
+      - doctor-db-data:/data/db
+
+  appointment-db:
+    image: mongo:latest
+    container_name: appointment-db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: user
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: appointment_db
+    ports:
+      - "5433:27017"
+    volumes:
+      - appointment-db-data:/data/db
   
 volumes:
   payment-db-data:
@@ -79,4 +103,6 @@ volumes:
   telemedicine-db-data:
   feedback-db-data:
   user-db-data:
+  doctor-db-data:
+  appointment-db-data:
 
