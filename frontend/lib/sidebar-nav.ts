@@ -4,6 +4,7 @@ import {
   CreditCard,
   FileText,
   LayoutDashboard,
+  MessageSquare,
   Pill,
   Users,
   type LucideIcon,
@@ -21,6 +22,7 @@ const adminNav: SidebarNavItem[] = [
   { title: "Appointments", url: "/admin/appointments", icon: Calendar },
   { title: "Reports", url: "/admin/reports", icon: FileText },
   { title: "Prescriptions", url: "/admin/prescriptions", icon: Pill },
+  { title: "Feedback", url: "/admin/feedback", icon: MessageSquare },
   { title: "Users", url: "/admin/users", icon: Users },
 ];
 
@@ -30,6 +32,7 @@ const doctorNav: SidebarNavItem[] = [
   { title: "Appointments", url: "/doctor/appointments", icon: Calendar },
   { title: "Reports", url: "/doctor/reports", icon: FileText },
   { title: "Prescriptions", url: "/doctor/prescriptions", icon: Pill },
+  { title: "Feedback", url: "/doctor/feedback", icon: MessageSquare },
 ];
 
 const patientNav: SidebarNavItem[] = [
@@ -38,6 +41,7 @@ const patientNav: SidebarNavItem[] = [
   { title: "Appointments", url: "/patient/appointments", icon: Calendar },
   { title: "Reports", url: "/patient/reports", icon: FileText },
   { title: "Prescriptions", url: "/patient/prescriptions", icon: Pill },
+  { title: "Feedback", url: "/patient/feedback", icon: MessageSquare },
   { title: "Payments", url: "/patient/payments", icon: CreditCard },
 ];
 
