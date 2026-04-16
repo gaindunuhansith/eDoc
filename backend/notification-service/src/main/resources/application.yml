@@ -28,3 +28,6 @@ vonage:
   api-key: ${VONAGE_API_KEY:}
   api-secret: ${VONAGE_API_SECRET:}
   sms-from: ${VONAGE_SMS_FROM:eDoc}
+
+jwt:
+  secret: ${JWT_SECRET:change-this-default-jwt-secret-key-to-at-least-32-bytes}
