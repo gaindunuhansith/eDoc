@@ -10,7 +10,7 @@ spring:
       database: edoc_doctor_db
 
 jwt:
-  secret: eDocSecretKey2026SuperSecureKeyForJWTTokenGeneration
+  secret: ${JWT_SECRET:change-this-default-jwt-secret-key-to-at-least-32-bytes}
   expiration: 86400000
 
 patient:

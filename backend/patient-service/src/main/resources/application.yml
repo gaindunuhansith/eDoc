@@ -21,3 +21,6 @@ app:
 
 doctor-service:
   base-url: ${DOCTOR_SERVICE_URL:http://localhost:8082}
+
+jwt:
+  secret: ${JWT_SECRET:change-this-default-jwt-secret-key-to-at-least-32-bytes}
