@@ -1,0 +1,22 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: doctor-service
+  data:
+    mongodb:
+      uri: ${MONGO_URI}
+      database: edoc_doctor_db
+
+jwt:
+  secret: eDocSecretKey2026SuperSecureKeyForJWTTokenGeneration
+  expiration: 86400000
+
+patient:
+  service:
+    url: http://localhost:8084
+
+logging:
+  level:
+    com.edoc: DEBUG
