@@ -7,6 +7,7 @@ import {
   MessageSquare,
   Pill,
   Users,
+  Video,
   type LucideIcon,
 } from "lucide-react";
 
@@ -23,6 +24,7 @@ const adminNav: SidebarNavItem[] = [
   { title: "Reports", url: "/admin/reports", icon: FileText },
   { title: "Prescriptions", url: "/admin/prescriptions", icon: Pill },
   { title: "Feedback", url: "/admin/feedback", icon: MessageSquare },
+  { title: "Telemedicine", url: "/admin/telemedicine", icon: Video },
   { title: "Users", url: "/admin/users", icon: Users },
 ];
 
@@ -33,6 +35,7 @@ const doctorNav: SidebarNavItem[] = [
   { title: "Reports", url: "/doctor/reports", icon: FileText },
   { title: "Prescriptions", url: "/doctor/prescriptions", icon: Pill },
   { title: "Feedback", url: "/doctor/feedback", icon: MessageSquare },
+  { title: "Telemedicine", url: "/doctor/telemedicine", icon: Video },
 ];
 
 const patientNav: SidebarNavItem[] = [
@@ -42,6 +45,7 @@ const patientNav: SidebarNavItem[] = [
   { title: "Reports", url: "/patient/reports", icon: FileText },
   { title: "Prescriptions", url: "/patient/prescriptions", icon: Pill },
   { title: "Feedback", url: "/patient/feedback", icon: MessageSquare },
+  { title: "Telemedicine", url: "/patient/telemedicine", icon: Video },
   { title: "Payments", url: "/patient/payments", icon: CreditCard },
 ];
 

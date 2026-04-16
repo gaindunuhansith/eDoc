@@ -10,10 +10,14 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "medical_reports")
 // Uploaded report metadata linked to a patient.
+@Getter
+@Setter
 public class MedicalReport {
 
     @Id
@@ -50,77 +54,5 @@ public class MedicalReport {
         if (createdAt == null) {
             createdAt = Instant.now();
         }
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Patient getPatient() {
-        return patient;
-    }
-
-    public void setPatient(Patient patient) {
-        this.patient = patient;
-    }
-
-    public String getReportName() {
-        return reportName;
-    }
-
-    public void setReportName(String reportName) {
-        this.reportName = reportName;
-    }
-
-    public String getReportUrl() {
-        return reportUrl;
-    }
-
-    public void setReportUrl(String reportUrl) {
-        this.reportUrl = reportUrl;
-    }
-
-    public String getNotes() {
-        return notes;
-    }
-
-    public void setNotes(String notes) {
-        this.notes = notes;
-    }
-
-    public String getReportType() {
-        return reportType;
-    }
-
-    public void setReportType(String reportType) {
-        this.reportType = reportType;
-    }
-
-    public String getDoctorId() {
-        return doctorId;
-    }
-
-    public void setDoctorId(String doctorId) {
-        this.doctorId = doctorId;
-    }
-
-    public String getAppointmentId() {
-        return appointmentId;
-    }
-
-    public void setAppointmentId(String appointmentId) {
-        this.appointmentId = appointmentId;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
     }
 }
