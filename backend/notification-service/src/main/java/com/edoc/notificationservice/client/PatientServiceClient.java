@@ -19,8 +19,8 @@ public class PatientServiceClient {
     @Value("${patient-service.base-url}")
     private String patientServiceBaseUrl;
 
-    public PatientServiceClient(RestClient.Builder restClientBuilder) {
-        this.restClient = restClientBuilder.build();
+    public PatientServiceClient() {
+        this.restClient = RestClient.builder().build();
     }
 
     // Returns a map containing at least "phone" (String) and "userId" (Number).

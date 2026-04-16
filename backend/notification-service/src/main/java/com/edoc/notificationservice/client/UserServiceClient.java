@@ -17,8 +17,8 @@ public class UserServiceClient {
     @Value("${user-service.base-url}")
     private String userServiceBaseUrl;
 
-    public UserServiceClient(RestClient.Builder restClientBuilder) {
-        this.restClient = restClientBuilder.build();
+    public UserServiceClient() {
+        this.restClient = RestClient.builder().build();
     }
 
     public UserContact getUserById(String userId) {
