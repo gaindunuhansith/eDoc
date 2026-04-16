@@ -158,3 +158,6 @@ gateway:
 logging:
   level:
     org.springframework.cloud.gateway: INFO
+
+jwt:
+  public-key: ${JWT_PUBLIC_KEY:}

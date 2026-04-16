@@ -26,3 +26,6 @@ user:
 server:
   port: ${SERVER_PORT:8089}
 
+jwt:
+  public-key: ${JWT_PUBLIC_KEY:}
+

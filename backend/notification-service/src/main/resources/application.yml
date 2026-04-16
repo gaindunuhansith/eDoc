@@ -34,3 +34,6 @@ vonage:
   api-key: ${VONAGE_API_KEY:}
   api-secret: ${VONAGE_API_SECRET:}
   sms-from: ${VONAGE_SMS_FROM:eDoc}
+
+jwt:
+  public-key: ${JWT_PUBLIC_KEY:}

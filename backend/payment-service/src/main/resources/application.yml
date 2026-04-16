@@ -30,3 +30,6 @@ app:
 
 server:
   port: ${SERVER_PORT:8085}
+
+jwt:
+  public-key: ${JWT_PUBLIC_KEY:}

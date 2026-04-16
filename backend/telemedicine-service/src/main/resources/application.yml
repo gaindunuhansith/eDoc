@@ -36,6 +36,9 @@ user:
   service:
     url: http://localhost:8088
 
+jwt:
+  public-key: ${JWT_PUBLIC_KEY:}
+
 ---
 spring:
   config:

@@ -10,7 +10,7 @@ spring:
       database: edoc_appointment_db
 
 jwt:
-  secret: eDocSecretKey2026SuperSecureKeyForJWTTokenGeneration
+  public-key: ${JWT_PUBLIC_KEY:}
   expiration: 86400000
 
 doctor:
