@@ -164,19 +164,45 @@ public class NotificationService {
 
     private String buildSubject(NotificationType type) {
         return switch (type) {
-            case APPOINTMENT_BOOKED -> "Appointment Confirmation";
+            case APPOINTMENT_BOOKED -> "Appointment Booked";
+            case APPOINTMENT_CONFIRMED -> "Appointment Confirmed";
+            case APPOINTMENT_CANCELLED -> "Appointment Cancelled";
+            case APPOINTMENT_COMPLETED -> "Consultation Completed";
+            case FEEDBACK_RECEIVED -> "New Feedback Received";
             case PAYMENT_SUCCESS -> "Payment Confirmation";
         };
     }
 
     private String buildMessage(NotificationType type, Map<String, Object> data) {
         return switch (type) {
-            case APPOINTMENT_BOOKED -> "Your appointment with Dr. "
-                    + valueOrDefault(data, "doctorName", "your doctor")
-                    + " is confirmed";
+            case APPOINTMENT_BOOKED -> "Hello " + valueOrDefault(data, "recipientName", "there")
+                    + ", your appointment with Dr. " + valueOrDefault(data, "doctorName", "your doctor")
+                    + " on " + valueOrDefault(data, "date", "the scheduled date")
+                    + " (" + valueOrDefault(data, "dayOfWeek", "") + ")"
+                    + " at " + valueOrDefault(data, "timeSlot", "the scheduled time")
+                    + " has been booked.";
+            case APPOINTMENT_CONFIRMED -> "Hello " + valueOrDefault(data, "patientName", "there")
+                    + ", your appointment on " + valueOrDefault(data, "date", "the scheduled date")
+                    + " (" + valueOrDefault(data, "dayOfWeek", "") + ")"
+                    + " at " + valueOrDefault(data, "timeSlot", "the scheduled time")
+                    + " has been confirmed.";
+            case APPOINTMENT_CANCELLED -> "Hello " + valueOrDefault(data, "patientName", "there")
+                    + ", your appointment on " + valueOrDefault(data, "date", "the scheduled date")
+                    + " (" + valueOrDefault(data, "dayOfWeek", "") + ")"
+                    + " at " + valueOrDefault(data, "timeSlot", "the scheduled time")
+                    + " has been cancelled.";
+            case APPOINTMENT_COMPLETED -> "Hello " + valueOrDefault(data, "recipientName", "there")
+                    + ", your consultation on " + valueOrDefault(data, "date", "the scheduled date")
+                    + " (" + valueOrDefault(data, "dayOfWeek", "") + ")"
+                    + " at " + valueOrDefault(data, "timeSlot", "the scheduled time")
+                    + " has been completed.";
+            case FEEDBACK_RECEIVED -> "Dear Dr. " + valueOrDefault(data, "doctorName", "Doctor")
+                    + ", you have received new feedback from a patient."
+                    + " Rating: " + valueOrDefault(data, "rating", "N/A") + "/5."
+                    + " Comment: " + valueOrDefault(data, "comment", "No comment provided.");
             case PAYMENT_SUCCESS -> "Your payment of Rs. "
                     + valueOrDefault(data, "amount", "0")
-                    + " was successful";
+                    + " was successful.";
         };
     }
 

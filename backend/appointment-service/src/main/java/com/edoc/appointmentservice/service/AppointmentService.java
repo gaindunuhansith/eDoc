@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -360,29 +361,26 @@ public class AppointmentService {
             String doctorPhone = getString(doctorData, "phoneNumber");
             String doctorName = getFullName(doctorData, "firstName", "lastName");
 
-            String subject = "Appointment booked";
-            String message = String.format(
-                    "Appointment booked for %s on %s (%s) with Dr. %s.",
-                    appointment.getTimeSlot(),
-                    appointment.getAppointmentDate(),
-                    appointment.getDayOfWeek(),
-                    appointment.getDoctorName() != null ? appointment.getDoctorName() : doctorName
-            );
+            String resolvedDoctorName = appointment.getDoctorName() != null ? appointment.getDoctorName() : doctorName;
 
             if (patientEmail != null || patientPhone != null) {
-                String patientMessage = patientName == null
-                        ? message
-                        : "Hello " + patientName + ", " + message;
-                notificationServiceClient.sendEmail(patientEmail, subject, patientMessage);
-                notificationServiceClient.sendSms(patientPhone, patientMessage);
+                Map<String, Object> data = new HashMap<>();
+                data.put("recipientName", patientName != null ? patientName : "there");
+                data.put("doctorName", resolvedDoctorName != null ? resolvedDoctorName : "your doctor");
+                data.put("date", appointment.getAppointmentDate() != null ? appointment.getAppointmentDate().toString() : "");
+                data.put("timeSlot", appointment.getTimeSlot() != null ? appointment.getTimeSlot() : "");
+                data.put("dayOfWeek", appointment.getDayOfWeek() != null ? appointment.getDayOfWeek() : "");
+                notificationServiceClient.sendNotification("APPOINTMENT_BOOKED", patientEmail, patientPhone, data);
             }
 
             if (doctorEmail != null || doctorPhone != null) {
-                String doctorMessage = doctorName == null
-                        ? message
-                        : "Hello Dr. " + doctorName + ", " + message;
-                notificationServiceClient.sendEmail(doctorEmail, subject, doctorMessage);
-                notificationServiceClient.sendSms(doctorPhone, doctorMessage);
+                Map<String, Object> data = new HashMap<>();
+                data.put("recipientName", doctorName != null ? "Dr. " + doctorName : "Doctor");
+                data.put("doctorName", resolvedDoctorName != null ? resolvedDoctorName : "your doctor");
+                data.put("date", appointment.getAppointmentDate() != null ? appointment.getAppointmentDate().toString() : "");
+                data.put("timeSlot", appointment.getTimeSlot() != null ? appointment.getTimeSlot() : "");
+                data.put("dayOfWeek", appointment.getDayOfWeek() != null ? appointment.getDayOfWeek() : "");
+                notificationServiceClient.sendNotification("APPOINTMENT_BOOKED", doctorEmail, doctorPhone, data);
             }
         } catch (Exception ex) {
             log.warn("Notification send failed for booking {}", appointment.getId(), ex);
@@ -396,20 +394,13 @@ public class AppointmentService {
             String patientPhone = getString(patientData, "phone");
             String patientName = getFullName(patientData, "firstName", "lastName");
 
-            String subject = "Appointment confirmed";
-            String message = String.format(
-                    "Your appointment on %s (%s) at %s has been confirmed.",
-                    appointment.getAppointmentDate(),
-                    appointment.getDayOfWeek(),
-                    appointment.getTimeSlot()
-            );
-
             if (patientEmail != null || patientPhone != null) {
-                String patientMessage = patientName == null
-                        ? message
-                        : "Hello " + patientName + ", " + message;
-                notificationServiceClient.sendEmail(patientEmail, subject, patientMessage);
-                notificationServiceClient.sendSms(patientPhone, patientMessage);
+                Map<String, Object> data = new HashMap<>();
+                data.put("patientName", patientName != null ? patientName : "there");
+                data.put("date", appointment.getAppointmentDate() != null ? appointment.getAppointmentDate().toString() : "");
+                data.put("timeSlot", appointment.getTimeSlot() != null ? appointment.getTimeSlot() : "");
+                data.put("dayOfWeek", appointment.getDayOfWeek() != null ? appointment.getDayOfWeek() : "");
+                notificationServiceClient.sendNotification("APPOINTMENT_CONFIRMED", patientEmail, patientPhone, data);
             }
         } catch (Exception ex) {
             log.warn("Notification send failed for confirmation {}", appointment.getId(), ex);
@@ -423,20 +414,13 @@ public class AppointmentService {
             String patientPhone = getString(patientData, "phone");
             String patientName = getFullName(patientData, "firstName", "lastName");
 
-            String subject = "Appointment cancelled";
-            String message = String.format(
-                    "Your appointment on %s (%s) at %s has been cancelled.",
-                    appointment.getAppointmentDate(),
-                    appointment.getDayOfWeek(),
-                    appointment.getTimeSlot()
-            );
-
             if (patientEmail != null || patientPhone != null) {
-                String patientMessage = patientName == null
-                        ? message
-                        : "Hello " + patientName + ", " + message;
-                notificationServiceClient.sendEmail(patientEmail, subject, patientMessage);
-                notificationServiceClient.sendSms(patientPhone, patientMessage);
+                Map<String, Object> data = new HashMap<>();
+                data.put("patientName", patientName != null ? patientName : "there");
+                data.put("date", appointment.getAppointmentDate() != null ? appointment.getAppointmentDate().toString() : "");
+                data.put("timeSlot", appointment.getTimeSlot() != null ? appointment.getTimeSlot() : "");
+                data.put("dayOfWeek", appointment.getDayOfWeek() != null ? appointment.getDayOfWeek() : "");
+                notificationServiceClient.sendNotification("APPOINTMENT_CANCELLED", patientEmail, patientPhone, data);
             }
         } catch (Exception ex) {
             log.warn("Notification send failed for cancellation {}", appointment.getId(), ex);
@@ -456,29 +440,22 @@ public class AppointmentService {
             String doctorPhone = getString(doctorData, "phoneNumber");
             String doctorName = getFullName(doctorData, "firstName", "lastName");
 
-            String subject = "Consultation completed";
-            String message = String.format(
-                    "Consultation completed for %s on %s (%s) with Dr. %s.",
-                    appointment.getTimeSlot(),
-                    appointment.getAppointmentDate(),
-                    appointment.getDayOfWeek(),
-                    appointment.getDoctorName() != null ? appointment.getDoctorName() : doctorName
-            );
-
             if (patientEmail != null || patientPhone != null) {
-                String patientMessage = patientName == null
-                        ? message
-                        : "Hello " + patientName + ", " + message;
-                notificationServiceClient.sendEmail(patientEmail, subject, patientMessage);
-                notificationServiceClient.sendSms(patientPhone, patientMessage);
+                Map<String, Object> data = new HashMap<>();
+                data.put("recipientName", patientName != null ? patientName : "there");
+                data.put("date", appointment.getAppointmentDate() != null ? appointment.getAppointmentDate().toString() : "");
+                data.put("timeSlot", appointment.getTimeSlot() != null ? appointment.getTimeSlot() : "");
+                data.put("dayOfWeek", appointment.getDayOfWeek() != null ? appointment.getDayOfWeek() : "");
+                notificationServiceClient.sendNotification("APPOINTMENT_COMPLETED", patientEmail, patientPhone, data);
             }
 
             if (doctorEmail != null || doctorPhone != null) {
-                String doctorMessage = doctorName == null
-                        ? message
-                        : "Hello Dr. " + doctorName + ", " + message;
-                notificationServiceClient.sendEmail(doctorEmail, subject, doctorMessage);
-                notificationServiceClient.sendSms(doctorPhone, doctorMessage);
+                Map<String, Object> data = new HashMap<>();
+                data.put("recipientName", doctorName != null ? "Dr. " + doctorName : "Doctor");
+                data.put("date", appointment.getAppointmentDate() != null ? appointment.getAppointmentDate().toString() : "");
+                data.put("timeSlot", appointment.getTimeSlot() != null ? appointment.getTimeSlot() : "");
+                data.put("dayOfWeek", appointment.getDayOfWeek() != null ? appointment.getDayOfWeek() : "");
+                notificationServiceClient.sendNotification("APPOINTMENT_COMPLETED", doctorEmail, doctorPhone, data);
             }
         } catch (Exception ex) {
             log.warn("Notification send failed for completion {}", appointment.getId(), ex);
