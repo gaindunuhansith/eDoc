@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type SyntheticEvent, useState } from "react";
@@ -19,8 +20,8 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-[#f8fbff]">
-      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-8 bg-white">
+    <div className="h-screen w-full flex overflow-hidden bg-[#f8fbff]">
+      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-6 bg-white overflow-hidden max-h-screen">
         <div className="w-full max-w-sm">
           <div className="flex items-center gap-2 mb-8 font-semibold text-2xl tracking-tight text-gray-900">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-900 text-white">
@@ -206,7 +207,7 @@ export default function AuthPage() {
 
             <Button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-full py-6 text-base font-medium mb-8 shadow-md"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-full py-3 text-base font-medium mb-4 shadow-md"
             >
               {isSignUp ? "Create Account" : "Login"}
             </Button>
@@ -224,13 +225,13 @@ export default function AuthPage() {
           <div className="space-y-3">
             <Button
               variant="outline"
-              className="w-full rounded-full py-6 bg-[#1a1a1a] hover:bg-black text-white hover:text-white border-0 transition-colors"
+              className="w-full rounded-full py-3 bg-[#1a1a1a] hover:bg-black text-white hover:text-white border-0 transition-colors"
             >
               Continue with Apple
             </Button>
             <Button
               variant="outline"
-              className="w-full rounded-full py-6 bg-white hover:bg-gray-50 border-gray-300 text-gray-700 shadow-sm transition-colors"
+              className="w-full rounded-full py-3 bg-white hover:bg-gray-50 border-gray-300 text-gray-700 shadow-sm transition-colors"
             >
               Continue with Google
             </Button>
@@ -238,14 +239,9 @@ export default function AuthPage() {
         </div>
       </div>
 
-      <div className="hidden lg:flex w-1/2 bg-gray-900 p-4">
-        <div
-          className="w-full h-full rounded-3xl overflow-hidden relative"
-          style={{
-            background:
-              "linear-gradient(135deg, #111111 0%, #2a2a2a 50%, #444444 100%)",
-          }}
-        >
+      <div className="hidden lg:flex w-1/2 border-l border-gray-100 bg-[#111111]">
+        <div className="w-full h-full relative">
+          <Image src="/banner.webp" alt="Banner" fill className="object-cover grayscale" />
           <div
             className="absolute inset-0 opacity-20 mix-blend-overlay"
             style={{
@@ -256,13 +252,6 @@ export default function AuthPage() {
 
           <div className="absolute bottom-0 right-0 w-64 h-64 bg-blue-500 rounded-full blur-[100px] opacity-20" />
 
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-[80%] max-w-md bg-black/40 backdrop-blur-xl border border-white/10 p-4 rounded-2xl text-center text-white/70 text-xs font-light shadow-2xl">
-            (c) 2026 eDoc. All rights reserved.
-            <br />
-            Unauthorized use or reproduction of any content of this platform is
-            prohibited. For more information, visit our Terms of service and
-            Privacy Policy.
-          </div>
         </div>
       </div>
     </div>

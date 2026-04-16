@@ -9,8 +9,8 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Aivox Dashboard",
-  description: "Aivox frontend dashboard theme",
+  title: "eDoc Dashboard",
+  description: "All Patient Care in One Place",
 };
 
 export default function RootLayout({
