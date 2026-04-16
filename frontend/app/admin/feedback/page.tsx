@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FeedbackCard } from "@/components/feedback";
+import { DataTable } from "@/components/ui/data-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Star, Check, X } from "lucide-react";
+import { ColumnDef } from "@tanstack/react-table";
 
 interface Feedback {
   id: number;
@@ -18,20 +18,124 @@ interface Feedback {
   status: "PENDING" | "APPROVED" | "REJECTED";
 }
 
+const createColumns = (handleApprove: (id: number) => void, handleReject: (id: number) => void): ColumnDef<Feedback>[] => [
+  {
+    accessorKey: "id",
+    header: "ID",
+    cell: ({ row }) => <div className="font-medium">#{row.getValue("id")}</div>,
+  },
+  {
+    accessorKey: "patientName",
+    header: "Patient",
+    cell: ({ row }) => <div className="font-medium">{row.getValue("patientName")}</div>,
+  },
+  {
+    accessorKey: "doctorName",
+    header: "Doctor",
+    cell: ({ row }) => <div className="font-medium">{row.getValue("doctorName")}</div>,
+  },
+  {
+    accessorKey: "rating",
+    header: "Rating",
+    cell: ({ row }) => {
+      const rating = row.getValue("rating") as number;
+      return (
+        <div className="flex items-center gap-1">
+          {Array.from({ length: 5 }, (_, i) => (
+            <Star
+              key={i}
+              className={`h-4 w-4 ${
+                i < rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+              }`}
+            />
+          ))}
+          <span className="text-sm text-muted-foreground ml-1">({rating}/5)</span>
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "comment",
+    header: "Comment",
+    cell: ({ row }) => {
+      const comment = row.getValue("comment") as string;
+      return (
+        <div className="max-w-xs truncate" title={comment}>
+          {comment || "No comment"}
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => {
+      const status = row.getValue("status") as string;
+      const getStatusColor = (status: string) => {
+        switch (status) {
+          case "APPROVED":
+            return "bg-green-100 text-green-800 hover:bg-green-200";
+          case "REJECTED":
+            return "bg-red-100 text-red-800 hover:bg-red-200";
+          default:
+            return "bg-yellow-100 text-yellow-800 hover:bg-yellow-200";
+        }
+      };
+      return <Badge className={getStatusColor(status)}>{status}</Badge>;
+    },
+  },
+  {
+    accessorKey: "timestamp",
+    header: "Date",
+    cell: ({ row }) => {
+      const date = new Date(row.getValue("timestamp"));
+      return <div className="text-sm text-muted-foreground">{date.toLocaleDateString()}</div>;
+    },
+  },
+  {
+    id: "actions",
+    header: "Actions",
+    cell: ({ row }) => {
+      const feedback = row.original;
+
+      if (feedback.status !== "PENDING") {
+        return null;
+      }
+
+      return (
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+            onClick={() => handleApprove(feedback.id)}
+            title="Approve"
+          >
+            <Check className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+            onClick={() => handleReject(feedback.id)}
+            title="Reject"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      );
+    },
+  },
+];
+
 export default function AdminFeedbackPage() {
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
-  const [filteredFeedbacks, setFilteredFeedbacks] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>("ALL");
 
   useEffect(() => {
     fetchFeedbacks();
   }, []);
-
-  useEffect(() => {
-    filterFeedbacks();
-  }, [feedbacks, statusFilter]);
 
   const fetchFeedbacks = async () => {
     try {
@@ -82,14 +186,6 @@ export default function AdminFeedbackPage() {
     }
   };
 
-  const filterFeedbacks = () => {
-    if (statusFilter === "ALL") {
-      setFilteredFeedbacks(feedbacks);
-    } else {
-      setFilteredFeedbacks(feedbacks.filter(fb => fb.status === statusFilter));
-    }
-  };
-
   const handleApprove = async (id: number) => {
     try {
       // Mock API call
@@ -127,11 +223,11 @@ export default function AdminFeedbackPage() {
   if (loading) {
     return (
       <div className="space-y-4">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-16" />
-        <div className="grid gap-4">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-32" />
+        <div className="h-8 w-48 bg-gray-200 rounded animate-pulse" />
+        <div className="h-16 bg-gray-200 rounded animate-pulse" />
+        <div className="space-y-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="h-12 bg-gray-200 rounded animate-pulse" />
           ))}
         </div>
       </div>
@@ -192,55 +288,20 @@ export default function AdminFeedbackPage() {
         </Card>
       </div>
 
-      {/* Filter */}
+      {/* Feedback Table */}
       <Card className="bg-white border border-gray-200">
         <CardHeader>
-          <CardTitle className="text-gray-900">Filter Feedback</CardTitle>
+          <CardTitle className="text-gray-900">All Feedback</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4">
-            <div className="w-48">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">All Feedback</SelectItem>
-                  <SelectItem value="PENDING">Pending</SelectItem>
-                  <SelectItem value="APPROVED">Approved</SelectItem>
-                  <SelectItem value="REJECTED">Rejected</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <DataTable
+            columns={createColumns(handleApprove, handleReject)}
+            data={feedbacks}
+            searchKey="patientName"
+            searchPlaceholder="Search by patient name..."
+          />
         </CardContent>
       </Card>
-
-      {/* Feedback List */}
-      {filteredFeedbacks.length === 0 ? (
-        <Card className="bg-white border border-gray-200">
-          <CardContent className="pt-6">
-            <p className="text-gray-600">No feedback found.</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4">
-          {filteredFeedbacks.map((feedback) => (
-            <FeedbackCard
-              key={feedback.id}
-              id={feedback.id}
-              rating={feedback.rating}
-              comment={feedback.comment}
-              timestamp={feedback.timestamp}
-              patientName={feedback.patientName}
-              doctorName={feedback.doctorName}
-              status={feedback.status}
-              onApprove={feedback.status === "PENDING" ? () => handleApprove(feedback.id) : undefined}
-              onReject={feedback.status === "PENDING" ? () => handleReject(feedback.id) : undefined}
-            />
-          ))}
-        </div>
-      )}
     </div>
   );
 }
