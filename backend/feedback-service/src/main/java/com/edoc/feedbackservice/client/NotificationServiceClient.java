@@ -1,6 +1,5 @@
 package com.edoc.feedbackservice.client;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -9,7 +8,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
-@Slf4j
 @Service
 public class NotificationServiceClient {
 
@@ -32,9 +30,9 @@ public class NotificationServiceClient {
                 .bodyToMono(Void.class)
                 .doOnError(error -> {
                     if (error instanceof WebClientResponseException e) {
-                        log.error("Error sending email notification: {}", e.getMessage());
+                        System.err.println("Error sending email notification: " + e.getMessage());
                     } else {
-                        log.error("Unexpected error sending email: {}", error.getMessage());
+                        System.err.println("Unexpected error sending email: " + error.getMessage());
                     }
                 });
     }
@@ -49,9 +47,9 @@ public class NotificationServiceClient {
                 .bodyToMono(Void.class)
                 .doOnError(error -> {
                     if (error instanceof WebClientResponseException e) {
-                        log.error("Error sending SMS notification: {}", e.getMessage());
+                        System.err.println("Error sending SMS notification: " + e.getMessage());
                     } else {
-                        log.error("Unexpected error sending SMS: {}", error.getMessage());
+                        System.err.println("Unexpected error sending SMS: " + error.getMessage());
                     }
                 });
     }

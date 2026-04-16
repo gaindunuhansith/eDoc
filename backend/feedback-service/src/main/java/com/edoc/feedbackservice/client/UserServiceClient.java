@@ -1,6 +1,5 @@
 package com.edoc.feedbackservice.client;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -9,7 +8,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
-@Slf4j
 @Service
 public class UserServiceClient {
 
@@ -31,12 +29,12 @@ public class UserServiceClient {
                 .doOnError(error -> {
                     if (error instanceof WebClientResponseException e) {
                         if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
-                            log.warn("User not found: {}", userId);
+                            System.out.println("User not found: " + userId);
                         } else {
-                            log.error("Error calling user service: {}", e.getMessage());
+                            System.err.println("Error calling user service: " + e.getMessage());
                         }
                     } else {
-                        log.error("Unexpected error calling user service: {}", error.getMessage());
+                        System.err.println("Unexpected error calling user service: " + error.getMessage());
                     }
                 });
     }

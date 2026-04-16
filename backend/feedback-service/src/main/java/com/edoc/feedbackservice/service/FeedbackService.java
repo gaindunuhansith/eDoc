@@ -9,7 +9,6 @@ import com.edoc.feedbackservice.entity.Feedback;
 import com.edoc.feedbackservice.exception.FeedbackNotFoundException;
 import com.edoc.feedbackservice.mapper.FeedbackMapper;
 import com.edoc.feedbackservice.repository.FeedbackRepository;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -17,7 +16,6 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Slf4j
 @Service
 public class FeedbackService {
 
@@ -43,7 +41,7 @@ public class FeedbackService {
         // Validate appointment exists and patient is authorized
         AppointmentServiceClient.AppointmentDTO appointment = appointmentServiceClient.getAppointment(request.getAppointmentId(), authHeader)
                 .onErrorResume(error -> {
-                    log.error("Failed to validate appointment: {}", error.getMessage());
+                    System.err.println("Failed to validate appointment: " + error.getMessage());
                     throw new RuntimeException("Unable to validate appointment");
                 })
                 .block();
@@ -76,7 +74,7 @@ public class FeedbackService {
 
                     return notificationServiceClient.sendEmail(doctor.getEmail(), subject, body, authHeader);
                 })
-                .doOnError(error -> log.error("Failed to send feedback notification: {}", error.getMessage()))
+                .doOnError(error -> System.err.println("Failed to send feedback notification: " + error.getMessage()))
                 .subscribe(); // Fire and forget
     }
 
