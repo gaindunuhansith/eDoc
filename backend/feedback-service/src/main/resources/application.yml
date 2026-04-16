@@ -27,5 +27,5 @@ server:
   port: ${SERVER_PORT:8089}
 
 jwt:
-  public-key-path: ${JWT_PUBLIC_KEY_PATH:secrets/public.pem}
+  public-key-path: ${JWT_PUBLIC_KEY_PATH:backend/user-service/secrets/public.pem}
 

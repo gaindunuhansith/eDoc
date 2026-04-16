@@ -13,8 +13,8 @@ spring:
         format_sql: true
 
 jwt:
-  private-key-path: ${JWT_PRIVATE_KEY_PATH:secrets/private.pem}
-  public-key-path: ${JWT_PUBLIC_KEY_PATH:secrets/public.pem}
+  private-key-path: ${JWT_PRIVATE_KEY_PATH:backend/user-service/secrets/private.pem}
+  public-key-path: ${JWT_PUBLIC_KEY_PATH:backend/user-service/secrets/public.pem}
   expiration: ${JWT_EXPIRATION:86400000}
 
 microservices:
