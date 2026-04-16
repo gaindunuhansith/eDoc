@@ -10,7 +10,7 @@ spring:
       database: edoc_appointment_db
 
 jwt:
-  public-key-path: ${JWT_PUBLIC_KEY_PATH:secrets/public.pem}
+  public-key-path: ${JWT_PUBLIC_KEY_PATH:backend/user-service/secrets/public.pem}
   expiration: 86400000
 
 doctor:

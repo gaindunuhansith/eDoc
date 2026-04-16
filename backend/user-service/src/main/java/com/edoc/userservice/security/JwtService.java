@@ -112,12 +112,30 @@ public class JwtService {
         try {
             if (keyPath.startsWith("file:") || keyPath.startsWith("classpath:")) {
                 Resource resource = resourceLoader.getResource(keyPath);
+                if (!resource.exists()) {
+                    throw new IllegalStateException("JWT key resource not found: " + keyPath);
+                }
                 try (InputStream inputStream = resource.getInputStream()) {
                     return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
                 }
             }
 
-            return Files.readString(Path.of(keyPath), StandardCharsets.UTF_8);
+            Path resolvedPath = Path.of(keyPath).toAbsolutePath().normalize();
+            if (!Files.exists(resolvedPath)) {
+                String fallbackName = keyPath.toLowerCase().contains("private") ? "private.pem" : "public.pem";
+                Resource fallbackResource = resourceLoader.getResource("classpath:secrets/" + fallbackName);
+                if (!fallbackResource.exists()) {
+                    throw new IllegalStateException(
+                            "JWT key file not found. Configured path='" + keyPath
+                                    + "', resolved='" + resolvedPath
+                                    + "', fallback='classpath:secrets/" + fallbackName + "'");
+                }
+                try (InputStream inputStream = fallbackResource.getInputStream()) {
+                    return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+                }
+            }
+
+            return Files.readString(resolvedPath, StandardCharsets.UTF_8);
         } catch (IOException ex) {
             throw new IllegalStateException("Unable to read JWT key file: " + keyPath, ex);
         }

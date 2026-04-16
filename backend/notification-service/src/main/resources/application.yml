@@ -36,4 +36,4 @@ vonage:
   sms-from: ${VONAGE_SMS_FROM:eDoc}
 
 jwt:
-  public-key-path: ${JWT_PUBLIC_KEY_PATH:secrets/public.pem}
+  public-key-path: ${JWT_PUBLIC_KEY_PATH:backend/user-service/secrets/public.pem}

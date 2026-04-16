@@ -59,11 +59,28 @@ public class GatewaySecurityConfig {
                         }
                         if (publicKeyPath.startsWith("file:") || publicKeyPath.startsWith("classpath:")) {
                                 Resource resource = resourceLoader.getResource(publicKeyPath);
+                                if (!resource.exists()) {
+                                        throw new IllegalStateException("JWT public key resource not found: " + publicKeyPath);
+                                }
                                 try (InputStream inputStream = resource.getInputStream()) {
                                         pem = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
                                 }
                         } else {
-                                pem = Files.readString(Path.of(publicKeyPath), StandardCharsets.UTF_8);
+                                Path resolvedPath = resolvePublicKeyPath(publicKeyPath);
+                                if (Files.exists(resolvedPath)) {
+                                        pem = Files.readString(resolvedPath, StandardCharsets.UTF_8);
+                                } else {
+                                        Resource fallbackResource = resourceLoader.getResource("classpath:secrets/public.pem");
+                                        if (!fallbackResource.exists()) {
+                                                throw new IllegalStateException(
+                                                                "JWT public key file not found. Configured path='" + publicKeyPath
+                                                                                + "', resolved='" + resolvedPath
+                                                                                + "', fallback='classpath:secrets/public.pem'");
+                                        }
+                                        try (InputStream inputStream = fallbackResource.getInputStream()) {
+                                                pem = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+                                        }
+                                }
                         }
 
                         String normalized = pem
@@ -76,5 +93,9 @@ public class GatewaySecurityConfig {
                 } catch (Exception ex) {
                         throw new IllegalStateException("Failed to load JWT public key", ex);
                 }
+        }
+
+        private Path resolvePublicKeyPath(String publicKeyPath) {
+                return Path.of(publicKeyPath).toAbsolutePath().normalize();
         }
 }
