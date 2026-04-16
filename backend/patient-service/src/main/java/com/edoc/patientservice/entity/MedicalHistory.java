@@ -34,6 +34,17 @@ public class MedicalHistory {
     @Column(name = "visit_date")
     private LocalDate visitDate;
 
+    // Cross-service reference IDs (no FK constraint — microservices pattern)
+    @Column(name = "doctor_id")
+    private String doctorId;
+
+    @Column(name = "appointment_id")
+    private String appointmentId;
+
+    // Snapshot of doctor name at time of entry — avoids calling doctor-service on every read
+    @Column(name = "doctor_name_snapshot", length = 200)
+    private String doctorNameSnapshot;
+
     @Column(columnDefinition = "TEXT")
     private String notes;
 
@@ -93,6 +104,30 @@ public class MedicalHistory {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public String getDoctorId() {
+        return doctorId;
+    }
+
+    public void setDoctorId(String doctorId) {
+        this.doctorId = doctorId;
+    }
+
+    public String getAppointmentId() {
+        return appointmentId;
+    }
+
+    public void setAppointmentId(String appointmentId) {
+        this.appointmentId = appointmentId;
+    }
+
+    public String getDoctorNameSnapshot() {
+        return doctorNameSnapshot;
+    }
+
+    public void setDoctorNameSnapshot(String doctorNameSnapshot) {
+        this.doctorNameSnapshot = doctorNameSnapshot;
     }
 
     public Instant getCreatedAt() {

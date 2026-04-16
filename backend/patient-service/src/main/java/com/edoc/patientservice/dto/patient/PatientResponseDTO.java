@@ -15,6 +15,12 @@ public class PatientResponseDTO {
     private LocalDate dateOfBirth;
     private String address;
     private Instant createdAt;
+    private Instant updatedAt;
+    private String gender;
+    private String bloodGroup;
+    private String nicNumber;
+    private String allergies;
+    private String emergencyContactPhone;
     private PatientStatus status;
     private Instant deactivatedAt;
     private Long deactivatedBy;
@@ -114,5 +120,53 @@ public class PatientResponseDTO {
 
     public void setDeactivationReason(String deactivationReason) {
         this.deactivationReason = deactivationReason;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public String getBloodGroup() {
+        return bloodGroup;
+    }
+
+    public void setBloodGroup(String bloodGroup) {
+        this.bloodGroup = bloodGroup;
+    }
+
+    public String getNicNumber() {
+        return nicNumber;
+    }
+
+    public void setNicNumber(String nicNumber) {
+        this.nicNumber = nicNumber;
+    }
+
+    public String getAllergies() {
+        return allergies;
+    }
+
+    public void setAllergies(String allergies) {
+        this.allergies = allergies;
+    }
+
+    public String getEmergencyContactPhone() {
+        return emergencyContactPhone;
+    }
+
+    public void setEmergencyContactPhone(String emergencyContactPhone) {
+        this.emergencyContactPhone = emergencyContactPhone;
     }
 }

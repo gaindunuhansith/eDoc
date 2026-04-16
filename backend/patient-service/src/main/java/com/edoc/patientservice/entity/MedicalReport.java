@@ -27,8 +27,17 @@ public class MedicalReport {
     @Column(name = "report_name", nullable = false, length = 200)
     private String reportName;
 
-    @Column(name = "report_url", columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT")
     private String reportUrl;
+
+    @Column(name = "report_type", length = 100)
+    private String reportType;
+
+    @Column(name = "doctor_id")
+    private String doctorId;
+
+    @Column(name = "appointment_id")
+    private String appointmentId;
 
     @Column(columnDefinition = "TEXT")
     private String notes;
@@ -81,6 +90,30 @@ public class MedicalReport {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public String getReportType() {
+        return reportType;
+    }
+
+    public void setReportType(String reportType) {
+        this.reportType = reportType;
+    }
+
+    public String getDoctorId() {
+        return doctorId;
+    }
+
+    public void setDoctorId(String doctorId) {
+        this.doctorId = doctorId;
+    }
+
+    public String getAppointmentId() {
+        return appointmentId;
+    }
+
+    public void setAppointmentId(String appointmentId) {
+        this.appointmentId = appointmentId;
     }
 
     public Instant getCreatedAt() {

@@ -19,6 +19,16 @@ public class MedicalHistoryRequestDTO {
     @Size(max = 4000)
     private String notes;
 
+    // Cross-service reference IDs
+    @Size(max = 100)
+    private String doctorId;
+
+    @Size(max = 100)
+    private String appointmentId;
+
+    @Size(max = 200)
+    private String doctorNameSnapshot;
+
     public String getCondition() {
         return condition;
     }
@@ -49,5 +59,29 @@ public class MedicalHistoryRequestDTO {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public String getDoctorId() {
+        return doctorId;
+    }
+
+    public void setDoctorId(String doctorId) {
+        this.doctorId = doctorId;
+    }
+
+    public String getAppointmentId() {
+        return appointmentId;
+    }
+
+    public void setAppointmentId(String appointmentId) {
+        this.appointmentId = appointmentId;
+    }
+
+    public String getDoctorNameSnapshot() {
+        return doctorNameSnapshot;
+    }
+
+    public void setDoctorNameSnapshot(String doctorNameSnapshot) {
+        this.doctorNameSnapshot = doctorNameSnapshot;
     }
 }

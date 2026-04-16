@@ -49,7 +49,7 @@ public class VonageSmsClient {
 
             SmsSubmissionResponseMessage first = response.getMessages().get(0);
             if (first.getStatus() == MessageStatus.OK) {
-                return SmsSendResult.success(first.getMessageId());
+                return SmsSendResult.success(first.getId());
             }
             return SmsSendResult.failure(
                     "Vonage error [" + first.getStatus() + "]: " + first.getErrorText());
