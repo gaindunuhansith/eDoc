@@ -32,4 +32,4 @@ server:
   port: ${SERVER_PORT:8085}
 
 jwt:
-  secret: ${JWT_SECRET:change-this-default-jwt-secret-key-to-at-least-32-bytes}
+  public-key: ${JWT_PUBLIC_KEY:}

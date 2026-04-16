@@ -83,7 +83,8 @@ public class JwtService {
 
     private PrivateKey getSigningKey() {
         try {
-            byte[] keyBytes = decodePemContent(readPem(jwtProperties.privateKeyPath()));
+            String pem = readPemOrRaw(jwtProperties.privateKey());
+            byte[] keyBytes = decodePemContent(pem);
             PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
             return KeyFactory.getInstance("RSA").generatePrivate(spec);
         } catch (Exception ex) {
@@ -93,7 +94,8 @@ public class JwtService {
 
     private PublicKey getVerificationKey() {
         try {
-            byte[] keyBytes = decodePemContent(readPem(jwtProperties.publicKeyPath()));
+            String pem = readPemOrRaw(jwtProperties.publicKey());
+            byte[] keyBytes = decodePemContent(pem);
             X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
             return KeyFactory.getInstance("RSA").generatePublic(spec);
         } catch (Exception ex) {
@@ -101,13 +103,22 @@ public class JwtService {
         }
     }
 
-    private String readPem(String keyPath) {
-        Resource resource = resourceLoader.getResource(keyPath);
-        try (InputStream inputStream = resource.getInputStream()) {
-            return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-        } catch (IOException ex) {
-            throw new IllegalStateException("Unable to read JWT key resource: " + keyPath, ex);
+    private String readPemOrRaw(String keyOrPath) {
+        if (keyOrPath == null) {
+            throw new IllegalStateException("JWT key must not be null");
         }
+        try {
+            if (keyOrPath.startsWith("file:") || keyOrPath.startsWith("classpath:")) {
+                Resource resource = resourceLoader.getResource(keyOrPath);
+                try (InputStream inputStream = resource.getInputStream()) {
+                    return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+                }
+            }
+        } catch (IOException ex) {
+            throw new IllegalStateException("Unable to read JWT key resource: " + keyOrPath, ex);
+        }
+        // treat as raw PEM content
+        return keyOrPath;
     }
 
     private byte[] decodePemContent(String pem) {

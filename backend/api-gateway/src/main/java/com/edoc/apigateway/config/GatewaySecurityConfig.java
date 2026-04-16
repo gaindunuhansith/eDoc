@@ -41,19 +41,31 @@ public class GatewaySecurityConfig {
         return http.build();
     }
 
-    @Bean
-        public ReactiveJwtDecoder jwtDecoder(@Value("${jwt.public-key-path}") String publicKeyPath,
+        @Bean
+        public ReactiveJwtDecoder jwtDecoder(@Value("${jwt.public-key}") String publicKey,
                                                                                  ResourceLoader resourceLoader) {
-                RSAPublicKey publicKey = loadPublicKey(publicKeyPath, resourceLoader);
-                return NimbusReactiveJwtDecoder.withPublicKey(publicKey)
+                RSAPublicKey publicKeyObj = loadPublicKey(publicKey, resourceLoader);
+                return NimbusReactiveJwtDecoder.withPublicKey(publicKeyObj)
                                 .signatureAlgorithm(SignatureAlgorithm.RS256)
-                .build();
-    }
+                                .build();
+        }
 
-        private RSAPublicKey loadPublicKey(String publicKeyPath, ResourceLoader resourceLoader) {
-                Resource resource = resourceLoader.getResource(Objects.requireNonNull(publicKeyPath, "jwt.public-key-path must not be null"));
-                try (InputStream inputStream = resource.getInputStream()) {
-                        String pem = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+        private RSAPublicKey loadPublicKey(String publicKeyOrPath, ResourceLoader resourceLoader) {
+                try {
+                        String pem;
+                        if (publicKeyOrPath == null) {
+                                throw new IllegalStateException("jwt.public-key must not be null");
+                        }
+                        if (publicKeyOrPath.startsWith("file:") || publicKeyOrPath.startsWith("classpath:")) {
+                                Resource resource = resourceLoader.getResource(publicKeyOrPath);
+                                try (InputStream inputStream = resource.getInputStream()) {
+                                        pem = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+                                }
+                        } else {
+                                // treat the property as raw PEM content
+                                pem = publicKeyOrPath;
+                        }
+
                         String normalized = pem
                                         .replace("-----BEGIN PUBLIC KEY-----", "")
                                         .replace("-----END PUBLIC KEY-----", "")
