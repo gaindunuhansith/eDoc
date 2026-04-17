@@ -63,6 +63,12 @@ public class DoctorController {
         return ResponseEntity.ok(doctorService.updateDoctorProfile(id, request));
     }
 
+    // PATCH /api/v1/doctors/{id}/verify - admin verifies a doctor
+    @PatchMapping("/{id}/verify")
+    public ResponseEntity<Doctor> verifyDoctor(@PathVariable String id) {
+        return ResponseEntity.ok(doctorService.verifyDoctor(id));
+    }
+
     // PATCH /api/v1/doctors/{id}/toggle-availability
     @PatchMapping("/{id}/toggle-availability")
     public ResponseEntity<Doctor> toggleAvailability(@PathVariable String id) {

@@ -168,6 +168,19 @@ export const useGetPrescriptionById = (id: string) =>
     enabled: !!id,
   });
 
+export const verifyDoctor = (id: string) =>
+  apiClient.patch<Doctor>(DOCTOR_ENDPOINTS.VERIFY(id));
+
+export const useVerifyDoctor = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: verifyDoctor,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.doctor.lists() });
+    },
+  });
+};
+
 export const useCreateDoctor = () => {
   const qc = useQueryClient();
   return useMutation({
