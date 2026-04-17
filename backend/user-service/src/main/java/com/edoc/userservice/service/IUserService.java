@@ -18,6 +18,8 @@ public interface IUserService {
 
     UserResponse patchByUserIdAsAdmin(String userId, PatchUserRequest request);
 
+    void markProfileCreated(String userId);
+
     void deleteCurrentUser();
 
     List<UserResponse> getAllUsers();

@@ -51,6 +51,10 @@ public class User {
     @Builder.Default
     private UserRole role = UserRole.PATIENT;
 
+    @Column(name = "is_profile_created", nullable = false)
+    @Builder.Default
+    private boolean isProfileCreated = false;
+
     @Column(name = "created_at", nullable = false)
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();

@@ -23,8 +23,12 @@ public class CorrelationIdFilter implements GlobalFilter, Ordered {
                 .headers(headers -> headers.set(CORRELATION_ID_HEADER, correlationId))
                 .build();
 
-        return chain.filter(exchange.mutate().request(request).build())
-                .then(Mono.fromRunnable(() -> exchange.getResponse().getHeaders().set(CORRELATION_ID_HEADER, correlationId)));
+        exchange.getResponse().beforeCommit(() -> {
+            exchange.getResponse().getHeaders().set(CORRELATION_ID_HEADER, correlationId);
+            return Mono.empty();
+        });
+
+        return chain.filter(exchange.mutate().request(request).build());
     }
 
     @Override
