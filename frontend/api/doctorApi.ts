@@ -69,6 +69,9 @@ export interface CreatePrescriptionPayload {
   notes?: string;
 }
 
+export const fetchMyDoctorProfile = () =>
+  apiClient.get<Doctor>(DOCTOR_ENDPOINTS.ME);
+
 export const fetchAllDoctors = () =>
   apiClient.get<Doctor[]>(DOCTOR_ENDPOINTS.GET_ALL);
 
@@ -116,6 +119,12 @@ export const updatePrescription = ({
     payload
   );
 
+
+export const useGetMyDoctorProfile = () =>
+  useQuery({
+    queryKey: queryKeys.doctor.detail("me"),
+    queryFn: () => fetchMyDoctorProfile().then((r) => r.data),
+  });
 
 export const useGetAllDoctors = () =>
   useQuery({

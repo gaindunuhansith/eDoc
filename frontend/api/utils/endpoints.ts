@@ -30,6 +30,7 @@ export const PRESCRIPTION_PATIENT_ENDPOINTS = {
 
 
 export const DOCTOR_ENDPOINTS = {
+  ME: "/api/v1/doctors/me",
   GET_ALL: "/api/v1/doctors",
   GET_BY_ID: (id: string) => `/api/v1/doctors/${id}`,
   BY_SPECIALTY: (specialty: string) => `/api/v1/doctors/specialty/${specialty}`,
