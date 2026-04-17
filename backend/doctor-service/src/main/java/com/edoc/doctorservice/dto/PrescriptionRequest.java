@@ -7,6 +7,7 @@ import java.util.List;
 public class PrescriptionRequest {
 
     private String patientId;
+    private String patientUserId;
     private String appointmentId;
     private String diagnosis;
     private String notes;

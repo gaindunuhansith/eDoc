@@ -13,8 +13,13 @@ public class AppointmentRequest {
     @NotBlank(message = "Patient ID is required")
     private String patientId;
 
+    @NotBlank(message = "Patient userId is required")
+    private String patientUserId;  // patient's userId (String UUID) for consistent ID usage
+
     @NotBlank(message = "Doctor ID is required")
     private String doctorId;
+
+    private String doctorName;   // optional, passed by frontend if available
 
     @NotNull(message = "Appointment date is required")
     private LocalDate appointmentDate;
@@ -31,4 +36,6 @@ public class AppointmentRequest {
     private String reasonForVisit;
 
     private String patientName;   // passed by frontend for display in doctor dashboard
+    private String patientEmail;  // passed by frontend; snapshotted for direct notification delivery
+    private String patientPhone;  // passed by frontend; snapshotted for direct notification delivery
 }

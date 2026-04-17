@@ -3,18 +3,19 @@ package com.edoc.notificationservice.repository;
 import com.edoc.notificationservice.model.UserNotification;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface UserNotificationRepository extends JpaRepository<UserNotification, Long> {
+public interface UserNotificationRepository extends JpaRepository<UserNotification, UUID> {
 
     List<UserNotification> findByUserIdOrderByCreatedAtDesc(String userId);
 
     long countByUserIdAndReadFalse(String userId);
 
-    Optional<UserNotification> findByIdAndUserId(Long id, String userId);
+    Optional<UserNotification> findByIdAndUserId(UUID id, String userId);
 
     @Modifying
     @Query("UPDATE UserNotification n SET n.read = true WHERE n.userId = :userId AND n.read = false")

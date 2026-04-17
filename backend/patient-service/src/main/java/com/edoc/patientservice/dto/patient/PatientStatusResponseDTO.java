@@ -1,26 +1,26 @@
 package com.edoc.patientservice.dto.patient;
 
-import com.edoc.patientservice.entity.PatientStatus;
+import java.util.UUID;
 
 // Minimal internal response used by other services to validate patient lifecycle state.
 public class PatientStatusResponseDTO {
 
-    private Long id;
-    private PatientStatus status;
+    private UUID id;
+    private boolean deleted;
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 
-    public PatientStatus getStatus() {
-        return status;
+    public boolean isDeleted() {
+        return deleted;
     }
 
-    public void setStatus(PatientStatus status) {
-        this.status = status;
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
     }
 }

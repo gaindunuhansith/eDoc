@@ -14,15 +14,12 @@ export type AppointmentStatus =
 
 export type AppointmentType = "IN_PERSON" | "VIDEO";
 
-export type PaymentStatus =
-  | "NOT_REQUIRED"
-  | "PENDING"
-  | "PAID"
-  | "REFUNDED";
+export type PaymentStatus = "PENDING" | "SUCCESS" | "FAILED";
 
 export interface Appointment {
   id: string;
   patientId: string;
+  patientUserId?: string;  // patient's userId (String UUID)
   patientName?: string;
   doctorId: string;
   doctorName?: string;
@@ -47,8 +44,12 @@ export interface Appointment {
 
 export interface CreateAppointmentPayload {
   patientId: string;
+  patientUserId?: string;  // patient's userId (String UUID)
   patientName?: string;
+  patientEmail?: string;   // snapshotted for direct notification delivery
+  patientPhone?: string;   // snapshotted for direct notification delivery
   doctorId: string;
+  doctorName?: string;
   appointmentDate: string;   // "YYYY-MM-DD"
   timeSlot: string;          // "09:00-09:30"
   dayOfWeek: string;         // "MONDAY"
@@ -73,13 +74,24 @@ export const cancelAppointment = ({
   reason,
 }: {
   id: string;
-  reason?: string;
+  reason: string;
 }) => {
-  const url = reason
-    ? `${APPOINTMENT_ENDPOINTS.CANCEL(id)}?reason=${encodeURIComponent(reason)}`
-    : APPOINTMENT_ENDPOINTS.CANCEL(id);
-  return apiClient.delete<Appointment>(url);
+  return apiClient.patch<Appointment>(APPOINTMENT_ENDPOINTS.CANCEL(id), { reason });
 };
+
+export const updateAppointment = ({
+  id,
+  update,
+}: {
+  id: string;
+  update: Partial<CreateAppointmentPayload>;
+}) => apiClient.put<Appointment>(APPOINTMENT_ENDPOINTS.UPDATE(id), update);
+
+export const deleteAppointment = ({
+  id,
+}: {
+  id: string;
+}) => apiClient.delete<void>(APPOINTMENT_ENDPOINTS.DELETE(id));
 
 export interface AppointmentStatusUpdate {
   status: AppointmentStatus;
@@ -99,6 +111,34 @@ export const updateAppointmentStatus = ({
 export const fetchPendingAppointmentsByDoctor = (doctorId: string) =>
   apiClient.get<Appointment[]>(APPOINTMENT_ENDPOINTS.PENDING_BY_DOCTOR(doctorId));
 
+export interface PaymentStatusUpdate {
+  paymentStatus: PaymentStatus;
+  paymentId: string;  // Reference ID from payment service
+}
+
+export const updatePaymentStatus = ({
+  id,
+  update,
+}: {
+  id: string;
+  update: PaymentStatusUpdate;
+}) => apiClient.patch<Appointment>(APPOINTMENT_ENDPOINTS.UPDATE_PAYMENT(id), update);
+
+export const fetchAllAppointments = () =>
+  apiClient.get<Appointment[]>(APPOINTMENT_ENDPOINTS.GET_ALL);
+
+export const fetchAppointmentsByStatus = ({
+  patientId,
+  status,
+}: {
+  patientId: string;
+  status: AppointmentStatus;
+}) =>
+  apiClient.get<Appointment[]>(APPOINTMENT_ENDPOINTS.BY_PATIENT_STATUS(patientId, status));
+
+export const fetchUnpaidConfirmedAppointments = (doctorId: string) =>
+  apiClient.get<Appointment[]>(APPOINTMENT_ENDPOINTS.UNPAID_BY_DOCTOR(doctorId));
+
 export const useGetAppointmentsByPatient = (patientId: string) =>
   useQuery({
     queryKey: queryKeys.appointment.byPatient(patientId),
@@ -110,6 +150,13 @@ export const useGetAppointmentsByDoctor = (doctorId: string) =>
   useQuery({
     queryKey: queryKeys.appointment.byDoctor(doctorId),
     queryFn: () => fetchAppointmentsByDoctor(doctorId).then((r) => r.data),
+    enabled: !!doctorId,
+  });
+
+export const useGetPendingAppointmentsByDoctor = (doctorId: string) =>
+  useQuery({
+    queryKey: ["appointments", "pending", doctorId],
+    queryFn: () => fetchPendingAppointmentsByDoctor(doctorId).then((r) => r.data),
     enabled: !!doctorId,
   });
 
@@ -150,9 +197,60 @@ export const useUpdateAppointmentStatus = () => {
   });
 };
 
-export const useGetPendingAppointmentsByDoctor = (doctorId: string) =>
+export const useUpdateAppointment = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: updateAppointment,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.appointment.all });
+    },
+  });
+};
+
+export const useDeleteAppointment = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: deleteAppointment,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.appointment.all });
+    },
+  });
+};
+
+export const useUpdatePaymentStatus = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: updatePaymentStatus,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.appointment.all });
+    },
+  });
+};
+
+export const useGetAllAppointments = () =>
   useQuery({
-    queryKey: queryKeys.appointment.pendingByDoctor(doctorId),
-    queryFn: () => fetchPendingAppointmentsByDoctor(doctorId).then((r) => r.data),
+    queryKey: queryKeys.appointment.all,
+    queryFn: () => fetchAllAppointments().then((r) => r.data),
+  });
+
+export const useGetAppointmentsByStatus = ({
+  patientId,
+  status,
+}: {
+  patientId: string;
+  status: AppointmentStatus;
+}) =>
+  useQuery({
+    queryKey: ["appointments", "patient", patientId, "status", status],
+    queryFn: () => fetchAppointmentsByStatus({ patientId, status }).then((r) => r.data),
+    enabled: !!patientId && !!status,
+  });
+
+export const useGetUnpaidConfirmedAppointments = (doctorId: string) =>
+  useQuery({
+    queryKey: ["appointments", "unpaid", doctorId],
+    queryFn: () => fetchUnpaidConfirmedAppointments(doctorId).then((r) => r.data),
     enabled: !!doctorId,
   });
+
+

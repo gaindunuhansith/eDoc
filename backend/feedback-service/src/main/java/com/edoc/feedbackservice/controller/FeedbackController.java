@@ -2,14 +2,18 @@ package com.edoc.feedbackservice.controller;
 
 import com.edoc.feedbackservice.dto.FeedbackRequestDTO;
 import com.edoc.feedbackservice.dto.FeedbackResponseDTO;
+import com.edoc.feedbackservice.dto.UpdateFeedbackRequestDTO;
 import com.edoc.feedbackservice.service.FeedbackService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/feedback")
@@ -24,9 +28,10 @@ public class FeedbackController {
 
     @PostMapping("/submit")
     public ResponseEntity<FeedbackResponseDTO> submitFeedback(@Valid @RequestBody FeedbackRequestDTO request,
-                                                              @RequestParam Long patientId,
-                                                              @RequestHeader("Authorization") String authHeader) {
-        FeedbackResponseDTO response = feedbackService.submitFeedback(request, patientId, authHeader);
+                                                              @AuthenticationPrincipal Jwt jwt) {
+        // patientId is resolved securely from the validated JWT via Spring Security Context
+        String authHeader = "Bearer " + jwt.getTokenValue();
+        FeedbackResponseDTO response = feedbackService.submitFeedback(request, authHeader);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -36,68 +41,62 @@ public class FeedbackController {
         return ResponseEntity.ok(feedbacks);
     }
 
-    @PatchMapping("/{id}/status")
-    public ResponseEntity<FeedbackResponseDTO> updateFeedbackStatus(@PathVariable Long id,
-                                                                    @RequestParam String status) {
-        FeedbackResponseDTO updated = feedbackService.updateFeedbackStatus(id, status);
-        return ResponseEntity.ok(updated);
+    @GetMapping("/doctor/{doctorId}")
+    public ResponseEntity<List<FeedbackResponseDTO>> getFeedbackForDoctor(@PathVariable String doctorId) {
+        List<FeedbackResponseDTO> feedbacks = feedbackService.getFeedbackForDoctor(doctorId);
+        return ResponseEntity.ok(feedbacks);
     }
 
-    @GetMapping("/doctor/{doctorId}")
-    public ResponseEntity<List<FeedbackResponseDTO>> getFeedbackForDoctor(@PathVariable Long doctorId) {
-        List<FeedbackResponseDTO> feedbacks = feedbackService.getFeedbackForDoctor(doctorId);
+    @GetMapping("/doctor/me")
+    public ResponseEntity<List<FeedbackResponseDTO>> getMyDoctorFeedback(@AuthenticationPrincipal Jwt jwt) {
+        // doctorId is resolved securely from the validated JWT via Spring Security Context
+        String authHeader = "Bearer " + jwt.getTokenValue();
+        List<FeedbackResponseDTO> feedbacks = feedbackService.getFeedbackForCurrentDoctor(authHeader);
         return ResponseEntity.ok(feedbacks);
     }
 
     @GetMapping("/patient/{patientId}")
-    public ResponseEntity<List<FeedbackResponseDTO>> getFeedbackForPatient(@PathVariable Long patientId) {
+    public ResponseEntity<List<FeedbackResponseDTO>> getFeedbackForPatient(@PathVariable UUID patientId) {
         List<FeedbackResponseDTO> feedbacks = feedbackService.getFeedbackForPatient(patientId);
+        return ResponseEntity.ok(feedbacks);
+    }
+
+    @GetMapping("/patient/me")
+    public ResponseEntity<List<FeedbackResponseDTO>> getMyFeedback(@AuthenticationPrincipal Jwt jwt) {
+        // patientId is resolved securely from the validated JWT via Spring Security Context
+        String authHeader = "Bearer " + jwt.getTokenValue();
+        List<FeedbackResponseDTO> feedbacks = feedbackService.getFeedbackForCurrentPatient(authHeader);
         return ResponseEntity.ok(feedbacks);
     }
 
     @GetMapping("/appointment/{appointmentId}")
-    public ResponseEntity<List<FeedbackResponseDTO>> getFeedbackForAppointment(@PathVariable Long appointmentId) {
-        List<FeedbackResponseDTO> feedbacks = feedbackService.getFeedbackForAppointment(appointmentId);
-        return ResponseEntity.ok(feedbacks);
-    }
-
-    @GetMapping("/internal/doctor/{doctorId}")
-    public ResponseEntity<List<FeedbackResponseDTO>> getFeedbackForDoctorInternal(@PathVariable Long doctorId,
-                                                                                   @RequestHeader("Authorization") String authHeader) {
-        List<FeedbackResponseDTO> feedbacks = feedbackService.getFeedbackForDoctor(doctorId);
-        return ResponseEntity.ok(feedbacks);
-    }
-
-    @GetMapping("/internal/patient/{patientId}")
-    public ResponseEntity<List<FeedbackResponseDTO>> getFeedbackForPatientInternal(@PathVariable Long patientId,
-                                                                                    @RequestHeader("Authorization") String authHeader) {
-        List<FeedbackResponseDTO> feedbacks = feedbackService.getFeedbackForPatient(patientId);
-        return ResponseEntity.ok(feedbacks);
-    }
-
-    @GetMapping("/internal/appointment/{appointmentId}")
-    public ResponseEntity<List<FeedbackResponseDTO>> getFeedbackForAppointmentInternal(@PathVariable Long appointmentId,
-                                                                                        @RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<List<FeedbackResponseDTO>> getFeedbackForAppointment(@PathVariable String appointmentId) {
         List<FeedbackResponseDTO> feedbacks = feedbackService.getFeedbackForAppointment(appointmentId);
         return ResponseEntity.ok(feedbacks);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<FeedbackResponseDTO> getFeedbackById(@PathVariable Long id) {
+    public ResponseEntity<FeedbackResponseDTO> getFeedbackById(@PathVariable UUID id) {
         FeedbackResponseDTO feedback = feedbackService.getFeedbackById(id);
         return ResponseEntity.ok(feedback);
     }
 
     @PutMapping("/update/{id}")
-    public ResponseEntity<FeedbackResponseDTO> updateFeedback(@PathVariable Long id,
-                                                              @Valid @RequestBody FeedbackRequestDTO request) {
-        FeedbackResponseDTO updated = feedbackService.updateFeedback(id, request);
+    public ResponseEntity<FeedbackResponseDTO> updateFeedback(@PathVariable UUID id,
+                                                              @Valid @RequestBody UpdateFeedbackRequestDTO request,
+                                                              @AuthenticationPrincipal Jwt jwt) {
+        // patientId is resolved securely from the validated JWT via Spring Security Context
+        String authHeader = "Bearer " + jwt.getTokenValue();
+        FeedbackResponseDTO updated = feedbackService.updateFeedback(id, request, authHeader);
         return ResponseEntity.ok(updated);
     }
 
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<Void> deleteFeedback(@PathVariable Long id) {
-        feedbackService.deleteFeedback(id);
+    public ResponseEntity<Void> deleteFeedback(@PathVariable UUID id,
+                                               @AuthenticationPrincipal Jwt jwt) {
+        // patientId is resolved securely from the validated JWT via Spring Security Context
+        String authHeader = "Bearer " + jwt.getTokenValue();
+        feedbackService.deleteFeedback(id, authHeader);
         return ResponseEntity.noContent().build();
     }
 }

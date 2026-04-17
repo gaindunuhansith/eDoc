@@ -4,13 +4,16 @@ import com.edoc.feedbackservice.entity.Feedback;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import java.util.List;
+import java.util.UUID;
 
 @Repository
-public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
+public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
 
-    List<Feedback> findByDoctorId(Long doctorId);
+    List<Feedback> findByDoctorId(String doctorId);
 
-    List<Feedback> findByPatientId(Long patientId);
+    List<Feedback> findByPatientId(UUID patientId);
 
-    List<Feedback> findByAppointmentId(Long appointmentId);
+    List<Feedback> findByAppointmentId(String appointmentId);
+
+    boolean existsByPatientIdAndAppointmentId(UUID patientId, String appointmentId);
 }

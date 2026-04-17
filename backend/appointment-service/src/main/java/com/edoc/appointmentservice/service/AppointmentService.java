@@ -23,6 +23,11 @@ import java.util.Map;
 @Slf4j
 public class AppointmentService {
 
+    private static final List<Appointment.AppointmentStatus> ACTIVE_SLOT_STATUSES = List.of(
+            Appointment.AppointmentStatus.PENDING,
+            Appointment.AppointmentStatus.CONFIRMED
+    );
+
     private final AppointmentRepository appointmentRepository;
     private final DoctorServiceClient doctorServiceClient;
     private final PatientServiceClient patientServiceClient;
@@ -38,12 +43,12 @@ public class AppointmentService {
 
         // Step 2: Check the slot isn't already taken
         boolean slotTaken = appointmentRepository
-                .existsByDoctorIdAndAppointmentDateAndTimeSlotAndStatusNot(
-                        request.getDoctorId(),
-                        request.getAppointmentDate(),
-                        request.getTimeSlot(),
-                        Appointment.AppointmentStatus.CANCELLED
-                );
+            .existsByDoctorIdAndAppointmentDateAndTimeSlotAndStatusIn(
+                request.getDoctorId(),
+                request.getAppointmentDate(),
+                request.getTimeSlot(),
+                ACTIVE_SLOT_STATUSES
+            );
 
         if (slotTaken) {
             throw new RuntimeException(
@@ -57,7 +62,10 @@ public class AppointmentService {
         // Step 4: Build the appointment object
         Appointment appointment = new Appointment();
         appointment.setPatientId(request.getPatientId());
+        appointment.setPatientUserId(request.getPatientUserId());  // Store patient's userId (String UUID)
         appointment.setPatientName(request.getPatientName());   // snapshot at booking time
+        appointment.setPatientEmail(request.getPatientEmail()); // snapshot for direct notification delivery
+        appointment.setPatientPhone(request.getPatientPhone()); // snapshot for direct notification delivery
         appointment.setDoctorId(request.getDoctorId());
         appointment.setAppointmentDate(request.getAppointmentDate());
         appointment.setTimeSlot(request.getTimeSlot());
@@ -68,14 +76,23 @@ public class AppointmentService {
         appointment.setCreatedAt(LocalDateTime.now());
         appointment.setUpdatedAt(LocalDateTime.now());
 
-        // Payment starts as NOT_REQUIRED until doctor confirms
-        appointment.setPaymentStatus(Appointment.PaymentStatus.NOT_REQUIRED);
+        // Payment starts as PENDING until confirmed/processed
+        appointment.setPaymentStatus(Appointment.PaymentStatus.PENDING);
 
         // Step 5: Snapshot doctor details into the appointment
+        if (request.getDoctorName() != null && !request.getDoctorName().isBlank()) {
+            // Use the doctor name from the request if provided
+            appointment.setDoctorName(request.getDoctorName().trim());
+        } else if (doctorData != null) {
+            // Fall back to building from doctor service response
+            Object firstName = doctorData.get("firstName");
+            Object lastName = doctorData.get("lastName");
+            if (firstName != null && lastName != null) {
+                appointment.setDoctorName(firstName.toString() + " " + lastName.toString());
+            }
+        }
+        // Snapshot other doctor details
         if (doctorData != null) {
-            appointment.setDoctorName(
-                    doctorData.get("firstName") + " " + doctorData.get("lastName")
-            );
             appointment.setDoctorSpecialty((String) doctorData.get("specialty"));
             appointment.setDoctorHospital((String) doctorData.get("hospital"));
             Object fee = doctorData.get("consultationFee");
@@ -165,12 +182,8 @@ public class AppointmentService {
         if (update.getStatus() == Appointment.AppointmentStatus.CANCELLED) {
             appointment.setCancellationReason(update.getCancellationReason());
 
-            // If already paid, mark as refunded
-            if (appointment.getPaymentStatus() == Appointment.PaymentStatus.PAID) {
-                appointment.setPaymentStatus(Appointment.PaymentStatus.REFUNDED);
-            } else {
-                appointment.setPaymentStatus(Appointment.PaymentStatus.NOT_REQUIRED);
-            }
+            // Mark payment as FAILED whether already paid or pending (refund or cancellation)
+            appointment.setPaymentStatus(Appointment.PaymentStatus.FAILED);
 
             String startTime = appointment.getTimeSlot().split("-")[0];
             doctorServiceClient.markSlotAsFree(
@@ -186,6 +199,12 @@ public class AppointmentService {
             notifyAppointmentConfirmed(savedAppointment);
         }
         if (update.getStatus() == Appointment.AppointmentStatus.REJECTED) {
+            String startTime = appointment.getTimeSlot().split("-")[0];
+            doctorServiceClient.markSlotAsFree(
+                    appointment.getDoctorId(),
+                    appointment.getDayOfWeek(),
+                    startTime
+            );
             notifyAppointmentRejected(savedAppointment);
         }
         if (update.getStatus() == Appointment.AppointmentStatus.CANCELLED) {
@@ -212,8 +231,8 @@ public class AppointmentService {
             );
         }
 
-        // Can only pay if payment is still pending
-        if (appointment.getPaymentStatus() == Appointment.PaymentStatus.PAID) {
+        // Can only pay if payment is still pending / not already successful
+        if (appointment.getPaymentStatus() == Appointment.PaymentStatus.SUCCESS) {
             throw new RuntimeException("This appointment has already been paid.");
         }
 
@@ -227,10 +246,30 @@ public class AppointmentService {
 
     // ─── CANCEL ──────────────────────────────────────────────────────────────
 
-    public Appointment cancelAppointment(String id, String reason) {
+    public Appointment cancelAppointment(String id, String reason, String authenticatedUserId) {
         Appointment appointment = getAppointmentById(id);
 
-        // Can only cancel if PENDING or CONFIRMED
+        // Security check - ensure the authenticated user owns this appointment
+        String ownerUserId = appointment.getPatientUserId();
+
+        if (ownerUserId != null) {
+            if (authenticatedUserId == null || !ownerUserId.equals(authenticatedUserId)) {
+                throw new RuntimeException("You are not authorized to cancel this appointment.");
+            }
+        } else {
+            // Fallback for legacy records: resolve patient by patientId and compare userId
+            if (appointment.getPatientId() == null) {
+                throw new RuntimeException("You are not authorized to cancel this appointment.");
+            }
+            Map<String, Object> patient = patientServiceClient.getPatientById(appointment.getPatientId());
+            Object userIdObj = patient != null ? patient.get("userId") : null;
+            String patientUserIdFromService = userIdObj != null ? userIdObj.toString() : null;
+            if (patientUserIdFromService == null || authenticatedUserId == null || !patientUserIdFromService.equals(authenticatedUserId)) {
+                throw new RuntimeException("You are not authorized to cancel this appointment.");
+            }
+        }
+
+        // Can only cancel if not COMPLETED or already CANCELLED
         if (appointment.getStatus() == Appointment.AppointmentStatus.COMPLETED) {
             throw new RuntimeException("Cannot cancel a completed appointment.");
         }
@@ -242,12 +281,8 @@ public class AppointmentService {
         appointment.setCancellationReason(reason);
         appointment.setUpdatedAt(LocalDateTime.now());
 
-        // Handle payment refund if already paid
-        if (appointment.getPaymentStatus() == Appointment.PaymentStatus.PAID) {
-            appointment.setPaymentStatus(Appointment.PaymentStatus.REFUNDED);
-        } else {
-            appointment.setPaymentStatus(Appointment.PaymentStatus.NOT_REQUIRED);
-        }
+        // Mark payment as FAILED on cancellation (whether already paid or pending)
+        appointment.setPaymentStatus(Appointment.PaymentStatus.FAILED);
 
         String startTime = appointment.getTimeSlot().split("-")[0];
         doctorServiceClient.markSlotAsFree(
@@ -282,11 +317,12 @@ public class AppointmentService {
 
         // Check new slot is available
         boolean newSlotTaken = appointmentRepository
-                .existsByDoctorIdAndAppointmentDateAndTimeSlotAndStatusNot(
+            .existsByDoctorIdAndAppointmentDateAndTimeSlotAndStatusInAndIdNot(
                         request.getDoctorId(),
                         request.getAppointmentDate(),
                         request.getTimeSlot(),
-                        Appointment.AppointmentStatus.CANCELLED
+                ACTIVE_SLOT_STATUSES,
+                existing.getId()
                 );
 
         if (newSlotTaken) {
@@ -319,14 +355,27 @@ public class AppointmentService {
     }
 
     // Delete a completed appointment - patient cleans up their history
-    public void deleteCompletedAppointment(String id, String patientId) {
+    public void deleteCompletedAppointment(String id, String authenticatedUserId) {
         Appointment appointment = getAppointmentById(id);
 
-        // Security check - make sure the patient owns this appointment
-        if (!appointment.getPatientId().equals(patientId)) {
-            throw new RuntimeException(
-                    "You are not authorized to delete this appointment."
-            );
+        // Security check - ensure the authenticated user owns this appointment
+        String ownerUserId = appointment.getPatientUserId();
+
+        if (ownerUserId != null) {
+            if (authenticatedUserId == null || !ownerUserId.equals(authenticatedUserId)) {
+                throw new RuntimeException("You are not authorized to delete this appointment.");
+            }
+        } else {
+            // Fallback for legacy records: resolve patient by patientId and compare userId
+            if (appointment.getPatientId() == null) {
+                throw new RuntimeException("You are not authorized to delete this appointment.");
+            }
+            Map<String, Object> patient = patientServiceClient.getPatientById(appointment.getPatientId());
+            Object userIdObj = patient != null ? patient.get("userId") : null;
+            String patientUserIdFromService = userIdObj != null ? userIdObj.toString() : null;
+            if (patientUserIdFromService == null || authenticatedUserId == null || !patientUserIdFromService.equals(authenticatedUserId)) {
+                throw new RuntimeException("You are not authorized to delete this appointment.");
+            }
         }
 
         // Only COMPLETED or CANCELLED appointments can be deleted
@@ -360,7 +409,8 @@ public class AppointmentService {
     private void notifyBooking(Appointment appointment) {
         try {
             Map<String, Object> data = buildAppointmentData(appointment);
-            notificationServiceClient.sendToPatient("APPOINTMENT_BOOKED", appointment.getPatientId(), data);
+            notificationServiceClient.sendToPatient("APPOINTMENT_BOOKED", appointment.getPatientId(),
+                    appointment.getPatientEmail(), appointment.getPatientPhone(), data);
             notificationServiceClient.sendToDoctor("APPOINTMENT_BOOKED", appointment.getDoctorId(), data);
         } catch (Exception ex) {
             log.warn("Notification send failed for booking {}", appointment.getId(), ex);
@@ -369,7 +419,8 @@ public class AppointmentService {
 
     private void notifyAppointmentConfirmed(Appointment appointment) {
         try {
-            notificationServiceClient.sendToPatient("APPOINTMENT_CONFIRMED", appointment.getPatientId(), buildAppointmentData(appointment));
+            notificationServiceClient.sendToPatient("APPOINTMENT_CONFIRMED", appointment.getPatientId(),
+                    appointment.getPatientEmail(), appointment.getPatientPhone(), buildAppointmentData(appointment));
         } catch (Exception ex) {
             log.warn("Notification send failed for confirmation {}", appointment.getId(), ex);
         }
@@ -377,7 +428,8 @@ public class AppointmentService {
 
     private void notifyAppointmentRejected(Appointment appointment) {
         try {
-            notificationServiceClient.sendToPatient("APPOINTMENT_REJECTED", appointment.getPatientId(), buildAppointmentData(appointment));
+            notificationServiceClient.sendToPatient("APPOINTMENT_REJECTED", appointment.getPatientId(),
+                    appointment.getPatientEmail(), appointment.getPatientPhone(), buildAppointmentData(appointment));
         } catch (Exception ex) {
             log.warn("Notification send failed for rejection {}", appointment.getId(), ex);
         }
@@ -385,7 +437,8 @@ public class AppointmentService {
 
     private void notifyAppointmentCancelled(Appointment appointment) {
         try {
-            notificationServiceClient.sendToPatient("APPOINTMENT_CANCELLED", appointment.getPatientId(), buildAppointmentData(appointment));
+            notificationServiceClient.sendToPatient("APPOINTMENT_CANCELLED", appointment.getPatientId(),
+                    appointment.getPatientEmail(), appointment.getPatientPhone(), buildAppointmentData(appointment));
         } catch (Exception ex) {
             log.warn("Notification send failed for cancellation {}", appointment.getId(), ex);
         }
@@ -394,7 +447,8 @@ public class AppointmentService {
     private void notifyCompletion(Appointment appointment) {
         try {
             Map<String, Object> data = buildAppointmentData(appointment);
-            notificationServiceClient.sendToPatient("APPOINTMENT_COMPLETED", appointment.getPatientId(), data);
+            notificationServiceClient.sendToPatient("APPOINTMENT_COMPLETED", appointment.getPatientId(),
+                    appointment.getPatientEmail(), appointment.getPatientPhone(), data);
             notificationServiceClient.sendToDoctor("APPOINTMENT_COMPLETED", appointment.getDoctorId(), data);
         } catch (Exception ex) {
             log.warn("Notification send failed for completion {}", appointment.getId(), ex);

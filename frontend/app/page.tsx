@@ -40,10 +40,8 @@ export default function AuthPage() {
         { name, email, password, phoneNumber, role },
         {
           onSuccess: () => {
-            toast.success("Account created successfully");
+            toast.success("Account created! Please sign in.");
             setIsSignUp(false);
-            setPassword("");
-            setConfirmPassword("");
           },
           onError: (err: any) => {
             setErrorMsg(err.message || "Registration failed");

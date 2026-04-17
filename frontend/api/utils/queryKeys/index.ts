@@ -14,8 +14,10 @@ export const queryKeys = {
     detail: (id: string) => ["patient", "detail", id] as const,
     stats: () => ["patient", "stats"] as const,
     reports: () => ["patient", "reports"] as const,
-    report: (id: number) => ["patient", "report", id] as const,
+    report: (id: string) => ["patient", "report", id] as const,
     prescriptions: () => ["patient", "prescriptions"] as const,
+    adminList: () => ["patient", "admin", "list"] as const,
+    adminDetail: (id: string) => ["patient", "admin", "detail", id] as const,
   },
 
   doctor: {
@@ -84,7 +86,8 @@ export const queryKeys = {
 
   payment: {
     all: ["payment"] as const,
-    lists: () => ["payment", "list"] as const,
+    lists: (page?: number, size?: number) => ["payment", "list", page, size] as const,
+    history: (page?: number, size?: number) => ["payment", "history", page, size] as const,
     detail: (id: string) => ["payment", "detail", id] as const,
     byPatient: (patientId: string) =>
       ["payment", "patient", patientId] as const,

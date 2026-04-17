@@ -5,10 +5,12 @@ import com.edoc.feedbackservice.dto.FeedbackResponseDTO;
 import com.edoc.feedbackservice.entity.Feedback;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
+
 @Component
 public class FeedbackMapper {
 
-    public Feedback toEntity(FeedbackRequestDTO dto, Long patientId) {
+    public Feedback toEntity(FeedbackRequestDTO dto, UUID patientId) {
         Feedback feedback = new Feedback();
         feedback.setPatientId(patientId);
         feedback.setDoctorId(dto.getDoctorId());
@@ -16,8 +18,7 @@ public class FeedbackMapper {
         feedback.setRating(dto.getRating());
         feedback.setComment(dto.getComment());
         feedback.setTimestamp(java.time.LocalDateTime.now());
-        feedback.setEditableUntil(java.time.LocalDateTime.now().plusHours(48));
-        feedback.setStatus(Feedback.FeedbackStatus.PENDING);
+        feedback.setEditableUntil(java.time.LocalDateTime.now().plusHours(24));
         return feedback;
     }
 
@@ -29,8 +30,7 @@ public class FeedbackMapper {
                 feedback.getAppointmentId(),
                 feedback.getRating(),
                 feedback.getComment(),
-                feedback.getTimestamp(),
-                feedback.getStatus().name()
+                feedback.getTimestamp()
         );
         dto.setEditableUntil(feedback.getEditableUntil());
         return dto;

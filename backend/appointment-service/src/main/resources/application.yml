@@ -8,22 +8,31 @@ spring:
     mongodb:
       uri: ${MONGO_URI}
       database: edoc_appointment_db
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          public-key-location: ${JWT_PUBLIC_KEY_LOCATION:classpath:public.pem}
 
 jwt:
   public-key-path: ${JWT_PUBLIC_KEY_PATH:secrets/public.pem}
+  public-key-base64: ${JWT_PUBLIC_KEY_BASE64:}
   expiration: ${JWT_EXPIRATION:86400000}
 
 doctor:
   service:
-    url: ${DOCTOR_SERVICE_URL:http://doctor-service:8082}
+    url: ${DOCTOR_SERVICE_URL:http://localhost:8082}
 
 patient:
   service:
-    url: ${PATIENT_SERVICE_URL:http://patient-service:8084}
+    url: ${PATIENT_SERVICE_URL:http://localhost:8084}
 
 notification:
   service:
-    url: ${NOTIFICATION_SERVICE_URL:http://notification-service:8083}
+    url: ${NOTIFICATION_SERVICE_URL:http://localhost:8083}
+
+seed:
+  enabled: ${SEED_ENABLED:false}
 
 logging:
   level:

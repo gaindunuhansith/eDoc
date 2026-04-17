@@ -7,11 +7,18 @@ class PatientAnalysisRequest(BaseModel):
     symptoms: str
     description: Optional[str] = None
 
+# Internal schema: what the LLM produces (no service data)
+class PatientLLMOutput(BaseModel):
+    analysis: str = Field(description="Patient-friendly medical analysis of the symptoms.")
+    recommended_actions: List[str] = Field(description="Actions the patient should take.")
+    recommended_specialty: str = Field(description="The single medical specialty most relevant to these symptoms (e.g. 'Cardiologist', 'Neurologist', 'Dermatologist').")
+
+# API response schema: LLM output + data fetched from other services
 class PatientAnalysisResponse(BaseModel):
     patient_summary: Optional[dict] = None
-    analysis: str = Field(description="Patient-friendly medical analysis.")
-    recommended_actions: List[str] = Field(description="Actions patient should take.")
-    recommended_specialty: str = Field(description="The precise recommended specialist type (e.g. Neurologist).")
+    analysis: str
+    recommended_actions: List[str]
+    recommended_specialty: str
     available_doctors: List[dict] = []
     service_errors: List[str] = []
 

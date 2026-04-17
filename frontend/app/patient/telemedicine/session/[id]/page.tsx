@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { WaitingRoom, VideoCall } from "@/components/telemedicine";
 import { Video, ArrowLeft, AlertCircle } from "lucide-react";
-import { useTelemedicineSession, useGetSessionToken } from "@/api/telemedicineApi";
+import { useTelemedicineSession } from "@/api/telemedicineApi";
 import { toast } from "sonner";
 
 export default function PatientTelemedicineSessionPage() {

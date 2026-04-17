@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search, Bell, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,7 +27,7 @@ export function TopHeader() {
 
   // Keep store unread count in sync from the polling query
   const { data: unreadData } = useGetUnreadCount();
-  useMemo(() => {
+  useEffect(() => {
     if (unreadData !== undefined) setUnreadCount(unreadData.count);
   }, [unreadData, setUnreadCount]);
   const navItems = useMemo(() => getNavForPathname(pathname), [pathname]);

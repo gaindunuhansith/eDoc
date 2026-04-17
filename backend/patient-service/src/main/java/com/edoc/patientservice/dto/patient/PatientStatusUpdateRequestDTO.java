@@ -1,26 +1,29 @@
 package com.edoc.patientservice.dto.patient;
 
-import com.edoc.patientservice.entity.PatientStatus;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import java.util.UUID;
 
-// Payload to change patient account status with optional audit actor and reason.
+// Payload to change patient soft-deletion state with optional audit actor and reason.
+// actedBy should be the acting party's internal patient-service UUID.
+// For self-service endpoints (PATCH /patients/me/status) the service ignores this field
+// and derives the actor from the authenticated JWT — do not pass it from the client.
 public class PatientStatusUpdateRequestDTO {
 
     @NotNull
-    private PatientStatus status;
+    private Boolean deleted;
 
     @Size(max = 500)
     private String reason;
 
-    private Long actedBy;
+    private UUID actedBy;
 
-    public PatientStatus getStatus() {
-        return status;
+    public Boolean isDeleted() {
+        return deleted;
     }
 
-    public void setStatus(PatientStatus status) {
-        this.status = status;
+    public void setDeleted(Boolean deleted) {
+        this.deleted = deleted;
     }
 
     public String getReason() {
@@ -31,11 +34,11 @@ public class PatientStatusUpdateRequestDTO {
         this.reason = reason;
     }
 
-    public Long getActedBy() {
+    public UUID getActedBy() {
         return actedBy;
     }
 
-    public void setActedBy(Long actedBy) {
+    public void setActedBy(UUID actedBy) {
         this.actedBy = actedBy;
     }
 }

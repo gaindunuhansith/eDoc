@@ -3,22 +3,16 @@
 import React, { useState, useMemo } from "react";
 import {
   Search,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Plus,
   Edit,
   Trash2,
   Star,
-  Filter,
-  Loader2,
   MessageSquare,
-  CheckCircle2
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableHeader,
@@ -42,15 +36,13 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { FeedbackErrorBoundary } from "@/components/feedback/error-boundary";
 import { useUser } from "@/store/store";
 import {
-  useGetFeedbackByPatient,
-  useSubmitFeedback,
+  useGetMyFeedback,
   useUpdateFeedback,
   useDeleteFeedback,
   isFeedbackEditable,
@@ -62,8 +54,6 @@ import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 
 interface FeedbackFormData {
-  appointmentId?: number;
-  doctorId?: number;
   rating: number;
   comment: string;
 }
@@ -80,18 +70,18 @@ function PatientFeedbackContent() {
   const user = useUser();
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [ratingFilter, setRatingFilter] = useState("all");
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
   const [editingFeedback, setEditingFeedback] = useState<Feedback | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
   const [formData, setFormData] = useState<FeedbackFormData>({
     rating: 5,
     comment: "",
   });
 
   // API hooks
-  const { data: feedbacks = [], isLoading, error } = useGetFeedbackByPatient(user?.userId || "");
-  const submitFeedbackMutation = useSubmitFeedback();
+  const { data: feedbacks = [], isLoading, error } = useGetMyFeedback();
   const updateFeedbackMutation = useUpdateFeedback();
   const deleteFeedbackMutation = useDeleteFeedback();
 
@@ -100,43 +90,16 @@ function PatientFeedbackContent() {
       const matchesSearch = feedback.comment?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            feedback.doctorName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            feedback.rating.toString().includes(searchTerm);
-      const matchesStatus = statusFilter === "all" || feedback.status === statusFilter;
       const matchesRating = ratingFilter === "all" || feedback.rating.toString() === ratingFilter;
-      return matchesSearch && matchesStatus && matchesRating;
+      return matchesSearch && matchesRating;
     });
-  }, [feedbacks, searchTerm, statusFilter, ratingFilter]);
+  }, [feedbacks, searchTerm, ratingFilter]);
 
-  const handleCreate = () => {
-    if (!formData.appointmentId || !formData.doctorId) {
-      toast.error("Please select an appointment to provide feedback for.");
-      return;
-    }
+  const totalPages = Math.max(1, Math.ceil(filteredFeedbacks.length / PAGE_SIZE));
+  const paginatedFeedbacks = filteredFeedbacks.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
-    if (formData.rating < 1 || formData.rating > 5) {
-      toast.error("Please provide a rating between 1 and 5 stars.");
-      return;
-    }
-
-    submitFeedbackMutation.mutate(
-      {
-        appointmentId: formData.appointmentId,
-        doctorId: formData.doctorId,
-        rating: formData.rating,
-        comment: formData.comment || undefined,
-      },
-      {
-        onSuccess: () => {
-          toast.success("Feedback submitted successfully!");
-          setFormData({ rating: 5, comment: "" });
-          setIsCreateDialogOpen(false);
-        },
-        onError: (error: any) => {
-          toast.error(error?.message || "Failed to submit feedback. Please try again.");
-          console.error("Submit feedback error:", error);
-        },
-      }
-    );
-  };
+  // Reset to page 1 when filters change
+  React.useEffect(() => { setCurrentPage(1); }, [searchTerm, ratingFilter]);
 
   const handleUpdate = () => {
     if (!editingFeedback) return;
@@ -169,15 +132,20 @@ function PatientFeedbackContent() {
   };
 
   const handleDelete = (id: number) => {
-    if (!confirm("Are you sure you want to delete this feedback? This action cannot be undone.")) return;
+    setDeleteTargetId(id);
+  };
 
-    deleteFeedbackMutation.mutate(id.toString(), {
+  const confirmDelete = () => {
+    if (deleteTargetId === null) return;
+    deleteFeedbackMutation.mutate(deleteTargetId.toString(), {
       onSuccess: () => {
         toast.success("Feedback deleted successfully!");
+        setDeleteTargetId(null);
       },
       onError: (error: any) => {
         toast.error(error?.message || "Failed to delete feedback. Please try again.");
         console.error("Delete feedback error:", error);
+        setDeleteTargetId(null);
       },
     });
   };
@@ -202,17 +170,6 @@ function PatientFeedbackContent() {
         onClick={interactive && onChange ? () => onChange(i + 1) : undefined}
       />
     ));
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "APPROVED":
-        return "bg-green-100 text-green-800 border-green-200";
-      case "REJECTED":
-        return "bg-red-100 text-red-800 border-red-200";
-      default:
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
-    }
   };
 
   // Loading state
@@ -282,86 +239,9 @@ function PatientFeedbackContent() {
           <h1 className="text-3xl font-bold text-foreground tracking-tight">My Feedback</h1>
           <p className="text-muted-foreground mt-1">Manage your feedback history</p>
         </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-primary hover:bg-primary/90">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Feedback
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Add New Feedback</DialogTitle>
-              <DialogDescription>
-                Share your experience with a recent appointment.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="appointmentId" className="text-right">
-                  Appointment ID
-                </Label>
-                <Input
-                  id="appointmentId"
-                  type="number"
-                  value={formData.appointmentId || ""}
-                  onChange={(e) => setFormData({ ...formData, appointmentId: Number(e.target.value) })}
-                  className="col-span-3"
-                  placeholder="Enter appointment ID"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="doctorId" className="text-right">
-                  Doctor ID
-                </Label>
-                <Input
-                  id="doctorId"
-                  type="number"
-                  value={formData.doctorId || ""}
-                  onChange={(e) => setFormData({ ...formData, doctorId: Number(e.target.value) })}
-                  className="col-span-3"
-                  placeholder="Enter doctor ID"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="rating" className="text-right">
-                  Rating
-                </Label>
-                <div className="col-span-3 flex gap-1">
-                  {renderStars(formData.rating, true, (rating) => setFormData({ ...formData, rating }))}
-                </div>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="comment" className="text-right">
-                  Comment
-                </Label>
-                <Textarea
-                  id="comment"
-                  value={formData.comment}
-                  onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
-                  className="col-span-3"
-                  placeholder="Share your thoughts..."
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                type="submit"
-                onClick={handleCreate}
-                disabled={submitFeedbackMutation.isPending}
-              >
-                {submitFeedbackMutation.isPending ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  "Submit Feedback"
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => router.push("/patient/appointments")} className="bg-primary hover:bg-primary/90">
+          Leave Feedback
+        </Button>
       </div>
 
       <div className="flex flex-col space-y-6 w-full">
@@ -376,17 +256,6 @@ function PatientFeedbackContent() {
                 className="pl-9 border-border/60 bg-background hover:border-border transition-colors h-10"
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[140px] border-border/60 bg-background hover:bg-muted/50 transition-colors h-10">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="PENDING">Pending</SelectItem>
-                <SelectItem value="APPROVED">Approved</SelectItem>
-                <SelectItem value="REJECTED">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
             <Select value={ratingFilter} onValueChange={setRatingFilter}>
               <SelectTrigger className="w-[140px] border-border/60 bg-background hover:bg-muted/50 transition-colors h-10">
                 <SelectValue placeholder="Rating" />
@@ -407,22 +276,15 @@ function PatientFeedbackContent() {
           <Table className="w-full">
             <TableHeader>
               <TableRow className="border-border/60 bg-muted/20 hover:bg-muted/20">
-                <TableHead className="w-12 text-center px-4">
-                  <Checkbox className="border-border/60 w-4 h-4" />
-                </TableHead>
                 <TableHead className="text-muted-foreground font-medium py-4">Rating</TableHead>
                 <TableHead className="text-muted-foreground font-medium py-4">Comment</TableHead>
                 <TableHead className="text-muted-foreground font-medium py-4">Date</TableHead>
-                <TableHead className="text-muted-foreground font-medium py-4">Status</TableHead>
                 <TableHead className="text-muted-foreground font-medium py-4 w-32">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredFeedbacks.map((feedback) => (
+              {paginatedFeedbacks.map((feedback) => (
                 <TableRow key={feedback.id} className="border-border/60 hover:bg-muted/10 transition-colors group">
-                  <TableCell className="text-center px-4">
-                    <Checkbox className="border-border/60 w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity" />
-                  </TableCell>
                   <TableCell className="py-4">
                     <div className="flex items-center gap-1">
                       {renderStars(feedback.rating)}
@@ -440,15 +302,7 @@ function PatientFeedbackContent() {
                     )}
                   </TableCell>
                   <TableCell className="py-4 text-sm text-muted-foreground">
-                    {new Date(feedback.createdAt || feedback.timestamp).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell className="py-4">
-                    <Badge
-                      variant="outline"
-                      className={cn("font-medium capitalize", getStatusColor(feedback.status))}
-                    >
-                      {feedback.status.toLowerCase()}
-                    </Badge>
+                    {new Date(feedback.timestamp).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="py-4">
                     <div className="flex flex-col gap-1">
@@ -481,22 +335,27 @@ function PatientFeedbackContent() {
                   </TableCell>
                 </TableRow>
               ))}
+              {paginatedFeedbacks.length === 0 && !isLoading && (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-muted-foreground py-10">No feedback found</TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </div>
 
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-border/40">
           <p className="text-sm text-muted-foreground">
-            Showing <span className="font-medium text-foreground">{filteredFeedbacks.length}</span> of <span className="font-medium text-foreground">{feedbacks.length}</span> feedbacks
+            Showing <span className="font-medium text-foreground">{paginatedFeedbacks.length}</span> of <span className="font-medium text-foreground">{filteredFeedbacks.length}</span> feedbacks
           </p>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" className="h-9 w-9 border-border/60 bg-background hover:bg-muted/50 transition-colors disabled:opacity-50" disabled>
+            <Button variant="outline" size="icon" className="h-9 w-9 border-border/60 bg-background hover:bg-muted/50 transition-colors disabled:opacity-50" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>
               <ChevronLeft className="w-4 h-4" />
             </Button>
             <div className="flex items-center gap-1">
-              <Button variant="secondary" size="sm" className="h-9 w-9 p-0 font-medium">1</Button>
+              <Button variant="secondary" size="sm" className="h-9 w-9 p-0 font-medium">{currentPage} / {totalPages}</Button>
             </div>
-            <Button variant="outline" size="icon" className="h-9 w-9 border-border/60 bg-background hover:bg-muted/50 transition-colors">
+            <Button variant="outline" size="icon" className="h-9 w-9 border-border/60 bg-background hover:bg-muted/50 transition-colors" disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>
               <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
@@ -592,19 +451,7 @@ function PatientFeedbackContent() {
               </CardContent>
             </Card>
 
-            <Card className="border border-gray-200">
-              <CardContent className="pt-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Approved Reviews</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {feedbacks.filter(f => f.status === 'APPROVED').length}
-                    </p>
-                  </div>
-                  <CheckCircle2 className="h-8 w-8 text-green-500" />
-                </div>
-              </CardContent>
-            </Card>
+
           </div>
 
           {/* Rating Distribution */}
@@ -638,6 +485,24 @@ function PatientFeedbackContent() {
           </Card>
         </div>
       )}
+
+      {/* Delete Confirm Dialog */}
+      <Dialog open={deleteTargetId !== null} onOpenChange={(open) => { if (!open) setDeleteTargetId(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Feedback</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this feedback? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTargetId(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={confirmDelete} disabled={deleteFeedbackMutation.isPending}>
+              {deleteFeedbackMutation.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

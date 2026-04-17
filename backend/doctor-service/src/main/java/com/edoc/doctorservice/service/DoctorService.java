@@ -10,6 +10,7 @@ import com.edoc.doctorservice.repository.PrescriptionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -21,7 +22,7 @@ public class DoctorService {
     private final PrescriptionRepository prescriptionRepository;
 
     // Register a new doctor
-    public Doctor registerDoctor(DoctorRegistrationRequest request) {
+    public Doctor registerDoctor(DoctorRegistrationRequest request, String userId) {
         if (doctorRepository.existsByEmail(request.getEmail())) {
             Doctor existing = doctorRepository.findByEmail(request.getEmail()).orElseThrow(() -> new RuntimeException("Doctor not found"));
             if (request.getId() != null && !request.getId().equals(existing.getId())) {
@@ -36,6 +37,7 @@ public class DoctorService {
         if (request.getId() != null && !request.getId().isEmpty()) {
             doctor.setId(request.getId());
         }
+        doctor.setUserId(userId);
         doctor.setFirstName(request.getFirstName());
         doctor.setLastName(request.getLastName());
         doctor.setEmail(request.getEmail());
@@ -67,12 +69,12 @@ public class DoctorService {
 
     // Get all verified doctors
     public List<Doctor> getAllVerifiedDoctors() {
-        return doctorRepository.findByIsVerified(true);
+        return doctorRepository.findByIsVerifiedAndIsDeletedFalse(true);
     }
 
     // Search doctors by specialty
     public List<Doctor> getDoctorsBySpecialty(String specialty) {
-        return doctorRepository.findBySpecialtyAndIsVerifiedAndIsAvailable(
+        return doctorRepository.findBySpecialtyAndIsVerifiedAndIsAvailableAndIsDeletedFalse(
                 specialty, true, true
         );
     }
@@ -110,7 +112,7 @@ public class DoctorService {
 
     // Get all doctors (for admin)
     public List<Doctor> getAllDoctors() {
-        return doctorRepository.findAll();
+        return doctorRepository.findByIsDeletedFalse();
     }
 
     // Delete doctor and all their related data - admin only
@@ -132,5 +134,15 @@ public class DoctorService {
 
         // Finally delete the doctor account itself
         doctorRepository.delete(doctor);
+    }
+
+    // Soft-delete a doctor by their user-service UUID — called by user-service on account deletion.
+    public void softDeleteDoctorByUserId(String userId) {
+        Doctor doctor = doctorRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Doctor not found with userId: " + userId));
+        doctor.setDeleted(true);
+        doctor.setDeletedAt(Instant.now());
+        doctor.setDeletionReason("Account deleted via user-service cascade");
+        doctorRepository.save(doctor);
     }
 }

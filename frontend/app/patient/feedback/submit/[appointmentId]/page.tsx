@@ -41,7 +41,7 @@ export default function SubmitFeedbackPage() {
       return;
     }
 
-    const finalDoctorId = doctorId ? Number(doctorId) : (appointment ? Number(appointment.doctorId) : null);
+    const finalDoctorId = doctorId || (appointment ? appointment.doctorId : null);
     if (!finalDoctorId) {
       toast.error("Doctor information not available. Please try again.");
       return;
@@ -49,7 +49,7 @@ export default function SubmitFeedbackPage() {
 
     submitFeedback(
       {
-        appointmentId: Number(appointmentIdStr),
+        appointmentId: appointmentIdStr,
         doctorId: finalDoctorId,
         rating,
         comment: comment || undefined,

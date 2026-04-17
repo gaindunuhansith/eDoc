@@ -7,10 +7,14 @@ security = HTTPBearer()
 
 def get_current_user(credentials: HTTPAuthorizationCredentials = Security(security)):
     token = credentials.credentials
+    public_key = settings.RS256_PUBLIC_KEY
+    if not public_key:
+        raise HTTPException(status_code=500, detail="JWT public key is not configured. Set JWT_PUBLIC_KEY_BASE64 or PUBLIC_KEY_PATH.")
+
     try:
         payload = jwt.decode(
             token,
-            settings.RS256_PUBLIC_KEY,
+            public_key,
             algorithms=["RS256"],
             options={"verify_aud": False}
         )

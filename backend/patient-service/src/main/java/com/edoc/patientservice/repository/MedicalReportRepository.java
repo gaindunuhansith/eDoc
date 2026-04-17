@@ -2,9 +2,10 @@ package com.edoc.patientservice.repository;
 
 import com.edoc.patientservice.entity.MedicalReport;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 // Persistence for patient medical report records.
-public interface MedicalReportRepository extends JpaRepository<MedicalReport, Long> {
-    List<MedicalReport> findByPatientId(Long patientId);
+public interface MedicalReportRepository extends JpaRepository<MedicalReport, UUID> {
+    List<MedicalReport> findByPatientId(UUID patientId);
 }

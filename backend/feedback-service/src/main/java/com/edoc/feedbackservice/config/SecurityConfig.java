@@ -1,9 +1,7 @@
 package com.edoc.feedbackservice.config;
 
-import java.io.InputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.security.KeyFactory;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.X509EncodedKeySpec;
@@ -26,17 +24,24 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.util.StringUtils;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
+
+    @Value("${jwt.public-key-base64:}")
+    private String publicKeyBase64;
+
+    @Value("${spring.security.oauth2.resourceserver.jwt.public-key-location:classpath:public.pem}")
+    private String publicKeyLocation;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
@@ -49,7 +54,15 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .anyRequest().permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/v1/feedback/submit").hasRole("PATIENT")
+                    .requestMatchers(HttpMethod.PUT, "/api/v1/feedback/update/**").hasRole("PATIENT")
+                    .requestMatchers(HttpMethod.DELETE, "/api/v1/feedback/delete/**").hasRole("PATIENT")
+                    .requestMatchers(HttpMethod.GET, "/api/v1/feedback/patient/me").hasRole("PATIENT")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/feedback/doctor/me").hasRole("DOCTOR")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/feedback/patient/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/feedback/doctor/**").hasRole("ADMIN")
+                    .requestMatchers(HttpMethod.GET, "/api/v1/feedback/all").hasRole("ADMIN")
+                    .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthConverter))
@@ -66,55 +79,42 @@ public class SecurityConfig {
     }
 
     @Bean
-    public JwtDecoder jwtDecoder(@Value("${jwt.public-key-path}") String publicKeyPath,
-                                 ResourceLoader resourceLoader) {
-        RSAPublicKey publicKeyObj = loadPublicKey(publicKeyPath, resourceLoader);
-        return NimbusJwtDecoder.withPublicKey(publicKeyObj)
+    public JwtDecoder jwtDecoder(ResourceLoader resourceLoader) {
+        RSAPublicKey rsaPublicKey;
+        if (StringUtils.hasText(publicKeyBase64)) {
+            rsaPublicKey = parsePublicKey(publicKeyBase64);
+        } else {
+            rsaPublicKey = parsePublicKey(readResource(publicKeyLocation, resourceLoader));
+        }
+
+        return NimbusJwtDecoder.withPublicKey(rsaPublicKey)
                 .signatureAlgorithm(SignatureAlgorithm.RS256)
                 .build();
     }
 
-    private RSAPublicKey loadPublicKey(String publicKeyPath, ResourceLoader resourceLoader) {
+    private String readResource(String path, ResourceLoader resourceLoader) {
         try {
-            String pem;
-            if (publicKeyPath == null || publicKeyPath.isBlank()) {
-                throw new IllegalStateException("jwt.public-key-path must not be null or blank");
+            Resource resource = resourceLoader.getResource(path);
+            if (!resource.exists()) {
+                throw new IllegalStateException("JWT public key is not configured. Set JWT_PUBLIC_KEY_BASE64 or JWT_PUBLIC_KEY_LOCATION.");
             }
-            if (publicKeyPath.startsWith("file:") || publicKeyPath.startsWith("classpath:")) {
-                Resource resource = resourceLoader.getResource(publicKeyPath);
-                if (!resource.exists()) {
-                    throw new IllegalStateException("JWT public key resource not found: " + publicKeyPath);
-                }
-                try (InputStream inputStream = resource.getInputStream()) {
-                    pem = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-                }
-            } else {
-                Path resolvedPath = Path.of(publicKeyPath).toAbsolutePath().normalize();
-                if (Files.exists(resolvedPath)) {
-                    pem = Files.readString(resolvedPath, StandardCharsets.UTF_8);
-                } else {
-                    Resource fallbackResource = resourceLoader.getResource("classpath:secrets/public.pem");
-                    if (!fallbackResource.exists()) {
-                        throw new IllegalStateException(
-                                "JWT public key file not found. Configured path='" + publicKeyPath
-                                        + "', resolved='" + resolvedPath
-                                        + "', fallback='classpath:secrets/public.pem'");
-                    }
-                    try (InputStream inputStream = fallbackResource.getInputStream()) {
-                        pem = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-                    }
-                }
-            }
+            return new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException ex) {
+            throw new IllegalStateException("Failed to read JWT public key resource", ex);
+        }
+    }
 
-            String normalized = pem
+    private RSAPublicKey parsePublicKey(String keyText) {
+        try {
+            String normalized = keyText
                     .replace("-----BEGIN PUBLIC KEY-----", "")
                     .replace("-----END PUBLIC KEY-----", "")
                     .replaceAll("\\s", "");
-            byte[] keyBytes = Base64.getDecoder().decode(normalized);
-            X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
-            return (RSAPublicKey) KeyFactory.getInstance("RSA").generatePublic(spec);
+            byte[] decoded = Base64.getDecoder().decode(normalized);
+            X509EncodedKeySpec keySpec = new X509EncodedKeySpec(decoded);
+            return (RSAPublicKey) KeyFactory.getInstance("RSA").generatePublic(keySpec);
         } catch (Exception ex) {
-            throw new IllegalStateException("Failed to load JWT public key", ex);
+            throw new IllegalStateException("Invalid JWT public key format", ex);
         }
     }
 

@@ -7,8 +7,11 @@ import com.edoc.appointmentservice.model.Appointment;
 import com.edoc.appointmentservice.service.AppointmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,7 +20,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/appointments")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
+@Slf4j
 public class AppointmentController {
 
     private final AppointmentService appointmentService;
@@ -28,6 +31,7 @@ public class AppointmentController {
     @PostMapping
     public ResponseEntity<Appointment> bookAppointment(
             @Valid @RequestBody AppointmentRequest request) {
+        log.info("Received appointment booking request: {}", request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(appointmentService.bookAppointment(request));
     }
@@ -122,12 +126,14 @@ public class AppointmentController {
 
     // ─── CANCEL ───────────────────────────────────────────────────────────────
 
-    // DELETE /api/v1/appointments/{id}/cancel
-    @DeleteMapping("/{id}/cancel")
+    // PATCH /api/v1/appointments/{id}/cancel
+    @PatchMapping("/{id}/cancel")
     public ResponseEntity<Appointment> cancelAppointment(
             @PathVariable String id,
-            @RequestParam(required = false) String reason) {
-        return ResponseEntity.ok(appointmentService.cancelAppointment(id, reason));
+            @Valid @RequestBody com.edoc.appointmentservice.dto.CancelRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        String userId = jwt != null ? jwt.getClaim("userId") : null;
+        return ResponseEntity.ok(appointmentService.cancelAppointment(id, request.getReason(), userId));
     }
 
     // ─── DELETE ───────────────────────────────────────────────────────────────
@@ -137,8 +143,9 @@ public class AppointmentController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, String>> deleteCompletedAppointment(
             @PathVariable String id,
-            @RequestParam String patientId) {
-        appointmentService.deleteCompletedAppointment(id, patientId);
+            @AuthenticationPrincipal Jwt jwt) {
+        String userId = jwt != null ? jwt.getClaim("userId") : null;
+        appointmentService.deleteCompletedAppointment(id, userId);
         return ResponseEntity.ok(
                 Map.of(
                         "message", "Appointment deleted successfully",

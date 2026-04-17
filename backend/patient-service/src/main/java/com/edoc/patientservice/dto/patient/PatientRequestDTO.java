@@ -1,13 +1,11 @@
 package com.edoc.patientservice.dto.patient;
 
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 
 // Payload for patient registration and profile updates.
 public class PatientRequestDTO {
-
-    @Size(max = 50)
-    private String phone;
 
     private LocalDate dateOfBirth;
 
@@ -29,17 +27,11 @@ public class PatientRequestDTO {
     @Size(max = 50)
     private String emergencyContactPhone;
 
+    @Positive
     private Double height;
 
+    @Positive
     private Double weight;
-
-    public String getPhone() {
-        return phone;
-    }
-
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
 
     public LocalDate getDateOfBirth() {
         return dateOfBirth;

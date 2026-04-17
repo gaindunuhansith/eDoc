@@ -8,9 +8,19 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create
+    defer-datasource-initialization: true
     properties:
       hibernate:
         format_sql: true
+  sql:
+    init:
+      mode: always
+      data-locations: classpath:db/seed.sql
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          public-key-location: ${JWT_PUBLIC_KEY_LOCATION:classpath:public.pem}
 
 server:
   port: ${SERVER_PORT:8084}
@@ -22,5 +32,8 @@ app:
 doctor-service:
   base-url: ${DOCTOR_SERVICE_URL:http://doctor-service:8082}
 
+user-service:
+  base-url: ${USER_SERVICE_URL:http://user-service:8088}
+
 jwt:
-  public-key-path: ${JWT_PUBLIC_KEY_PATH:secrets/public.pem}
+  public-key-base64: ${JWT_PUBLIC_KEY_BASE64:}

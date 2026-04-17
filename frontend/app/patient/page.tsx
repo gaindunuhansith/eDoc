@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   User,
@@ -43,7 +44,8 @@ import {
 
 import { useStore } from "@/store/store";
 import { useRegisterPatient, useGetMyPatientProfile, useUpdateMyPatientProfile, type PatientPayload, type Patient } from "@/api/patientApi";
-import { useGetFeedbackByPatient } from "@/api/feedbackApi";
+import { useGetMyFeedback } from "@/api/feedbackApi";
+import { useGetAppointmentsByPatient } from "@/api/appointmentApi";
 import { markProfileCreated } from "@/api/userApi";
 
 // ─── Edit Profile Dialog ─────────────────────────────────────────────────────
@@ -51,8 +53,9 @@ import { markProfileCreated } from "@/api/userApi";
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
 
 function EditProfileDialog({ open, onClose, current }: { open: boolean; onClose: () => void; current: Patient }) {
+  const userPhone = useStore((s) => s.user?.phoneNumber);
   const [form, setForm] = useState<PatientPayload>({
-    phone: current.phone ?? "",
+    phone: current.phone ?? userPhone ?? "",
     dateOfBirth: current.dateOfBirth ?? "",
     address: current.address ?? "",
     gender: current.gender ?? "",
@@ -71,8 +74,8 @@ function EditProfileDialog({ open, onClose, current }: { open: boolean; onClose:
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.phone || !form.dateOfBirth || !form.gender) {
-      toast.error("Phone, date of birth and gender are required.");
+    if (!form.dateOfBirth || !form.gender) {
+      toast.error("Date of birth and gender are required.");
       return;
     }
     updatePatient.mutate(form, {
@@ -98,7 +101,7 @@ function EditProfileDialog({ open, onClose, current }: { open: boolean; onClose:
             <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Personal Details</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label htmlFor="ep-phone">Phone <span className="text-rose-500">*</span></Label>
+                <Label htmlFor="ep-phone">Phone</Label>
                 <Input id="ep-phone" placeholder="+94 77 123 4567" value={form.phone} onChange={(e) => set("phone", e.target.value)} />
               </div>
               <div className="space-y-1.5">
@@ -178,7 +181,7 @@ function ProfileCreationForm() {
   const updateUser = useStore((s) => s.updateUser);
 
   const [form, setForm] = useState<PatientPayload>({
-    phone: "",
+    phone: user?.phoneNumber ?? "",
     dateOfBirth: "",
     address: "",
     gender: "",
@@ -190,6 +193,7 @@ function ProfileCreationForm() {
     weight: undefined,
   });
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const registerPatient = useRegisterPatient();
 
   const set = (field: keyof PatientPayload, value: string | number | undefined) =>
@@ -198,11 +202,12 @@ function ProfileCreationForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.phone || !form.dateOfBirth || !form.gender) {
-      toast.error("Phone, date of birth and gender are required.");
+    if (!form.dateOfBirth || !form.gender) {
+      toast.error("Date of birth and gender are required.");
       return;
     }
 
+    setIsSubmitting(true);
     try {
       await registerPatient.mutateAsync(form);
 
@@ -216,6 +221,8 @@ function ProfileCreationForm() {
       const msg =
         err instanceof Error ? err.message : "Failed to create profile.";
       toast.error(msg);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -240,19 +247,6 @@ function ProfileCreationForm() {
             </CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="phone">
-                Phone Number <span className="text-rose-500">*</span>
-              </Label>
-              <Input
-                id="phone"
-                placeholder="+94 77 123 4567"
-                value={form.phone}
-                onChange={(e) => set("phone", e.target.value)}
-                className="border-border/60"
-              />
-            </div>
-
             <div className="space-y-1.5">
               <Label htmlFor="dob">
                 Date of Birth <span className="text-rose-500">*</span>
@@ -406,10 +400,10 @@ function ProfileCreationForm() {
         <div className="flex justify-end">
           <Button
             type="submit"
-            disabled={registerPatient.isPending}
-            className="min-w-[160px]"
+            disabled={isSubmitting}
+            className="min-w-40"
           >
-            {registerPatient.isPending ? "Saving..." : "Create Profile"}
+            {isSubmitting ? "Saving..." : "Create Profile"}
           </Button>
         </div>
       </form>
@@ -420,10 +414,16 @@ function ProfileCreationForm() {
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
 function PatientDashboardContent() {
+  const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
   const user = useStore((s) => s.user);
   const { data: profile, isLoading: profileLoading } = useGetMyPatientProfile();
-  const { data: feedbacks = [] } = useGetFeedbackByPatient(user?.userId || "");
+  const { data: feedbacks = [] } = useGetMyFeedback();
+  const { data: appointments = [] } = useGetAppointmentsByPatient(profile ? String(profile.id) : "");
+  const patientAppointments = React.useMemo(() => {
+    const patientId = profile ? String(profile.id) : "";
+    return appointments.filter((appointment) => String(appointment.patientId) === patientId);
+  }, [appointments, profile]);
 
   // Calculate feedback statistics
   const feedbackStats = React.useMemo(() => {
@@ -439,6 +439,19 @@ function PatientDashboardContent() {
       approvedFeedbacks,
     };
   }, [feedbacks]);
+
+  const upcomingTelemedicineAppointments = React.useMemo(() => {
+    return patientAppointments
+      .filter((a) => a.type === "VIDEO" && a.status === "CONFIRMED")
+      .sort((a, b) => {
+        const aStart = a.timeSlot?.split("-")?.[0]?.trim() || "00:00";
+        const bStart = b.timeSlot?.split("-")?.[0]?.trim() || "00:00";
+        const aTime = new Date(`${a.appointmentDate}T${aStart}:00`).getTime();
+        const bTime = new Date(`${b.appointmentDate}T${bStart}:00`).getTime();
+        return aTime - bTime;
+      })
+      .slice(0, 4);
+  }, [patientAppointments]);
 
   if (profileLoading) {
     return (
@@ -575,6 +588,39 @@ function PatientDashboardContent() {
         </Card>
       </div>
 
+      <Card className="border-border/60">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-muted-foreground" />
+            Upcoming Telemedicine Appointments
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {upcomingTelemedicineAppointments.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No upcoming telemedicine appointments.</p>
+          ) : (
+            <div className="space-y-3">
+              {upcomingTelemedicineAppointments.map((appt) => (
+                <div key={appt.id} className="rounded-md border border-border/60 p-3 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Dr. {appt.doctorName ?? "Doctor"}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {new Date(appt.appointmentDate).toLocaleDateString()} • {appt.timeSlot}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => router.push(`/patient/telemedicine/session/${appt.id}`)}
+                  >
+                    Join Session
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Edit dialog */}
       {profile && (
         <EditProfileDialog open={editOpen} onClose={() => setEditOpen(false)} current={profile} />
@@ -628,8 +674,17 @@ function PatientDashboardContent() {
 
 export default function PatientDashboard() {
   const isProfileCreated = useStore((s) => s.user?.isProfileCreated);
+  const { data: existingProfile, isLoading, isError } = useGetMyPatientProfile();
 
-  if (!isProfileCreated) {
+  if (isLoading) {
+    return <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">Loading...</div>;
+  }
+
+  // New patient: no patient profile in the service (404 returns null)
+  // Also fall through to the form if there was a non-404 fetch error so the
+  // user can still complete their profile — the gate uses store flag as the
+  // primary signal and the fetch result as confirmation.
+  if (!isProfileCreated && (existingProfile === null || isError)) {
     return <ProfileCreationForm />;
   }
 

@@ -6,12 +6,9 @@ import { queryKeys } from "./utils/queryKeys";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export type PatientStatus = "ACTIVE" | "INACTIVE" | "SUSPENDED";
-
 export interface Patient {
-  id: number;
+  id: string;        // UUID
   userId: string;
-  phone?: string;
   dateOfBirth?: string;
   address?: string;
   gender?: string;
@@ -21,13 +18,18 @@ export interface Patient {
   emergencyContactPhone?: string;
   height?: number;
   weight?: number;
-  status: PatientStatus;
+  deleted: boolean;
   createdAt: string;
   updatedAt?: string;
+  deletedAt?: string | null;
+  deletedBy?: string | null;  // UUID of actor
+  deletionReason?: string | null;
+  // Enriched from user-service by admin endpoints.
+  userName?: string | null;
+  userEmail?: string | null;
 }
 
 export interface PatientPayload {
-  phone?: string;
   dateOfBirth?: string; // "YYYY-MM-DD"
   address?: string;
   gender?: string;
@@ -65,7 +67,16 @@ export const useRegisterPatient = () => {
 export const useGetMyPatientProfile = () =>
   useQuery({
     queryKey: queryKeys.patient.me(),
-    queryFn: () => fetchMyPatientProfile().then((r) => r.data),
+    queryFn: async () => {
+      try {
+        const res = await fetchMyPatientProfile();
+        return res.data;
+      } catch (err: any) {
+        // Axios interceptor attaches .status to the thrown Error
+        if (err?.status === 404) return null;
+        throw err;
+      }
+    },
     retry: false,
   });
 
@@ -79,11 +90,52 @@ export const useUpdateMyPatientProfile = () => {
   });
 };
 
+// ─── Admin Patient Management ────────────────────────────────────────────────
+
+export interface AdminPatientStatusPayload {
+  deleted: boolean;
+  reason?: string;
+}
+
+export const fetchAdminAllPatients = () =>
+  apiClient.get<Patient[]>(PATIENT_ENDPOINTS.ADMIN_ALL);
+
+export const fetchAdminPatientById = (id: string) =>
+  apiClient.get<Patient>(PATIENT_ENDPOINTS.ADMIN_BY_ID(id));
+
+export const adminUpdatePatientStatus = (id: string, payload: AdminPatientStatusPayload) =>
+  apiClient.patch<Patient>(PATIENT_ENDPOINTS.ADMIN_UPDATE_STATUS(id), payload);
+
+export const useGetAdminAllPatients = () =>
+  useQuery({
+    queryKey: queryKeys.patient.adminList(),
+    queryFn: () => fetchAdminAllPatients().then((r) => r.data),
+  });
+
+export const useGetAdminPatientById = (id: string | null) =>
+  useQuery({
+    queryKey: queryKeys.patient.adminDetail(id!),
+    queryFn: () => fetchAdminPatientById(id!).then((r) => r.data),
+    enabled: id !== null,
+  });
+
+export const useAdminUpdatePatientStatus = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: AdminPatientStatusPayload }) =>
+      adminUpdatePatientStatus(id, payload),
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: queryKeys.patient.adminList() });
+      qc.invalidateQueries({ queryKey: queryKeys.patient.adminDetail(id) });
+    },
+  });
+};
+
 // ─── Medical Reports ──────────────────────────────────────────────────────────
 
 export interface MedicalReport {
-  id: number;
-  patientId: number;
+  id: string;        // UUID
+  patientId: string; // UUID
   reportName: string;
   reportType: string;
   doctorId?: string;
@@ -100,10 +152,10 @@ export const uploadReport = (formData: FormData) =>
     headers: { "Content-Type": "multipart/form-data" },
   });
 
-export const deleteReport = (id: number) =>
+export const deleteReport = (id: string) =>
   apiClient.delete(REPORT_ENDPOINTS.MY_REPORT(id));
 
-export const getReportDownloadUrl = (id: number) =>
+export const getReportDownloadUrl = (id: string) =>
   REPORT_ENDPOINTS.DOWNLOAD(id);
 
 export const useGetMyReports = () =>

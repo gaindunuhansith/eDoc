@@ -21,10 +21,12 @@ public class UserServiceClient {
         this.restClient = RestClient.builder().build();
     }
 
-    public UserContact getUserById(String userId) {
+    // authHeader parameter kept for signature compatibility but no longer forwarded —
+    // the internal endpoint is permitAll and has no ownership check.
+    public UserContact getUserById(String userId, String authHeader) {
         try {
             return restClient.get()
-                    .uri(userServiceBaseUrl + "/api/v1/users/{userId}", userId)
+                    .uri(userServiceBaseUrl + "/api/v1/users/internal/{userId}", userId)
                     .retrieve()
                     .body(UserContact.class);
         } catch (RestClientException ex) {

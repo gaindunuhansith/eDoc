@@ -1,15 +1,14 @@
 package com.edoc.patientservice.dto.patient;
 
-import com.edoc.patientservice.entity.PatientStatus;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.UUID;
 
 // Patient profile data returned to API callers.
 public class PatientResponseDTO {
 
-    private Long id;
+    private UUID id;
     private String userId;
-    private String phone;
     private LocalDate dateOfBirth;
     private String address;
     private Instant createdAt;
@@ -21,16 +20,19 @@ public class PatientResponseDTO {
     private String emergencyContactPhone;
     private Double height;
     private Double weight;
-    private PatientStatus status;
-    private Instant deactivatedAt;
-    private Long deactivatedBy;
-    private String deactivationReason;
+    private boolean deleted;
+    private Instant deletedAt;
+    private UUID deletedBy;
+    private String deletionReason;
+    // Enriched from user-service — may be null when called from non-admin endpoints.
+    private String userName;
+    private String userEmail;
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 
@@ -40,14 +42,6 @@ public class PatientResponseDTO {
 
     public void setUserId(String userId) {
         this.userId = userId;
-    }
-
-    public String getPhone() {
-        return phone;
-    }
-
-    public void setPhone(String phone) {
-        this.phone = phone;
     }
 
     public LocalDate getDateOfBirth() {
@@ -138,35 +132,51 @@ public class PatientResponseDTO {
         this.weight = weight;
     }
 
-    public PatientStatus getStatus() {
-        return status;
+    public boolean isDeleted() {
+        return deleted;
     }
 
-    public void setStatus(PatientStatus status) {
-        this.status = status;
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
     }
 
-    public Instant getDeactivatedAt() {
-        return deactivatedAt;
+    public Instant getDeletedAt() {
+        return deletedAt;
     }
 
-    public void setDeactivatedAt(Instant deactivatedAt) {
-        this.deactivatedAt = deactivatedAt;
+    public void setDeletedAt(Instant deletedAt) {
+        this.deletedAt = deletedAt;
     }
 
-    public Long getDeactivatedBy() {
-        return deactivatedBy;
+    public UUID getDeletedBy() {
+        return deletedBy;
     }
 
-    public void setDeactivatedBy(Long deactivatedBy) {
-        this.deactivatedBy = deactivatedBy;
+    public void setDeletedBy(UUID deletedBy) {
+        this.deletedBy = deletedBy;
     }
 
-    public String getDeactivationReason() {
-        return deactivationReason;
+    public String getDeletionReason() {
+        return deletionReason;
     }
 
-    public void setDeactivationReason(String deactivationReason) {
-        this.deactivationReason = deactivationReason;
+    public void setDeletionReason(String deletionReason) {
+        this.deletionReason = deletionReason;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
+    public String getUserEmail() {
+        return userEmail;
+    }
+
+    public void setUserEmail(String userEmail) {
+        this.userEmail = userEmail;
     }
 }

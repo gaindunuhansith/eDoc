@@ -7,6 +7,8 @@ import com.edoc.notificationservice.service.NotificationService;
 import com.edoc.notificationservice.service.UserNotificationService;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -37,8 +39,9 @@ public class NotificationController {
 
     @PostMapping("/send")
     // Unified notification endpoint used by other services (appointment/payment/etc.).
-    public ResponseEntity<NotificationResponse> send(@RequestBody NotificationRequestDTO request) {
-        NotificationResponse response = notificationService.send(request);
+    public ResponseEntity<NotificationResponse> send(@RequestBody NotificationRequestDTO request,
+                                                     HttpServletRequest httpRequest) {
+        NotificationResponse response = notificationService.send(request, httpRequest.getHeader("Authorization"));
         if ("FAILED".equals(response.status())) {
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(response);
         }
@@ -59,7 +62,7 @@ public class NotificationController {
 
     @PatchMapping("/{id}/read")
     // Mark a single notification as read.
-    public ResponseEntity<Void> markRead(@PathVariable Long id) {
+    public ResponseEntity<Void> markRead(@PathVariable UUID id) {
         userNotificationService.markRead(id, getCurrentUserId());
         return ResponseEntity.noContent().build();
     }
@@ -73,7 +76,7 @@ public class NotificationController {
 
     @DeleteMapping("/{id}")
     // Delete a notification owned by the authenticated user.
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
         userNotificationService.delete(id, getCurrentUserId());
         return ResponseEntity.noContent().build();
     }
@@ -83,7 +86,7 @@ public class NotificationController {
         if (auth == null || !(auth.getPrincipal() instanceof Jwt jwt)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
         }
-        Object uid = jwt.getClaim("uid");
+        Object uid = jwt.getClaim("userId");
         if (uid == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User identity missing");
         }

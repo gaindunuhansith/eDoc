@@ -51,7 +51,7 @@ public class NotificationService {
         this.userNotificationService = userNotificationService;
     }
 
-    public NotificationResponse send(NotificationRequestDTO request) {
+    public NotificationResponse send(NotificationRequestDTO request, String authHeader) {
         if (request == null || request.type() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Notification type is required.");
         }
@@ -62,25 +62,40 @@ public class NotificationService {
         String inboxUserId = null; // JWT uid (UUID) for the patient inbox
 
         if (request.patientId() != null) {
-            Map<?, ?> patientData = patientServiceClient.getPatientById(request.patientId());
-            if (patientData != null) {
-                phone = patientData.get("phone") instanceof String s ? s : null;
-                Object userIdObj = patientData.get("userId");
-                if (userIdObj != null) {
-                    inboxUserId = userIdObj.toString();
-                    UserServiceClient.UserContact user = userServiceClient.getUserById(inboxUserId);
-                    if (user != null) email = user.email();
+            // Resolve userId from patient-service for the in-app inbox.
+            String resolvedUserId = patientServiceClient.getPatientUserId(request.patientId());
+            if (resolvedUserId != null && !resolvedUserId.isBlank()) {
+                inboxUserId = resolvedUserId;
+            }
+            // Use pre-resolved contact if provided; fall back to user-service only if absent.
+            if ((request.recipientEmail() != null && !request.recipientEmail().isBlank())
+                    || (request.recipientPhone() != null && !request.recipientPhone().isBlank())) {
+                email = request.recipientEmail();
+                phone = request.recipientPhone();
+            } else if (inboxUserId != null) {
+                UserServiceClient.UserContact user = userServiceClient.getUserById(inboxUserId, authHeader);
+                if (user != null) {
+                    email = user.email();
+                    phone = user.phoneNumber();
                 }
             }
         } else if (request.doctorId() != null) {
+            // Resolve userId from doctor-service internal endpoint, then fetch contact info from user-service.
             DoctorServiceClient.DoctorContact doctor = doctorServiceClient.getDoctorById(request.doctorId());
-            if (doctor != null) {
-                email = doctor.email();
-                phone = doctor.phoneNumber();
+            if (doctor != null && doctor.userId() != null && !doctor.userId().isBlank()) {
+                inboxUserId = doctor.userId();
+                UserServiceClient.UserContact user = userServiceClient.getUserById(doctor.userId(), authHeader);
+                if (user != null) {
+                    email = user.email();
+                    phone = user.phoneNumber();
+                }
             }
         } else if (request.userId() != null) {
-            UserServiceClient.UserContact user = userServiceClient.getUserById(request.userId().toString());
-            if (user != null) email = user.email();
+            UserServiceClient.UserContact user = userServiceClient.getUserById(request.userId(), authHeader);
+            if (user != null) {
+                email = user.email();
+                phone = user.phoneNumber();
+            }
         }
 
         if ((email == null || email.isBlank()) && (phone == null || phone.isBlank()) && inboxUserId == null) {
@@ -227,6 +242,7 @@ public class NotificationService {
             case APPOINTMENT_REJECTED -> "Appointment Rejected";
             case APPOINTMENT_CANCELLED -> "Appointment Cancelled";
             case APPOINTMENT_COMPLETED -> "Consultation Completed";
+            case TELEMEDICINE_SESSION_STARTED -> "Telemedicine Session Started";
             case FEEDBACK_RECEIVED -> "New Feedback Received";
             case PAYMENT_SUCCESS -> "Payment Confirmation";
         };
@@ -234,49 +250,52 @@ public class NotificationService {
 
     private String buildMessage(NotificationType type, Map<String, Object> data) {
         return switch (type) {
-            case APPOINTMENT_BOOKED -> "Hello " + valueOrDefault(data, "recipientName", "there")
-                    + ", your appointment with Dr. " + valueOrDefault(data, "doctorName", "your doctor")
-                    + " on " + valueOrDefault(data, "date", "the scheduled date")
-                    + " (" + valueOrDefault(data, "dayOfWeek", "") + ")"
-                    + " at " + valueOrDefault(data, "timeSlot", "the scheduled time")
+            case APPOINTMENT_BOOKED -> "Hello " + s(data, "patientName", "there")
+                    + ", your appointment with Dr. " + s(data, "doctorName", "your doctor")
+                    + " on " + s(data, "date", "the scheduled date")
+                    + " (" + s(data, "dayOfWeek", "") + ")"
+                    + " at " + s(data, "timeSlot", "the scheduled time")
                     + " has been booked.";
-            case APPOINTMENT_CONFIRMED -> "Hello " + valueOrDefault(data, "patientName", "there")
-                    + ", your appointment on " + valueOrDefault(data, "date", "the scheduled date")
-                    + " (" + valueOrDefault(data, "dayOfWeek", "") + ")"
-                    + " at " + valueOrDefault(data, "timeSlot", "the scheduled time")
+            case APPOINTMENT_CONFIRMED -> "Hello " + s(data, "patientName", "there")
+                    + ", your appointment on " + s(data, "date", "the scheduled date")
+                    + " (" + s(data, "dayOfWeek", "") + ")"
+                    + " at " + s(data, "timeSlot", "the scheduled time")
                     + " has been confirmed.";
-            case APPOINTMENT_REJECTED -> "Hello " + valueOrDefault(data, "patientName", "there")
+            case APPOINTMENT_REJECTED -> "Hello " + s(data, "patientName", "there")
                     + ", unfortunately your appointment request with Dr. "
-                    + valueOrDefault(data, "doctorName", "your doctor")
-                    + " on " + valueOrDefault(data, "date", "the scheduled date")
-                    + " (" + valueOrDefault(data, "dayOfWeek", "") + ")"
-                    + " at " + valueOrDefault(data, "timeSlot", "the scheduled time")
+                    + s(data, "doctorName", "your doctor")
+                    + " on " + s(data, "date", "the scheduled date")
+                    + " (" + s(data, "dayOfWeek", "") + ")"
+                    + " at " + s(data, "timeSlot", "the scheduled time")
                     + " has been rejected. Please book a new appointment.";
-            case APPOINTMENT_CANCELLED -> "Hello " + valueOrDefault(data, "patientName", "there")
-                    + ", your appointment on " + valueOrDefault(data, "date", "the scheduled date")
-                    + " (" + valueOrDefault(data, "dayOfWeek", "") + ")"
-                    + " at " + valueOrDefault(data, "timeSlot", "the scheduled time")
+            case APPOINTMENT_CANCELLED -> "Hello " + s(data, "patientName", "there")
+                    + ", your appointment on " + s(data, "date", "the scheduled date")
+                    + " (" + s(data, "dayOfWeek", "") + ")"
+                    + " at " + s(data, "timeSlot", "the scheduled time")
                     + " has been cancelled.";
-            case APPOINTMENT_COMPLETED -> "Hello " + valueOrDefault(data, "recipientName", "there")
-                    + ", your consultation on " + valueOrDefault(data, "date", "the scheduled date")
-                    + " (" + valueOrDefault(data, "dayOfWeek", "") + ")"
-                    + " at " + valueOrDefault(data, "timeSlot", "the scheduled time")
+            case APPOINTMENT_COMPLETED -> "Hello " + s(data, "patientName", "there")
+                    + ", your consultation on " + s(data, "date", "the scheduled date")
+                    + " (" + s(data, "dayOfWeek", "") + ")"
+                    + " at " + s(data, "timeSlot", "the scheduled time")
                     + " has been completed.";
-            case FEEDBACK_RECEIVED -> "Dear Dr. " + valueOrDefault(data, "doctorName", "Doctor")
+            case TELEMEDICINE_SESSION_STARTED -> "Hello " + s(data, "recipientName", "there")
+                    + ", your telemedicine session with Dr. " + s(data, "doctorName", "your doctor")
+                    + " on " + s(data, "date", "today")
+                    + " at " + s(data, "timeSlot", "the scheduled time")
+                    + " has started. Please join now.";
+            case FEEDBACK_RECEIVED -> "Dear Dr. " + s(data, "doctorName", "Doctor")
                     + ", you have received new feedback from a patient."
-                    + " Rating: " + valueOrDefault(data, "rating", "N/A") + "/5."
-                    + " Comment: " + valueOrDefault(data, "comment", "No comment provided.");
+                    + " Rating: " + (data != null && data.get("rating") != null ? data.get("rating") : "N/A") + "/5."
+                    + " Comment: " + s(data, "comment", "No comment provided.");
             case PAYMENT_SUCCESS -> "Your payment of Rs. "
-                    + valueOrDefault(data, "amount", "0")
-                    + " was successful.";
+                    + (data != null && data.get("amount") != null ? data.get("amount") : "0") + " was successful.";
         };
     }
 
-    private String valueOrDefault(Map<String, Object> data, String key, String defaultValue) {
-        if (data == null) {
-            return defaultValue;
-        }
-        Object value = data.get(key);
-        return value == null ? defaultValue : String.valueOf(value);
+    private String s(Map<String, Object> data, String key, String defaultValue) {
+        if (data == null) return defaultValue;
+        Object val = data.get(key);
+        if (val == null || val.toString().isBlank()) return defaultValue;
+        return val.toString();
     }
 }

@@ -4,11 +4,11 @@ import com.edoc.patientservice.dto.history.MedicalHistoryRequestDTO;
 import com.edoc.patientservice.dto.history.MedicalHistoryResponseDTO;
 import com.edoc.patientservice.entity.MedicalHistory;
 import com.edoc.patientservice.entity.Patient;
-import com.edoc.patientservice.entity.PatientStatus;
 import com.edoc.patientservice.mapper.MedicalHistoryMapper;
 import com.edoc.patientservice.repository.MedicalHistoryRepository;
 import com.edoc.patientservice.repository.PatientRepository;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -40,7 +40,7 @@ public class MedicalHistoryService {
                 .collect(Collectors.toList());
     }
 
-    public MedicalHistoryResponseDTO addHistoryInternal(Long patientId, MedicalHistoryRequestDTO request) {
+    public MedicalHistoryResponseDTO addHistoryInternal(UUID patientId, MedicalHistoryRequestDTO request) {
         // Create a history entry for internal systems.
         Patient patient = findPatientOrThrow(patientId);
         assertPatientActiveForWrite(patient);
@@ -50,7 +50,7 @@ public class MedicalHistoryService {
     }
 
     @Transactional(readOnly = true)
-    public List<MedicalHistoryResponseDTO> getHistoryInternal(Long patientId) {
+    public List<MedicalHistoryResponseDTO> getHistoryInternal(UUID patientId) {
         // Internal endpoint for staff services to read history.
         findPatientOrThrow(patientId);
         return medicalHistoryRepository.findByPatientId(patientId).stream()
@@ -58,7 +58,7 @@ public class MedicalHistoryService {
                 .collect(Collectors.toList());
     }
 
-    private Patient findPatientOrThrow(Long patientId) {
+    private Patient findPatientOrThrow(UUID patientId) {
         return patientRepository.findById(patientId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient not found"));
     }
@@ -69,7 +69,7 @@ public class MedicalHistoryService {
     }
 
     private void assertPatientActiveForWrite(Patient patient) {
-        if (patient.getStatus() != PatientStatus.ACTIVE) {
+        if (patient.isDeleted()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Patient is inactive");
         }
     }

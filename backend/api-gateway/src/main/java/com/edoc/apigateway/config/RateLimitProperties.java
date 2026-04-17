@@ -10,9 +10,9 @@ public class RateLimitProperties {
     private int cleanupInterval = 200;
     private long idleTtlSeconds = 1800;
 
-    private Policy defaults = new Policy(20, 40);
-    private Policy auth = new Policy(5, 10);
-    private Policy payments = new Policy(3, 6);
+    private Policy defaults = new Policy(60, 120);
+    private Policy auth = new Policy(20, 40);
+    private Policy payments = new Policy(20, 40);
 
     public boolean isEnabled() {
         return enabled;

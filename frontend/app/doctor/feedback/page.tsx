@@ -5,15 +5,10 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-  Star,
-  CheckCircle,
-  XCircle,
-  Clock
+  Star
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableHeader,
@@ -39,100 +34,35 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { useGetFeedbackByDoctor, type Feedback } from "@/api/feedbackApi";
-import { useUser } from "@/store/store";
-
-// Mock data for doctor feedback (feedback from patients)
-const mockFeedbacks = [
-  {
-    id: 1,
-    patientId: 1,
-    patientName: "John Doe",
-    appointmentId: 201,
-    rating: 5,
-    comment: "Dr. Smith was very professional and caring. Excellent service!",
-    timestamp: "2024-04-15T10:30:00Z",
-    status: "APPROVED",
-  },
-  {
-    id: 2,
-    patientId: 2,
-    patientName: "Jane Smith",
-    appointmentId: 202,
-    rating: 4,
-    comment: "Good consultation, but waiting time was a bit long.",
-    timestamp: "2024-04-12T14:15:00Z",
-    status: "APPROVED",
-  },
-  {
-    id: 3,
-    patientId: 3,
-    patientName: "Bob Johnson",
-    appointmentId: 203,
-    rating: 3,
-    comment: "Average experience. Could be better.",
-    timestamp: "2024-04-10T09:00:00Z",
-    status: "PENDING",
-  },
-  {
-    id: 4,
-    patientId: 4,
-    patientName: "Alice Brown",
-    appointmentId: 204,
-    rating: 5,
-    comment: "Outstanding care! Highly recommend.",
-    timestamp: "2024-04-08T11:45:00Z",
-    status: "APPROVED",
-  },
-  {
-    id: 5,
-    patientId: 5,
-    patientName: "Charlie Wilson",
-    appointmentId: 205,
-    rating: 2,
-    comment: "Not satisfied with the service.",
-    timestamp: "2024-04-05T16:30:00Z",
-    status: "REJECTED",
-  },
-  {
-    id: 6,
-    patientId: 6,
-    patientName: "Diana Davis",
-    appointmentId: 206,
-    rating: 4,
-    comment: "Very knowledgeable doctor. Explained everything clearly.",
-    timestamp: "2024-04-03T13:20:00Z",
-    status: "APPROVED",
-  },
-];
+import { useGetMyDoctorFeedback, type Feedback } from "@/api/feedbackApi";
 
 export default function DoctorFeedbackPage() {
-  const user = useUser();
-  const { data: feedbacks = [], isLoading } = useGetFeedbackByDoctor(user?.userId ?? "");
+  const { data: feedbacks = [], isLoading, error } = useGetMyDoctorFeedback();
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [ratingFilter, setRatingFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
   const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
 
   const filteredFeedbacks = useMemo(() => {
     return feedbacks.filter((feedback) => {
       const matchesSearch = feedback.comment?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           feedback.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           feedback.patientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            feedback.rating.toString().includes(searchTerm);
-      const matchesStatus = statusFilter === "all" || feedback.status === statusFilter;
       const matchesRating = ratingFilter === "all" || feedback.rating.toString() === ratingFilter;
-      return matchesSearch && matchesStatus && matchesRating;
+      return matchesSearch && matchesRating;
     });
-  }, [feedbacks, searchTerm, statusFilter, ratingFilter]);
+  }, [feedbacks, searchTerm, ratingFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredFeedbacks.length / PAGE_SIZE));
+  const paginatedFeedbacks = filteredFeedbacks.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  React.useEffect(() => { setCurrentPage(1); }, [searchTerm, ratingFilter]);
 
   const averageRating = useMemo(() => {
     if (feedbacks.length === 0) return 0;
     return feedbacks.reduce((sum, f) => sum + f.rating, 0) / feedbacks.length;
   }, [feedbacks]);
-
-  const handleStatusChange = (_feedbackId: number, _newStatus: "APPROVED" | "REJECTED") => {
-    // Status changes are admin-only
-  };
 
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
@@ -146,28 +76,6 @@ export default function DoctorFeedbackPage() {
     ));
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "APPROVED":
-        return "bg-green-100 text-green-800 border-green-200";
-      case "REJECTED":
-        return "bg-red-100 text-red-800 border-red-200";
-      default:
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "APPROVED":
-        return <CheckCircle className="h-4 w-4" />;
-      case "REJECTED":
-        return <XCircle className="h-4 w-4" />;
-      default:
-        return <Clock className="h-4 w-4" />;
-    }
-  };
-
   return (
     <div className="w-full h-full p-6 lg:p-10 space-y-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -179,6 +87,10 @@ export default function DoctorFeedbackPage() {
 
       {isLoading && (
         <p className="text-muted-foreground text-sm">Loading feedback...</p>
+      )}
+
+      {error && (
+        <p className="text-red-500 text-sm">Failed to load feedback. Please refresh the page.</p>
       )}
 
       {/* Average Rating Card */}
@@ -211,17 +123,6 @@ export default function DoctorFeedbackPage() {
                 className="pl-9 border-border/60 bg-background hover:border-border transition-colors h-10"
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[140px] border-border/60 bg-background hover:bg-muted/50 transition-colors h-10">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="PENDING">Pending</SelectItem>
-                <SelectItem value="APPROVED">Approved</SelectItem>
-                <SelectItem value="REJECTED">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
             <Select value={ratingFilter} onValueChange={setRatingFilter}>
               <SelectTrigger className="w-[140px] border-border/60 bg-background hover:bg-muted/50 transition-colors h-10">
                 <SelectValue placeholder="Rating" />
@@ -242,23 +143,16 @@ export default function DoctorFeedbackPage() {
           <Table className="w-full">
             <TableHeader>
               <TableRow className="border-border/60 bg-muted/20 hover:bg-muted/20">
-                <TableHead className="w-12 text-center px-4">
-                  <Checkbox className="border-border/60 w-4 h-4" />
-                </TableHead>
                 <TableHead className="text-muted-foreground font-medium py-4">Patient</TableHead>
                 <TableHead className="text-muted-foreground font-medium py-4">Rating</TableHead>
                 <TableHead className="text-muted-foreground font-medium py-4">Comment</TableHead>
                 <TableHead className="text-muted-foreground font-medium py-4">Date</TableHead>
-                <TableHead className="text-muted-foreground font-medium py-4">Status</TableHead>
                 <TableHead className="text-muted-foreground font-medium py-4 w-32">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredFeedbacks.map((feedback) => (
-                <TableRow key={feedback.id} className="border-border/60 hover:bg-muted/10 transition-colors group">
-                  <TableCell className="text-center px-4">
-                    <Checkbox className="border-border/60 w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity" />
-                  </TableCell>
+              {paginatedFeedbacks.map((feedback) => (
+                <TableRow key={feedback.id} className="border-border/60 hover:bg-muted/10 transition-colors">
                   <TableCell className="py-4">
                     <div className="font-medium text-foreground">
                       {feedback.patientName ?? "—"}
@@ -276,67 +170,41 @@ export default function DoctorFeedbackPage() {
                     </p>
                   </TableCell>
                   <TableCell className="py-4 text-sm text-muted-foreground">
-                    {new Date(feedback.timestamp ?? feedback.createdAt).toLocaleDateString()}
+                    {new Date(feedback.timestamp).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="py-4">
-                    <Badge
-                      variant="outline"
-                      className={cn("font-medium capitalize flex items-center gap-1", getStatusColor(feedback.status))}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedFeedback(feedback)}
+                      className="h-8 w-8 p-0"
                     >
-                      {getStatusIcon(feedback.status)}
-                      {feedback.status.toLowerCase()}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="py-4">
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedFeedback(feedback)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Star className="h-4 w-4" />
-                      </Button>
-                      {feedback.status === "PENDING" && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleStatusChange(feedback.id, "APPROVED")}
-                            className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleStatusChange(feedback.id, "REJECTED")}
-                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <XCircle className="h-4 w-4" />
-                          </Button>
-                        </>
-                      )}
-                    </div>
+                      <Star className="h-4 w-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
+              {paginatedFeedbacks.length === 0 && !isLoading && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-10">No feedback found</TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </div>
 
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-border/40">
           <p className="text-sm text-muted-foreground">
-            Showing <span className="font-medium text-foreground">{filteredFeedbacks.length}</span> of <span className="font-medium text-foreground">{feedbacks.length}</span> feedbacks
+            Showing <span className="font-medium text-foreground">{paginatedFeedbacks.length}</span> of <span className="font-medium text-foreground">{filteredFeedbacks.length}</span> feedbacks
           </p>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" className="h-9 w-9 border-border/60 bg-background hover:bg-muted/50 transition-colors disabled:opacity-50" disabled>
+            <Button variant="outline" size="icon" className="h-9 w-9 border-border/60 bg-background hover:bg-muted/50 transition-colors disabled:opacity-50" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>
               <ChevronLeft className="w-4 h-4" />
             </Button>
             <div className="flex items-center gap-1">
-              <Button variant="secondary" size="sm" className="h-9 w-9 p-0 font-medium">1</Button>
+              <Button variant="secondary" size="sm" className="h-9 w-9 p-0 font-medium">{currentPage} / {totalPages}</Button>
             </div>
-            <Button variant="outline" size="icon" className="h-9 w-9 border-border/60 bg-background hover:bg-muted/50 transition-colors">
+            <Button variant="outline" size="icon" className="h-9 w-9 border-border/60 bg-background hover:bg-muted/50 transition-colors" disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>
               <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
@@ -367,17 +235,7 @@ export default function DoctorFeedbackPage() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="font-medium">Date:</span>
-                <span>{new Date(selectedFeedback.timestamp ?? selectedFeedback.createdAt).toLocaleDateString()}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="font-medium">Status:</span>
-                <Badge
-                  variant="outline"
-                  className={cn("font-medium capitalize flex items-center gap-1", getStatusColor(selectedFeedback.status))}
-                >
-                  {getStatusIcon(selectedFeedback.status)}
-                  {selectedFeedback.status.toLowerCase()}
-                </Badge>
+                <span>{new Date(selectedFeedback.timestamp).toLocaleDateString()}</span>
               </div>
               <div>
                 <span className="font-medium">Comment:</span>

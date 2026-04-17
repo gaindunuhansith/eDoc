@@ -1,5 +1,4 @@
 package com.edoc.appointmentservice.client;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,16 +18,15 @@ public class DoctorServiceClient {
 
     private final WebClient.Builder webClientBuilder;
 
-    // Get doctor details by ID from doctor-service
-    // Returns a Map because we don't want to duplicate the Doctor model here
+    // Get doctor details by ID from doctor-service via internal (no-auth) endpoint
     public Map<?, ?> getDoctorById(String doctorId) {
         try {
             return webClientBuilder.build()
                     .get()
-                    .uri(doctorServiceUrl + "/api/v1/doctors/" + doctorId)
+                    .uri(doctorServiceUrl + "/api/v1/doctors/internal/" + doctorId + "/details")
                     .retrieve()
                     .bodyToMono(Map.class)
-                    .block(); // block() makes it synchronous - simpler for now
+                    .block();
         } catch (Exception e) {
             log.error("Error fetching doctor with id: {}", doctorId, e);
             throw new RuntimeException("Could not fetch doctor details. Doctor service may be down.");
@@ -38,12 +36,13 @@ public class DoctorServiceClient {
     // Tell doctor-service to mark a slot as booked
     public void markSlotAsBooked(String doctorId, String dayOfWeek, String startTime) {
         try {
+            AvailabilitySlotRequest request = new AvailabilitySlotRequest(dayOfWeek, startTime);
+
             webClientBuilder.build()
                     .patch()
                     .uri(doctorServiceUrl + "/api/v1/doctors/" + doctorId
-                            + "/availability/book"
-                            + "?dayOfWeek=" + dayOfWeek
-                            + "&startTime=" + startTime)
+                    + "/availability/book")
+                .bodyValue(request)
                     .retrieve()
                     .bodyToMono(Void.class)
                     .block();
@@ -56,12 +55,13 @@ public class DoctorServiceClient {
     // Tell doctor-service to free up a slot (when appointment is cancelled)
     public void markSlotAsFree(String doctorId, String dayOfWeek, String startTime) {
         try {
+            AvailabilitySlotRequest request = new AvailabilitySlotRequest(dayOfWeek, startTime);
+
             webClientBuilder.build()
                     .patch()
                     .uri(doctorServiceUrl + "/api/v1/doctors/" + doctorId
-                            + "/availability/free"
-                            + "?dayOfWeek=" + dayOfWeek
-                            + "&startTime=" + startTime)
+                    + "/availability/free")
+                .bodyValue(request)
                     .retrieve()
                     .bodyToMono(Void.class)
                     .block();

@@ -3,10 +3,12 @@ package com.edoc.doctorservice.model;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.index.Indexed;
 
+import java.time.Instant;
 import java.util.List;
 
 @Data                          // Lombok: auto generates getters, setters, toString
@@ -17,6 +19,9 @@ public class Doctor {
 
     @Id
     private String id;
+
+    // Links to the user-service account (JWT uid claim).
+    private String userId;
 
     @Indexed(unique = true)    // Email must be unique
     private String email;
@@ -33,10 +38,19 @@ public class Doctor {
     private String profileImageUrl;
     private double consultationFee;
 
+    @JsonProperty("isVerified")
     private boolean isVerified;        // Admin must verify the doctor first
+    @JsonProperty("isAvailable")
     private boolean isAvailable;       // Is the doctor currently active on platform
 
     private String role = "DOCTOR";    // Always "DOCTOR" for this service
 
     private List<String> languages;    // Languages the doctor speaks
+
+    @JsonProperty("isDeleted")
+    private boolean isDeleted = false;
+
+    private Instant deletedAt;
+
+    private String deletionReason;
 }

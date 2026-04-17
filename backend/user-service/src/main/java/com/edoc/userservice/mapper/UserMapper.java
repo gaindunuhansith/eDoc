@@ -1,6 +1,6 @@
 package com.edoc.userservice.mapper;
 
-import com.edoc.userservice.dto.UserResponse;
+import com.edoc.userservice.payload.response.UserResponse;
 import com.edoc.userservice.model.User;
 import org.springframework.stereotype.Component;
 
@@ -19,8 +19,11 @@ public class UserMapper {
                 .phoneNumber(user.getPhoneNumber())
                 .role(user.getRole())
                 .isProfileCreated(user.isProfileCreated())
+            .isActive(user.isActive())
+            .isDeleted(user.isDeleted())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
+            .deletedAt(user.getDeletedAt())
                 .build();
     }
 }

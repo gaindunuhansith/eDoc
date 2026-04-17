@@ -24,9 +24,11 @@ public class DoctorController {
     // POST /api/v1/doctors/register
     @PostMapping("/register")
     public ResponseEntity<Doctor> registerDoctor(
-            @Valid @RequestBody DoctorRegistrationRequest request) {
+            @Valid @RequestBody DoctorRegistrationRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        String userId = jwt.getClaim("userId");
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(doctorService.registerDoctor(request));
+                .body(doctorService.registerDoctor(request, userId));
     }
 
     // GET /api/v1/doctors/me — returns the currently authenticated doctor's profile
@@ -79,6 +81,26 @@ public class DoctorController {
     @GetMapping("/admin/all")
     public ResponseEntity<List<Doctor>> getAllDoctorsForAdmin() {
         return ResponseEntity.ok(doctorService.getAllDoctors());
+    }
+
+    // GET /api/v1/doctors/internal/{id} — used by notification-service to resolve userId for contact lookup.
+    @GetMapping("/internal/{id}")
+    public ResponseEntity<Map<String, String>> getDoctorUserIdInternal(@PathVariable String id) {
+        Doctor doctor = doctorService.getDoctorById(id);
+        return ResponseEntity.ok(Map.of("userId", doctor.getUserId() != null ? doctor.getUserId() : ""));
+    }
+
+    // GET /api/v1/doctors/internal/{id}/details — used by appointment-service to fetch full doctor data without auth.
+    @GetMapping("/internal/{id}/details")
+    public ResponseEntity<Doctor> getDoctorDetailsInternal(@PathVariable String id) {
+        return ResponseEntity.ok(doctorService.getDoctorById(id));
+    }
+
+    // DELETE /api/v1/doctors/internal/by-user/{userId} — called by user-service on DOCTOR account deletion.
+    @DeleteMapping("/internal/by-user/{userId}")
+    public ResponseEntity<Void> softDeleteDoctorByUserId(@PathVariable String userId) {
+        doctorService.softDeleteDoctorByUserId(userId);
+        return ResponseEntity.noContent().build();
     }
 
     // DELETE /api/v1/doctors/{id} - admin removes a doctor

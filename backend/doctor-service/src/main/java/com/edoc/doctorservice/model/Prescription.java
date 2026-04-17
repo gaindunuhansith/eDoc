@@ -19,7 +19,10 @@ public class Prescription {
     private String id;
 
     private String doctorId;
+    // Legacy patient identifier kept for backward compatibility.
     private String patientId;
+    // Primary patient identifier for cross-service consistency (user-service UUID).
+    private String patientUserId;
     private String appointmentId;      // Links to the appointment this was issued for
 
     private String diagnosis;          // What the doctor diagnosed

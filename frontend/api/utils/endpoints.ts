@@ -1,27 +1,35 @@
 export const USER_ENDPOINTS = {
   LOGIN: "/api/v1/users/login",
   REGISTER: "/api/v1/users/register",
-  LOGOUT: "/api/v1/users/logout",
   ME: "/api/v1/users/me",
   UPDATE_PROFILE: "/api/v1/users/me",
-  CHANGE_PASSWORD: "/api/v1/users/me/password",
+  UPDATE_BY_ID: (id: string) => `/api/v1/users/${id}`,
+  PATCH_BY_ID: (id: string) => `/api/v1/users/${id}`,
   PROFILE_CREATED: (id: string) => `/api/v1/users/${id}/profile-created`,
-  ALL_USERS: "/api/v1/admin/users",
-  USER_BY_ID: (id: string) => `/api/v1/admin/users/${id}`,
-  DELETE_USER: (id: string) => `/api/v1/admin/users/${id}`,
+  ACTIVATE_USER: (id: string) => `/api/v1/users/${id}/activate`,
+  DEACTIVATE_USER: (id: string) => `/api/v1/users/${id}/deactivate`,
+  RESTORE_USER: (id: string) => `/api/v1/users/${id}/restore`,
+  ALL_USERS: "/api/v1/users",
+  BATCH_USERS: "/api/v1/users/batch",
+  USER_BY_ID: (id: string) => `/api/v1/users/${id}`,
+  DELETE_USER: (id: string) => `/api/v1/users/${id}`,
 } as const;
 export const PATIENT_ENDPOINTS = {
   REGISTER: "/api/v1/patients/register",
   ME: "/api/v1/patients/me",
   UPDATE_ME: "/api/v1/patients/me",
   UPDATE_STATUS: "/api/v1/patients/me/status",
+  ADMIN_ALL: "/api/v1/patients/admin/all",
+  ADMIN_BY_ID: (id: string) => `/api/v1/patients/admin/${id}`,
+  ADMIN_UPDATE_STATUS: (id: string) => `/api/v1/patients/admin/${id}/status`,
+  PRESCRIPTIONS_BY_USER_ID: (userId: string) => `/api/v1/patients/${userId}/prescriptions`,
 } as const;
 
 export const REPORT_ENDPOINTS = {
   MY_REPORTS: "/api/v1/patients/me/reports",
-  MY_REPORT: (id: number) => `/api/v1/patients/me/reports/${id}`,
+  MY_REPORT: (id: string) => `/api/v1/patients/me/reports/${id}`,
   UPLOAD: "/api/v1/patients/me/reports",
-  DOWNLOAD: (id: number) => `/api/v1/patients/me/reports/${id}/download`,
+  DOWNLOAD: (id: string) => `/api/v1/patients/me/reports/${id}/download`,
 } as const;
 
 export const PRESCRIPTION_PATIENT_ENDPOINTS = {
@@ -32,37 +40,48 @@ export const PRESCRIPTION_PATIENT_ENDPOINTS = {
 export const DOCTOR_ENDPOINTS = {
   ME: "/api/v1/doctors/me",
   GET_ALL: "/api/v1/doctors",
+  ADMIN_ALL: "/api/v1/doctors/admin/all",
   GET_BY_ID: (id: string) => `/api/v1/doctors/${id}`,
+  GET_PATIENT: (doctorId: string, patientId: string) => `/api/v1/doctors/${doctorId}/patients/${patientId}`,
+  GET_PATIENT_REPORTS: (doctorId: string, patientId: string) => `/api/v1/doctors/${doctorId}/patients/${patientId}/reports`,
+  GET_PATIENT_REPORT_FILE: (doctorId: string, patientId: string, reportId: number) => `/api/v1/doctors/${doctorId}/patients/${patientId}/reports/${reportId}/file`,
   BY_SPECIALTY: (specialty: string) => `/api/v1/doctors/specialty/${specialty}`,
   CREATE: "/api/v1/doctors/register",
   UPDATE: (id: string) => `/api/v1/doctors/${id}`,
   DELETE: (id: string) => `/api/v1/doctors/${id}`,
   VERIFY: (id: string) => `/api/v1/doctors/${id}/verify`,
+  TOGGLE_AVAILABILITY: (id: string) => `/api/v1/doctors/${id}/toggle-availability`,
   AVAILABILITY: (id: string) => `/api/v1/doctors/${id}/availability`,
   DELETE_AVAILABILITY: (id: string, day: string) => `/api/v1/doctors/${id}/availability/${day}`,
   
   PRESCRIPTIONS_BY_DOCTOR: (doctorId: string) => `/api/v1/prescriptions/doctor/${doctorId}`,
   PRESCRIPTIONS_BY_APPOINTMENT: (appointmentId: string) => `/api/v1/prescriptions/appointment/${appointmentId}`,
   PRESCRIPTION_BY_ID: (id: string) => `/api/v1/prescriptions/${id}`,
+  PRESCRIPTIONS_BY_PATIENT: (patientId: string) => `/api/v1/prescriptions/patient/${patientId}`,
   CREATE_PRESCRIPTION: (doctorId: string) => `/api/v1/prescriptions/${doctorId}`,
   UPDATE_PRESCRIPTION: (id: string) => `/api/v1/prescriptions/${id}`,
 } as const;
 
 
 export const APPOINTMENT_ENDPOINTS = {
+  GET_ALL: "/api/v1/appointments",
   GET_BY_ID: (id: string) => `/api/v1/appointments/${id}`,
   CREATE: "/api/v1/appointments",
+  UPDATE: (id: string) => `/api/v1/appointments/${id}`,
+  DELETE: (id: string) => `/api/v1/appointments/${id}`,
   CANCEL: (id: string) => `/api/v1/appointments/${id}/cancel`,
   UPDATE_STATUS: (id: string) => `/api/v1/appointments/${id}/status`,
+  UPDATE_PAYMENT: (id: string) => `/api/v1/appointments/${id}/payment`,
   BY_PATIENT: (patientId: string) => `/api/v1/appointments/patient/${patientId}`,
+  BY_PATIENT_STATUS: (patientId: string, status: string) => `/api/v1/appointments/patient/${patientId}/status/${status}`,
   BY_DOCTOR: (doctorId: string) => `/api/v1/appointments/doctor/${doctorId}`,
   PENDING_BY_DOCTOR: (doctorId: string) => `/api/v1/appointments/doctor/${doctorId}/pending`,
+  UNPAID_BY_DOCTOR: (doctorId: string) => `/api/v1/appointments/doctor/${doctorId}/unpaid`,
 } as const;
 
 
 export const NOTIFICATION_ENDPOINTS = {
   GET_ALL: "/api/v1/notifications",
-  GET_BY_ID: (id: string) => `/api/v1/notifications/${id}`,
   MARK_READ: (id: string) => `/api/v1/notifications/${id}/read`,
   MARK_ALL_READ: "/api/v1/notifications/read-all",
   DELETE: (id: string) => `/api/v1/notifications/${id}`,
@@ -74,11 +93,12 @@ export const FEEDBACK_ENDPOINTS = {
   SUBMIT: "/api/v1/feedback/submit",
   ALL: "/api/v1/feedback/all",
   GET_BY_ID: (id: string) => `/api/v1/feedback/${id}`,
+  BY_PATIENT_ME: "/api/v1/feedback/patient/me",
   BY_PATIENT: (patientId: string) => `/api/v1/feedback/patient/${patientId}`,
+  BY_DOCTOR_ME: "/api/v1/feedback/doctor/me",
   BY_DOCTOR: (doctorId: string) => `/api/v1/feedback/doctor/${doctorId}`,
   BY_APPOINTMENT: (appointmentId: string) => `/api/v1/feedback/appointment/${appointmentId}`,
   UPDATE: (id: string) => `/api/v1/feedback/update/${id}`,
-  UPDATE_STATUS: (id: string) => `/api/v1/feedback/${id}/status`,
   DELETE: (id: string) => `/api/v1/feedback/delete/${id}`,
 } as const;
 
@@ -111,10 +131,12 @@ export const AI_ENDPOINTS = {
 export const PAYMENT_ENDPOINTS = {
   GET_ALL: "/api/v1/payments",
   GET_BY_ID: (id: string) => `/api/v1/payments/${id}`,
+  HISTORY: "/api/v1/payments/history",
   INITIATE: "/api/v1/payments/initiate",
-  CONFIRM: (id: string) => `/api/v1/payments/${id}/confirm`,
-  REFUND: (id: string) => `/api/v1/payments/${id}/refund`,
-  BY_PATIENT: (patientId: string) => `/api/v1/payments?patientId=${patientId}`,
-  BY_APPOINTMENT: (appointmentId: string) =>
-    `/api/v1/payments?appointmentId=${appointmentId}`,
+  RECONCILE: (id: string) => `/api/v1/payments/${id}/reconcile`,
+  BY_USER: (userId: string) => `/api/v1/payments/users/${userId}`,
+  BY_STATUS: (status: string) => `/api/v1/payments/status/${status}`,
+  BY_APPOINTMENT: (appointmentId: string) => `/api/v1/payments/appointment/${appointmentId}`,
+  BY_ORDER: (orderId: string) => `/api/v1/payments/order/${orderId}`,
+  INVOICE: (id: string) => `/api/v1/payments/${id}/invoice`,
 } as const;

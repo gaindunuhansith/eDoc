@@ -27,7 +27,13 @@ export interface TelemedicineSession {
   status: SessionStatus;
   roomName?: string;
   notes?: string;
+  /** Raw backend field — populated by the backend on session start */
+  startTime?: string;
+  /** Raw backend field — populated by the backend on session end */
+  endTime?: string;
+  /** Frontend-normalized alias for startTime */
   startedAt?: string;
+  /** Frontend-normalized alias for endTime */
   endedAt?: string;
   createdAt: string;
   updatedAt: string;
@@ -211,6 +217,7 @@ export const fetchAllSessions = async () => {
   try {
     checkTelemedicineAccess();
     const response = await apiClient.get<TelemedicineSession[]>(TELEMEDICINE_ENDPOINTS.SESSIONS);
+    response.data = response.data.map(normalizeSession);
     return response;
   } catch (error) {
     throw handleTelemedicineError(error, "fetchAllSessions");
@@ -223,6 +230,7 @@ export const fetchSessionByAppointmentId = async (appointmentId: string) => {
     const response = await apiClient.get<TelemedicineSession>(
       TELEMEDICINE_ENDPOINTS.SESSION_BY_APPOINTMENT_ID(appointmentId)
     );
+    response.data = normalizeSession(response.data);
     return response;
   } catch (error) {
     throw handleTelemedicineError(error, "fetchSessionByAppointmentId");
@@ -236,6 +244,7 @@ export const createSession = async (payload: CreateSessionPayload) => {
       TELEMEDICINE_ENDPOINTS.CREATE_SESSION,
       payload
     );
+    response.data = normalizeSession(response.data);
     return response;
   } catch (error) {
     throw handleTelemedicineError(error, "createSession");
@@ -248,6 +257,7 @@ export const startSession = async (appointmentId: string) => {
     const response = await apiClient.put<TelemedicineSession>(
       TELEMEDICINE_ENDPOINTS.START_SESSION(appointmentId)
     );
+    response.data = normalizeSession(response.data);
     showTelemedicineSuccessToast("Session started successfully", "The telemedicine session has begun");
     return response;
   } catch (error) {
@@ -259,6 +269,7 @@ export const endSession = async (appointmentId: string) => {
   try {
     checkTelemedicineAccess();
     const response = await apiClient.put<TelemedicineSession>(TELEMEDICINE_ENDPOINTS.END_SESSION(appointmentId));
+    response.data = normalizeSession(response.data);
     showTelemedicineSuccessToast("Session ended successfully", "The telemedicine session has been completed");
     return response;
   } catch (error) {
@@ -268,14 +279,31 @@ export const endSession = async (appointmentId: string) => {
 
 export const fetchSessionToken = async (appointmentId: string) => {
   try {
-    const user = checkTelemedicineAccess();
+    checkTelemedicineAccess();
     const response = await apiClient.get<SessionToken>(
-      `${TELEMEDICINE_ENDPOINTS.SESSION_TOKEN(appointmentId)}?userId=${user.userId}`
+      TELEMEDICINE_ENDPOINTS.SESSION_TOKEN(appointmentId)
     );
     return response;
   } catch (error) {
     throw handleTelemedicineError(error, "fetchSessionToken");
   }
+};
+
+const normalizeSession = (session: TelemedicineSession): TelemedicineSession => {
+  const now = new Date().toISOString();
+  const scheduledAt = session.scheduledAt || session.startTime || session.createdAt || now;
+  const createdAt = session.createdAt || now;
+  const updatedAt = session.updatedAt || createdAt;
+
+  return {
+    ...session,
+    scheduledAt,
+    duration: session.duration ?? 30,
+    startedAt: session.startedAt || session.startTime,
+    endedAt: session.endedAt || session.endTime,
+    createdAt,
+    updatedAt,
+  };
 };
 
 export const deleteSession = async (appointmentId: string) => {

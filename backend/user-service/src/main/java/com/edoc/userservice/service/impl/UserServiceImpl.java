@@ -2,9 +2,9 @@ package com.edoc.userservice.service.impl;
 
 import com.edoc.userservice.client.DoctorServiceClient;
 import com.edoc.userservice.client.PatientServiceClient;
-import com.edoc.userservice.dto.PatchUserRequest;
-import com.edoc.userservice.dto.UpdateUserRequest;
-import com.edoc.userservice.dto.UserResponse;
+import com.edoc.userservice.payload.request.PatchUserRequest;
+import com.edoc.userservice.payload.request.UpdateUserRequest;
+import com.edoc.userservice.payload.response.UserResponse;
 import com.edoc.userservice.exception.EmailAlreadyExistsException;
 import com.edoc.userservice.exception.UnauthorizedOperationException;
 import com.edoc.userservice.exception.UserNotFoundException;
@@ -12,7 +12,7 @@ import com.edoc.userservice.mapper.UserMapper;
 import com.edoc.userservice.model.User;
 import com.edoc.userservice.model.enums.UserRole;
 import com.edoc.userservice.repository.UserRepository;
-import com.edoc.userservice.service.IUserService;
+import com.edoc.userservice.service.UserService;
 import com.edoc.userservice.util.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -21,12 +21,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 
-@Service
+@Service("userService")
 @RequiredArgsConstructor
-public class UserServiceImpl implements IUserService {
+public class UserServiceImpl implements UserService {
 
     private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
     private static final String AUTHENTICATED_USER_NOT_FOUND = "Authenticated user not found";
@@ -41,7 +42,7 @@ public class UserServiceImpl implements IUserService {
     @Override
     @Transactional(readOnly = true)
     public UserResponse getCurrentUser() {
-        User user = userRepository.findByEmail(securityUtils.getCurrentEmail())
+        User user = userRepository.findByEmailAndIsDeletedFalse(securityUtils.getCurrentEmail())
                 .orElseThrow(() -> new UserNotFoundException(AUTHENTICATED_USER_NOT_FOUND));
         return userMapper.toResponse(user);
     }
@@ -49,9 +50,12 @@ public class UserServiceImpl implements IUserService {
     @Override
     @Transactional(readOnly = true)
     public UserResponse getByUserId(String userId) {
-        User target = findByUserId(userId);
-        User current = userRepository.findByEmail(securityUtils.getCurrentEmail())
+        User current = userRepository.findByEmailAndIsDeletedFalse(securityUtils.getCurrentEmail())
                 .orElseThrow(() -> new UserNotFoundException(AUTHENTICATED_USER_NOT_FOUND));
+
+        User target = securityUtils.isAdmin()
+            ? findByUserIdIncludingDeleted(userId)
+            : findByUserIdActive(userId);
 
         enforceOwnerOrAdmin(current, target.getUserId());
         return userMapper.toResponse(target);
@@ -60,8 +64,8 @@ public class UserServiceImpl implements IUserService {
     @Override
     @Transactional
     public UserResponse updateByUserId(String userId, UpdateUserRequest request) {
-        User target = findByUserId(userId);
-        User current = userRepository.findByEmail(securityUtils.getCurrentEmail())
+        User target = findByUserIdActive(userId);
+        User current = userRepository.findByEmailAndIsDeletedFalse(securityUtils.getCurrentEmail())
                 .orElseThrow(() -> new UserNotFoundException(AUTHENTICATED_USER_NOT_FOUND));
 
         enforceOwnerOrAdmin(current, target.getUserId());
@@ -77,47 +81,51 @@ public class UserServiceImpl implements IUserService {
         }
 
         User updated = userRepository.save(target);
+        log.info("Updated user userId={} by requester={}", target.getUserId(), current.getUserId());
         return userMapper.toResponse(updated);
     }
 
     @Override
     @Transactional
     public UserResponse patchCurrentUser(PatchUserRequest request) {
-        User current = userRepository.findByEmail(securityUtils.getCurrentEmail())
+        User current = userRepository.findByEmailAndIsDeletedFalse(securityUtils.getCurrentEmail())
                 .orElseThrow(() -> new UserNotFoundException(AUTHENTICATED_USER_NOT_FOUND));
 
-        applyPatch(current, request, false);
+        applyPatch(current, request);
         User updated = userRepository.save(current);
+        log.info("Patched current user userId={}", current.getUserId());
         return userMapper.toResponse(updated);
     }
 
     @Override
     @Transactional
     public UserResponse patchByUserIdAsAdmin(String userId, PatchUserRequest request) {
-        User target = findByUserId(userId);
+        User target = findByUserIdActive(userId);
 
-        applyPatch(target, request, true);
+        applyPatch(target, request);
         User updated = userRepository.save(target);
+        log.info("Admin patched user userId={}", target.getUserId());
         return userMapper.toResponse(updated);
     }
 
     @Override
     @Transactional
     public void markProfileCreated(String userId) {
-        User target = findByUserId(userId);
-        User current = userRepository.findByEmail(securityUtils.getCurrentEmail())
+        User target = findByUserIdActive(userId);
+        User current = userRepository.findByEmailAndIsDeletedFalse(securityUtils.getCurrentEmail())
                 .orElseThrow(() -> new UserNotFoundException(AUTHENTICATED_USER_NOT_FOUND));
 
         enforceOwnerOrAdmin(current, target.getUserId());
 
         target.setProfileCreated(true);
         userRepository.save(target);
+        log.info("Marked profile created userId={}", target.getUserId());
     }
 
     @Override
     @Transactional
     public void deleteCurrentUser() {
-        User current = userRepository.findByEmail(securityUtils.getCurrentEmail())
+        User current = userRepository.findByEmailAndIsDeletedFalse(securityUtils.getCurrentEmail())
                 .orElseThrow(() -> new UserNotFoundException(AUTHENTICATED_USER_NOT_FOUND));
         deleteUserAndRelatedData(current);
     }
@@ -125,7 +133,7 @@ public class UserServiceImpl implements IUserService {
     @Override
     @Transactional(readOnly = true)
     public List<UserResponse> getAllUsers() {
-        return userRepository.findAll().stream()
+        return userRepository.findAllByIsDeletedFalse().stream()
                 .map(userMapper::toResponse)
                 .toList();
     }
@@ -133,16 +141,66 @@ public class UserServiceImpl implements IUserService {
     @Override
     @Transactional
     public void deleteByUserId(String userId) {
-        User target = findByUserId(userId);
+        User target = findByUserIdIncludingDeleted(userId);
         deleteUserAndRelatedData(target);
     }
 
-    private User findByUserId(String userId) {
+    @Override
+    @Transactional
+    public UserResponse activateUser(String userId) {
+        User target = findByUserIdIncludingDeleted(userId);
+        if (target.isDeleted()) {
+            throw new IllegalArgumentException("Cannot activate a deleted user. Restore first.");
+        }
+        target.setActive(true);
+        User updated = userRepository.save(target);
+        log.info("Activated user userId={}", target.getUserId());
+        return userMapper.toResponse(updated);
+    }
+
+    @Override
+    @Transactional
+    public UserResponse deactivateUser(String userId) {
+        User target = findByUserIdIncludingDeleted(userId);
+        if (target.isDeleted()) {
+            throw new IllegalArgumentException("Cannot deactivate a deleted user. Restore first.");
+        }
+        target.setActive(false);
+        User updated = userRepository.save(target);
+        log.info("Deactivated user userId={}", target.getUserId());
+        return userMapper.toResponse(updated);
+    }
+
+    @Override
+    @Transactional
+    public UserResponse restoreUser(String userId) {
+        User target = findByUserIdIncludingDeleted(userId);
+        if (!target.isDeleted()) {
+            return userMapper.toResponse(target);
+        }
+        target.setDeleted(false);
+        target.setDeletedAt(null);
+        target.setActive(true);
+        User updated = userRepository.save(target);
+        log.info("Restored user userId={}", target.getUserId());
+        return userMapper.toResponse(updated);
+    }
+
+    private User findByUserIdIncludingDeleted(String userId) {
         if (userId == null || userId.isBlank()) {
             throw new IllegalArgumentException("userId is required");
         }
 
         return userRepository.findByUserId(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found for userId: " + userId));
+    }
+
+    private User findByUserIdActive(String userId) {
+        if (userId == null || userId.isBlank()) {
+            throw new IllegalArgumentException("userId is required");
+        }
+
+        return userRepository.findByUserIdAndIsDeletedFalse(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found for userId: " + userId));
     }
 
@@ -153,9 +211,13 @@ public class UserServiceImpl implements IUserService {
         }
     }
 
-    private void applyPatch(User target, PatchUserRequest request, boolean allowRoleChange) {
+    private void applyPatch(User target, PatchUserRequest request) {
         if (request == null) {
             throw new IllegalArgumentException("Patch payload is required");
+        }
+
+        if (target.isDeleted()) {
+            throw new IllegalArgumentException("Cannot update a deleted user");
         }
 
         boolean hasAnyField = false;
@@ -193,14 +255,6 @@ public class UserServiceImpl implements IUserService {
             hasAnyField = true;
         }
 
-        if (request.getRole() != null) {
-            if (!allowRoleChange) {
-                throw new UnauthorizedOperationException("Only admin can change role");
-            }
-            target.setRole(request.getRole());
-            hasAnyField = true;
-        }
-
         if (!hasAnyField) {
             throw new IllegalArgumentException("At least one field must be provided for patch");
         }
@@ -208,7 +262,7 @@ public class UserServiceImpl implements IUserService {
 
     private void validateUniqueEmail(User target, String normalizedEmail) {
         boolean emailChanged = !target.getEmail().equalsIgnoreCase(normalizedEmail);
-        if (emailChanged && userRepository.existsByEmail(normalizedEmail)) {
+        if (emailChanged && userRepository.existsByEmailAndIsDeletedFalse(normalizedEmail)) {
             throw new EmailAlreadyExistsException("A user already exists with the given email");
         }
     }
@@ -221,8 +275,62 @@ public class UserServiceImpl implements IUserService {
     }
 
     private void deleteUserAndRelatedData(User user) {
+        if (user.isDeleted()) {
+            log.info("User already deleted userId={}", user.getUserId());
+            return;
+        }
         callDownstreamCleanup(user);
-        userRepository.delete(user);
+        user.setDeleted(true);
+        user.setDeletedAt(LocalDateTime.now());
+        user.setActive(false);
+        userRepository.save(user);
+        log.info("Soft deleted user userId={}", user.getUserId());
+    }
+
+    @Override
+    public boolean isOwner(String userId) {
+        if (userId == null || userId.isBlank()) {
+            return false;
+        }
+        try {
+            String email = securityUtils.getCurrentEmail();
+            return userRepository.findByEmailAndIsDeletedFalse(email)
+                    .map(User::getUserId)
+                    .map(userId::equals)
+                    .orElse(false);
+        } catch (Exception ex) {
+            return false;
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserResponse> getUsersByIds(List<String> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        return userIds.stream()
+                .map(uid -> userRepository.findByUserId(uid).orElse(null))
+                .filter(u -> u != null)
+                .map(userMapper::toResponse)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public User findByEmailForAuthentication(String email) {
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("email is required");
+        }
+        
+        User user = userRepository.findByEmailAndIsDeletedFalse(normalizeEmail(email))
+                .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
+        
+        if (!user.isActive()) {
+            throw new UserNotFoundException("User is inactive");
+        }
+        
+        return user;
     }
 
     private void callDownstreamCleanup(User user) {

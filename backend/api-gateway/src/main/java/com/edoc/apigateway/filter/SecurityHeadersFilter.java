@@ -13,14 +13,15 @@ public class SecurityHeadersFilter implements GlobalFilter, Ordered {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        return chain.filter(exchange)
-                .then(Mono.fromRunnable(() -> {
-                    HttpHeaders headers = exchange.getResponse().getHeaders();
-                    headers.putIfAbsent("X-Content-Type-Options", java.util.List.of("nosniff"));
-                    headers.putIfAbsent("X-Frame-Options", java.util.List.of("DENY"));
-                    headers.putIfAbsent("Referrer-Policy", java.util.List.of("no-referrer"));
-                    headers.putIfAbsent(HttpHeaders.CACHE_CONTROL, java.util.List.of("no-store"));
-                }));
+        exchange.getResponse().beforeCommit(() -> {
+            HttpHeaders headers = exchange.getResponse().getHeaders();
+            headers.putIfAbsent("X-Content-Type-Options", java.util.List.of("nosniff"));
+            headers.putIfAbsent("X-Frame-Options", java.util.List.of("DENY"));
+            headers.putIfAbsent("Referrer-Policy", java.util.List.of("no-referrer"));
+            headers.putIfAbsent(HttpHeaders.CACHE_CONTROL, java.util.List.of("no-store"));
+            return Mono.empty();
+        });
+        return chain.filter(exchange);
     }
 
     @Override

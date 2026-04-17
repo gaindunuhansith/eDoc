@@ -72,7 +72,7 @@ public class ResendEmailClient {
             headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(payload, headers);
-            ResponseEntity<Map> response = restTemplate.exchange(apiUrl, HttpMethod.POST, entity, Map.class);
+            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(apiUrl, HttpMethod.POST, entity, new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {});
             if (response.getStatusCode().is2xxSuccessful()) {
                 String messageId = extractMessageId(response.getBody());
                 return ResendSendResult.success(messageId);

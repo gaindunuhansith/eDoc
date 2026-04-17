@@ -24,7 +24,7 @@ public class PatientServiceClient {
                     .get()
                     .uri(patientServiceUrl + "/api/v1/internal/patients/" + patientId)
                     .retrieve()
-                    .bodyToMono(Map.class)
+                    .bodyToMono(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                     .block();
         } catch (Exception ex) {
             log.error("Error fetching patient with id: {}", patientId, ex);
@@ -34,12 +34,31 @@ public class PatientServiceClient {
 
     public Map<String, Object> getPatientStatusById(String patientId) {
         try {
-            return webClientBuilder.build()
+            Map<String, Object> raw = webClientBuilder.build()
                     .get()
                     .uri(patientServiceUrl + "/api/v1/internal/patients/" + patientId + "/status")
                     .retrieve()
-                    .bodyToMono(Map.class)
+                    .bodyToMono(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                     .block();
+
+            if (raw == null) return null;
+
+            // Backwards-compatibility: older callers expect a `status` string (e.g. "ACTIVE").
+            // New patient-service returns `{ id: UUID, deleted: boolean }`.
+            if (!raw.containsKey("status") && raw.containsKey("deleted")) {
+                Object deletedObj = raw.get("deleted");
+                boolean deleted = false;
+                if (deletedObj instanceof Boolean) {
+                    deleted = (Boolean) deletedObj;
+                } else if (deletedObj != null) {
+                    deleted = Boolean.parseBoolean(deletedObj.toString());
+                }
+                Map<String, Object> translated = new java.util.HashMap<>(raw);
+                translated.put("status", deleted ? "INACTIVE" : "ACTIVE");
+                return translated;
+            }
+
+            return raw;
         } catch (Exception ex) {
             log.error("Error fetching patient status with id: {}", patientId, ex);
             throw new RuntimeException("Could not validate patient status. Patient service may be down.");

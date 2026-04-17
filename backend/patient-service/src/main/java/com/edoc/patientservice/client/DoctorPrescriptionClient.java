@@ -23,12 +23,19 @@ public class DoctorPrescriptionClient {
         this.doctorServiceBaseUrl = doctorServiceBaseUrl;
     }
 
-    public List<PrescriptionResponseDTO> getPrescriptionsByPatient(String patientId) {
+    public List<PrescriptionResponseDTO> getPrescriptionsByPatient(String patientUserId, String authHeader) {
         try {
-            List<PrescriptionResponseDTO> prescriptions = restClient.get()
-                    .uri(doctorServiceBaseUrl + "/api/v1/prescriptions/patient/{patientId}", patientId)
-                    .retrieve()
-                    .body(new ParameterizedTypeReference<List<PrescriptionResponseDTO>>() { });
+            var spec = restClient.get()
+                    .uri(doctorServiceBaseUrl + "/api/v1/prescriptions/patient/{patientUserId}", patientUserId);
+            List<PrescriptionResponseDTO> prescriptions;
+            if (authHeader != null && !authHeader.isBlank()) {
+                prescriptions = spec.header("Authorization", authHeader)
+                        .retrieve()
+                        .body(new ParameterizedTypeReference<List<PrescriptionResponseDTO>>() { });
+            } else {
+                prescriptions = spec.retrieve()
+                        .body(new ParameterizedTypeReference<List<PrescriptionResponseDTO>>() { });
+            }
             return prescriptions == null ? Collections.emptyList() : prescriptions;
         } catch (ResponseStatusException ex) {
             throw ex;

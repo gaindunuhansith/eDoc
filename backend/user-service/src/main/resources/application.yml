@@ -1,6 +1,10 @@
 spring:
   application:
     name: user-service
+  data:
+    web:
+      pageable:
+        max-page-size: 200
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5440}/${DB_NAME:user_db}
     username: ${DB_USER:user}
@@ -8,22 +12,31 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create
+    defer-datasource-initialization: true
     properties:
       hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/schema.sql
+      data-locations: classpath:db/seed.sql
 
 jwt:
   private-key-path: ${JWT_PRIVATE_KEY_PATH:secrets/private.pem}
   public-key-path: ${JWT_PUBLIC_KEY_PATH:secrets/public.pem}
+  public-key-base64: ${JWT_PUBLIC_KEY_BASE64:}
+  private-key-base64: ${JWT_PRIVATE_KEY_BASE64:}
   expiration: ${JWT_EXPIRATION:86400000}
 
 microservices:
   patient:
     base-url: ${PATIENT_SERVICE_URL:http://patient-service:8084}
-    delete-by-user-id-path: ${PATIENT_DELETE_BY_USER_ID_PATH:/patients/{userId}}
+    delete-by-user-id-path: ${PATIENT_DELETE_BY_USER_ID_PATH:/api/v1/internal/patients/by-user/{userId}}
   doctor:
     base-url: ${DOCTOR_SERVICE_URL:http://doctor-service:8082}
-    delete-by-user-id-path: ${DOCTOR_DELETE_BY_USER_ID_PATH:/api/v1/doctors/{userId}}
+    delete-by-user-id-path: ${DOCTOR_DELETE_BY_USER_ID_PATH:/api/v1/doctors/internal/by-user/{userId}}
 
 server:
   port: ${SERVER_PORT:8088}

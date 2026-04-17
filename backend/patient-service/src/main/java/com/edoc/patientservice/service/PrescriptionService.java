@@ -5,6 +5,7 @@ import com.edoc.patientservice.dto.prescription.PrescriptionResponseDTO;
 import com.edoc.patientservice.entity.Patient;
 import com.edoc.patientservice.repository.PatientRepository;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,20 +24,21 @@ public class PrescriptionService {
         this.patientRepository = patientRepository;
     }
 
-    public List<PrescriptionResponseDTO> getPrescriptionsForPatient(String userId) {
-        Patient patient = findPatientByUserIdOrThrow(userId);
-        return doctorPrescriptionClient.getPrescriptionsByPatient(patient.getId().toString());
+    public List<PrescriptionResponseDTO> getPrescriptionsForPatient(String userId, String authHeader) {
+        // Verify patient exists
+        findPatientByUserIdOrThrow(userId);
+        // Query doctor-service with userId, not patient's internal ID
+        // Prescriptions are stored with patientId = userId (string UUID)
+        return doctorPrescriptionClient.getPrescriptionsByPatient(userId, authHeader);
     }
 
-    public List<PrescriptionResponseDTO> getPrescriptionsInternal(Long patientId) {
-        assertPatientExists(patientId);
-        return doctorPrescriptionClient.getPrescriptionsByPatient(patientId.toString());
-    }
-
-    private void assertPatientExists(Long patientId) {
-        if (!patientRepository.existsById(patientId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient not found");
+    public List<PrescriptionResponseDTO> getPrescriptionsInternal(UUID patientId, String authHeader) {
+        Patient patient = patientRepository.findById(patientId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient not found"));
+        if (patient.getUserId() == null || patient.getUserId().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Patient userId is missing");
         }
+        return doctorPrescriptionClient.getPrescriptionsByPatient(patient.getUserId(), authHeader);
     }
 
     private Patient findPatientByUserIdOrThrow(String userId) {

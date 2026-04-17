@@ -11,13 +11,13 @@ import org.springframework.web.server.ResponseStatusException;
 public class RequestPatientProvider implements CurrentPatientProvider {
 
     @Override
-    public String getCurrentPatientId() {
+    public String getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !(authentication.getPrincipal() instanceof Jwt jwt)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Patient identity is missing.");
         }
 
-        Object uid = jwt.getClaim("uid");
+        Object uid = jwt.getClaim("userId");
         if (uid == null || uid.toString().isBlank()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Patient identity is missing.");
         }

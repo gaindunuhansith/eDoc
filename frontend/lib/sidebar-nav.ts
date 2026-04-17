@@ -22,6 +22,7 @@ const adminNav: SidebarNavItem[] = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
   { title: "eDoc AI", url: "/admin/edoc-ai", icon: Bot },
   { title: "Users", url: "/admin/users", icon: Users },
+  { title: "Doctors", url: "/admin/doctors", icon: Building2 },
   { title: "Pending Doctors", url: "/admin/pending-doctors", icon: Building2 },
   { title: "Patients", url: "/admin/patients", icon: Users },
   { title: "Appointments", url: "/admin/appointments", icon: Calendar },
@@ -37,7 +38,7 @@ const doctorNav: SidebarNavItem[] = [
   { title: "eDoc AI", url: "/doctor/edoc-ai", icon: Bot },
   { title: "Patients", url: "/doctor/patients", icon: Users },
   { title: "Appointments", url: "/doctor/appointments", icon: Calendar },
-  { title: "Reports", url: "/doctor/reports", icon: FileText },
+
   { title: "Prescriptions", url: "/doctor/prescriptions", icon: Pill },
   { title: "Feedback", url: "/doctor/feedback", icon: MessageSquare },
   { title: "Telemedicine", url: "/doctor/telemedicine", icon: Video },
@@ -49,10 +50,9 @@ const patientNav: SidebarNavItem[] = [
   { title: "Doctors", url: "/patient/doctors", icon: Building2 },
   { title: "Appointments", url: "/patient/appointments", icon: Calendar },
   { title: "Reports", url: "/patient/reports", icon: FileText },
-  { title: "Prescriptions", url: "/patient/prescriptions", icon: Pill },
+  
   { title: "Feedback", url: "/patient/feedback", icon: MessageSquare },
   { title: "Telemedicine", url: "/patient/telemedicine", icon: Video },
-  { title: "Confirm Order", url: "/patient/confirm-order", icon: CreditCard },
   { title: "Payments", url: "/patient/payments", icon: CreditCard },
 ];
 

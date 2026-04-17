@@ -7,7 +7,9 @@ import com.edoc.patientservice.dto.patient.PatientStatusUpdateRequestDTO;
 import com.edoc.patientservice.service.CurrentPatientProvider;
 import com.edoc.patientservice.service.PatientService;
 import jakarta.validation.Valid;
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,43 +36,59 @@ public class PatientController {
     @ResponseStatus(HttpStatus.CREATED)
     // Register a new patient profile linked to the authenticated user-service account.
     public PatientResponseDTO registerPatient(@Valid @RequestBody PatientRequestDTO request) {
-        return patientService.registerPatient(request, currentPatientProvider.getCurrentPatientId());
+        return patientService.registerPatient(request, currentPatientProvider.getCurrentUserId());
     }
 
     @GetMapping("/patients/me")
     // Read the current patient's profile using the authenticated user-service identity.
     public PatientResponseDTO getCurrentPatient() {
-        return patientService.getPatientByUserId(currentPatientProvider.getCurrentPatientId());
+        return patientService.getPatientByUserId(currentPatientProvider.getCurrentUserId());
     }
 
     @PutMapping("/patients/me")
     // Update the current patient's profile.
     public PatientResponseDTO updateCurrentPatient(@Valid @RequestBody PatientRequestDTO request) {
-        return patientService.updatePatientByUserId(currentPatientProvider.getCurrentPatientId(), request);
+        return patientService.updatePatientByUserId(currentPatientProvider.getCurrentUserId(), request);
     }
 
     @PatchMapping("/patients/me/status")
     // Change the current patient's account status and keep deactivation audit data.
     public PatientResponseDTO updateCurrentPatientStatus(@Valid @RequestBody PatientStatusUpdateRequestDTO request) {
-        return patientService.changePatientStatusByUserId(currentPatientProvider.getCurrentPatientId(), request);
+        return patientService.changePatientStatusByUserId(currentPatientProvider.getCurrentUserId(), request);
     }
 
     @GetMapping("/internal/patients/{id}")
     // Internal lookup for other services by internal patient id.
-    public PatientResponseDTO getPatientInternal(@PathVariable Long id) {
+    public PatientResponseDTO getPatientInternal(@PathVariable UUID id) {
         return patientService.getPatient(id);
+    }
+
+    @GetMapping("/internal/patients/by-user/{userId}")
+    // Internal lookup by user-service UUID string (used by doctor-service).
+    public PatientResponseDTO getPatientByUserIdInternal(@PathVariable String userId) {
+        return patientService.getPatientByUserId(userId);
     }
 
     @GetMapping("/internal/patients/{id}/status")
     // Internal lightweight status lookup for booking and authorization checks.
-    public PatientStatusResponseDTO getPatientStatusInternal(@PathVariable Long id) {
+    public PatientStatusResponseDTO getPatientStatusInternal(@PathVariable UUID id) {
         return patientService.getPatientStatus(id);
     }
 
     @PatchMapping("/internal/patients/{id}/status")
     // Internal status updates for admin/staff workflows.
-    public PatientResponseDTO updatePatientStatusInternal(@PathVariable Long id,
+    public PatientResponseDTO updatePatientStatusInternal(@PathVariable UUID id,
                                                           @Valid @RequestBody PatientStatusUpdateRequestDTO request) {
         return patientService.changePatientStatus(id, request, request.getActedBy());
+    }
+
+    @DeleteMapping("/internal/patients/by-user/{userId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    // Called by user-service on PATIENT account deletion — soft-deletes the linked profile.
+    public void softDeletePatientByUserId(@PathVariable String userId) {
+        PatientStatusUpdateRequestDTO req = new PatientStatusUpdateRequestDTO();
+        req.setDeleted(true);
+        req.setReason("Account deleted via user-service cascade");
+        patientService.changePatientStatusByUserId(userId, req);
     }
 }

@@ -1,22 +1,22 @@
 package com.edoc.feedbackservice.dto;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 public class FeedbackResponseDTO {
 
-    private Long id;
-    private Long patientId;
-    private Long doctorId;
-    private Long appointmentId;
+    private UUID id;
+    private UUID patientId;
+    private String doctorId;
+    private String appointmentId;
     private int rating;
     private String comment;
     private LocalDateTime timestamp;
     private LocalDateTime editableUntil;
-    private String status;
 
     public FeedbackResponseDTO() {}
 
-    public FeedbackResponseDTO(Long id, Long patientId, Long doctorId, Long appointmentId, int rating, String comment, LocalDateTime timestamp, String status) {
+    public FeedbackResponseDTO(UUID id, UUID patientId, String doctorId, String appointmentId, int rating, String comment, LocalDateTime timestamp) {
         this.id = id;
         this.patientId = patientId;
         this.doctorId = doctorId;
@@ -24,20 +24,19 @@ public class FeedbackResponseDTO {
         this.rating = rating;
         this.comment = comment;
         this.timestamp = timestamp;
-        this.status = status;
     }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
-    public Long getPatientId() { return patientId; }
-    public void setPatientId(Long patientId) { this.patientId = patientId; }
+    public UUID getPatientId() { return patientId; }
+    public void setPatientId(UUID patientId) { this.patientId = patientId; }
 
-    public Long getDoctorId() { return doctorId; }
-    public void setDoctorId(Long doctorId) { this.doctorId = doctorId; }
+    public String getDoctorId() { return doctorId; }
+    public void setDoctorId(String doctorId) { this.doctorId = doctorId; }
 
-    public Long getAppointmentId() { return appointmentId; }
-    public void setAppointmentId(Long appointmentId) { this.appointmentId = appointmentId; }
+    public String getAppointmentId() { return appointmentId; }
+    public void setAppointmentId(String appointmentId) { this.appointmentId = appointmentId; }
 
     public int getRating() { return rating; }
     public void setRating(int rating) { this.rating = rating; }
@@ -50,7 +49,4 @@ public class FeedbackResponseDTO {
 
     public LocalDateTime getEditableUntil() { return editableUntil; }
     public void setEditableUntil(LocalDateTime editableUntil) { this.editableUntil = editableUntil; }
-
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
 }

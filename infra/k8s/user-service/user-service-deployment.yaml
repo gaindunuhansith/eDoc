@@ -42,11 +42,16 @@ spec:
                 secretKeyRef:
                   name: edoc-secrets
                   key: JWT_PRIVATE_KEY_PATH
-            - name: JWT_PUBLIC_KEY_PATH
+            - name: JWT_PUBLIC_KEY_BASE64
               valueFrom:
                 secretKeyRef:
                   name: edoc-secrets
-                  key: JWT_PUBLIC_KEY_PATH
+                  key: JWT_PUBLIC_KEY_BASE64
+            - name: JWT_PRIVATE_KEY_BASE64
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: JWT_PRIVATE_KEY_BASE64
             - name: PATIENT_SERVICE_URL
               valueFrom:
                 configMapKeyRef:

@@ -4,98 +4,142 @@ import apiClient from "./utils/axiosInstance";
 import { PAYMENT_ENDPOINTS } from "./utils/endpoints";
 import { queryKeys } from "./utils/queryKeys";
 
-export type PaymentStatus =
-  | "PENDING"
-  | "COMPLETED"
-  | "FAILED"
-  | "REFUNDED"
-  | "CANCELLED";
+// ─── Actual backend status values ─────────────────────────────────────────────
+export type PaymentStatus = "PENDING" | "SUCCESS" | "FAILED";
+export type CurrencyType = "LKR" | "USD";
 
 export type PaymentMethod = "CARD" | "BANK_TRANSFER" | "DIGITAL_WALLET";
 
-export interface Payment {
+// ─── Matches backend PaymentHistoryResponse ───────────────────────────────────
+export interface PaymentHistoryItem {
   id: string;
-  patientId: string;
   appointmentId?: string;
+  userId: string;
   amount: number;
-  currency: string;
+  currency: CurrencyType;
   status: PaymentStatus;
-  method: PaymentMethod;
-  transactionId?: string;
+  orderId?: string;
   createdAt: string;
-  updatedAt: string;
 }
 
+// ─── Matches backend PaymentDetailResponse ────────────────────────────────────
+export interface PaymentDetailItem extends PaymentHistoryItem {
+  payhereId?: string;
+  updatedAt: string;
+  billing?: {
+    fullName?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    country?: string;
+  };
+  transactionLogs?: Array<{
+    id: string;
+    event: string;
+    rawPayload?: string;
+    createdAt: string;
+  }>;
+}
+
+// ─── Spring Page wrapper ───────────────────────────────────────────────────────
+export interface SpringPage<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+  first: boolean;
+  last: boolean;
+}
+
+// ─── Matches backend InitiatePaymentRequest ───────────────────────────────────
 export interface InitiatePaymentPayload {
-  userId: string;
   appointmentId: string;
   amount: number;
-  currency: string;
-  firstName?: string;
-  lastName?: string;
+  currency: CurrencyType | string;
+  fullName?: string;
   email?: string;
   phone?: string;
   address?: string;
   city?: string;
   country?: string;
-  metadata?: Record<string, string>;
 }
 
+// ─── Matches backend InitiatePaymentResponse ──────────────────────────────────
 export interface CheckoutPayloadResponse {
-  actionUrl: string;
-  fields: Record<string, string>;
+  orderId: string;
+  merchantId: string;
+  amount: number;
+  currency: string;
+  hash: string;
+  checkoutUrl: string;
+  notifyUrl: string;
 }
 
-export interface ConfirmPaymentPayload {
-  transactionId: string;
-}
+// ─── API Functions ─────────────────────────────────────────────────────────────
 
-export const fetchAllPayments = () =>
-  apiClient.get<Payment[]>(PAYMENT_ENDPOINTS.GET_ALL);
+export const initiatePayment = (payload: InitiatePaymentPayload) => {
+  const body = {
+    appointmentId: payload.appointmentId,
+    amount: payload.amount,
+    currency: payload.currency,
+    billing: {
+      fullName: payload.fullName ?? "",
+      email: payload.email ?? "",
+      phone: payload.phone ?? "",
+      address: payload.address,
+      city: payload.city,
+      country: payload.country || "Sri Lanka",
+    },
+  };
 
-export const fetchPaymentById = (id: string) =>
-  apiClient.get<Payment>(PAYMENT_ENDPOINTS.GET_BY_ID(id));
-
-export const initiatePayment = (payload: InitiatePaymentPayload) =>
-  apiClient.post<CheckoutPayloadResponse>(PAYMENT_ENDPOINTS.INITIATE, payload);
-
-export const confirmPayment = ({
-  id,
-  payload,
-}: {
-  id: string;
-  payload: ConfirmPaymentPayload;
-}) => apiClient.patch<Payment>(PAYMENT_ENDPOINTS.CONFIRM(id), payload);
-
-export const refundPayment = (id: string) =>
-  apiClient.patch<Payment>(PAYMENT_ENDPOINTS.REFUND(id));
-
-export const fetchPaymentsByPatient = (patientId: string) =>
-  apiClient.get<Payment[]>(PAYMENT_ENDPOINTS.BY_PATIENT(patientId));
+  return apiClient.post<CheckoutPayloadResponse>(PAYMENT_ENDPOINTS.INITIATE, body);
+};
 
 export const fetchPaymentsByAppointment = (appointmentId: string) =>
-  apiClient.get<Payment[]>(
+  apiClient.get<PaymentHistoryItem>(
     PAYMENT_ENDPOINTS.BY_APPOINTMENT(appointmentId)
   );
 
-export const useGetAllPayments = () =>
+export const fetchPaymentsByOrder = (orderId: string) =>
+  apiClient.get<PaymentHistoryItem>(PAYMENT_ENDPOINTS.BY_ORDER(orderId));
+
+export const downloadInvoice = (id: string) =>
+  apiClient.get<Blob>(PAYMENT_ENDPOINTS.INVOICE(id), { responseType: "blob" });
+
+// ─── Hooks ─────────────────────────────────────────────────────────────────────
+
+export const useGetMyPaymentHistory = (page = 0, size = 10) =>
   useQuery({
-    queryKey: queryKeys.payment.lists(),
-    queryFn: () => fetchAllPayments().then((r) => r.data),
+    queryKey: queryKeys.payment.history(page, size),
+    queryFn: () =>
+      apiClient
+        .get<SpringPage<PaymentHistoryItem>>(PAYMENT_ENDPOINTS.HISTORY, {
+          params: { page, size, sort: "createdAt,DESC" },
+        })
+        .then((r) => r.data),
+  });
+
+export const useGetAllPayments = (page = 0, size = 10) =>
+  useQuery({
+    queryKey: queryKeys.payment.lists(page, size),
+    queryFn: () =>
+      apiClient
+        .get<SpringPage<PaymentHistoryItem>>(PAYMENT_ENDPOINTS.GET_ALL, {
+          params: { page, size, sort: "createdAt,DESC" },
+        })
+        .then((r) => r.data),
   });
 
 export const useGetPaymentById = (id: string) =>
   useQuery({
     queryKey: queryKeys.payment.detail(id),
-    queryFn: () => fetchPaymentById(id).then((r) => r.data),
+    queryFn: () =>
+      apiClient
+        .get<PaymentDetailItem>(PAYMENT_ENDPOINTS.GET_BY_ID(id))
+        .then((r) => r.data),
     enabled: !!id,
-  });
-
-export const useGetPaymentsByPatient = (patientId: string) =>
-  useQuery({
-    queryKey: queryKeys.payment.byPatient(patientId),
-    queryFn: () => fetchPaymentsByPatient(patientId).then((r) => r.data),
-    enabled: !!patientId,
   });
 
 export const useGetPaymentsByAppointment = (appointmentId: string) =>
@@ -105,34 +149,75 @@ export const useGetPaymentsByAppointment = (appointmentId: string) =>
     enabled: !!appointmentId,
   });
 
+export const useGetPaymentsByUser = (userId: string, page = 0, size = 10) =>
+  useQuery({
+    queryKey: [...queryKeys.payment.byPatient(userId), page, size],
+    queryFn: () =>
+      apiClient
+        .get<SpringPage<PaymentHistoryItem>>(PAYMENT_ENDPOINTS.BY_USER(userId), {
+          params: { page, size, sort: "createdAt,DESC" },
+        })
+        .then((r) => r.data),
+    enabled: !!userId,
+  });
+
+export const useGetPaymentsByStatus = (
+  status: "PENDING" | "SUCCESS" | "FAILED",
+  page = 0,
+  size = 10
+) =>
+  useQuery({
+    queryKey: ["payment", "status", status, page, size],
+    queryFn: () =>
+      apiClient
+        .get<SpringPage<PaymentHistoryItem>>(PAYMENT_ENDPOINTS.BY_STATUS(status), {
+          params: { page, size, sort: "createdAt,DESC" },
+        })
+        .then((r) => r.data),
+    enabled: !!status,
+  });
+
+export const useGetPaymentByOrder = (orderId: string) =>
+  useQuery({
+    queryKey: ["payment", "order", orderId],
+    queryFn: () => fetchPaymentsByOrder(orderId).then((r) => r.data),
+    enabled: !!orderId,
+  });
+
+// Polls every 2.5 s until status is SUCCESS or FAILED, then stops.
+export const usePollPaymentByOrder = (orderId: string, active: boolean) =>
+  useQuery({
+    queryKey: ["payment", "order", orderId, "poll"],
+    queryFn: () => fetchPaymentsByOrder(orderId).then((r) => r.data),
+    enabled: !!orderId && active,
+    refetchInterval: (query) => {
+      const status = (query.state.data as PaymentHistoryItem | undefined)?.status;
+      if (status === "SUCCESS" || status === "FAILED") return false;
+      return 2500;
+    },
+    refetchIntervalInBackground: false,
+  });
+
 export const useInitiatePayment = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: InitiatePaymentPayload) =>
       initiatePayment(payload).then((r) => r.data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.payment.lists() });
+      qc.invalidateQueries({ queryKey: queryKeys.payment.all });
     },
   });
 };
 
-export const useConfirmPayment = () => {
+export const useReconcilePayment = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: confirmPayment,
-    onSuccess: (_, { id }) => {
-      qc.invalidateQueries({ queryKey: queryKeys.payment.detail(id) });
-      qc.invalidateQueries({ queryKey: queryKeys.payment.lists() });
-    },
-  });
-};
-
-export const useRefundPayment = () => {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: refundPayment,
+    mutationFn: (id: string) =>
+      apiClient
+        .post<{ message: string }>(PAYMENT_ENDPOINTS.RECONCILE(id))
+        .then((r) => r.data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.payment.lists() });
+      qc.invalidateQueries({ queryKey: queryKeys.payment.all });
     },
   });
 };

@@ -4,7 +4,6 @@ import com.edoc.patientservice.dto.report.MedicalReportRequestDTO;
 import com.edoc.patientservice.dto.report.MedicalReportResponseDTO;
 import com.edoc.patientservice.entity.MedicalReport;
 import com.edoc.patientservice.entity.Patient;
-import com.edoc.patientservice.entity.PatientStatus;
 import com.edoc.patientservice.mapper.MedicalReportMapper;
 import com.edoc.patientservice.repository.MedicalReportRepository;
 import com.edoc.patientservice.repository.PatientRepository;
@@ -85,7 +84,7 @@ public class MedicalReportService {
     }
 
     @Transactional(readOnly = true)
-    public MedicalReportResponseDTO getReportForPatient(String userId, Long reportId) {
+    public MedicalReportResponseDTO getReportForPatient(String userId, UUID reportId) {
         // Ensure the report belongs to the requested patient.
         Patient patient = findPatientByUserIdOrThrow(userId);
         MedicalReport report = findReportOrThrow(reportId);
@@ -96,7 +95,7 @@ public class MedicalReportService {
     }
 
     @Transactional(readOnly = true)
-    public ResponseEntity<Resource> getReportFileForPatient(String userId, Long reportId) {
+    public ResponseEntity<Resource> getReportFileForPatient(String userId, UUID reportId) {
         // Verify access and return the stored report file.
         Patient patient = findPatientByUserIdOrThrow(userId);
         MedicalReport report = findReportOrThrow(reportId);
@@ -107,7 +106,7 @@ public class MedicalReportService {
     }
 
     @Transactional(readOnly = true)
-    public ResponseEntity<Resource> getReportFileInternal(Long patientId, Long reportId) {
+    public ResponseEntity<Resource> getReportFileInternal(UUID patientId, UUID reportId) {
         // Internal endpoint uses patientId ownership checks before exposing file bytes.
         MedicalReport report = findReportOrThrow(reportId);
         if (!report.getPatient().getId().equals(patientId)) {
@@ -144,7 +143,7 @@ public class MedicalReportService {
     }
 
     @Transactional(readOnly = true)
-    public List<MedicalReportResponseDTO> getReportsForPatientInternal(Long patientId) {
+    public List<MedicalReportResponseDTO> getReportsForPatientInternal(UUID patientId) {
         // Internal endpoint for staff services to list reports.
         findPatientOrThrow(patientId);
         return medicalReportRepository.findByPatientId(patientId).stream()
@@ -152,7 +151,7 @@ public class MedicalReportService {
                 .collect(Collectors.toList());
     }
 
-    private Patient findPatientOrThrow(Long patientId) {
+    private Patient findPatientOrThrow(UUID patientId) {
         return patientRepository.findById(patientId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient not found"));
     }
@@ -163,12 +162,12 @@ public class MedicalReportService {
     }
 
     private void assertPatientActiveForWrite(Patient patient) {
-        if (patient.getStatus() != PatientStatus.ACTIVE) {
+        if (patient.isDeleted()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Patient is inactive");
         }
     }
 
-    private MedicalReport findReportOrThrow(Long reportId) {
+    private MedicalReport findReportOrThrow(UUID reportId) {
         return medicalReportRepository.findById(reportId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Report not found"));
     }

@@ -12,14 +12,14 @@ public class AppointmentServiceClient {
 
     private final RestClient restClient;
 
-    @Value("${appointment.service.base-url}")
+    @Value("${appointment.service.url}")
     private String appointmentServiceBaseUrl;
 
     public AppointmentServiceClient(RestClient.Builder restClientBuilder) {
         this.restClient = restClientBuilder.build();
     }
 
-    public AppointmentDTO getAppointment(Long appointmentId, String authHeader) {
+    public AppointmentDTO getAppointment(String appointmentId, String authHeader) {
         try {
             return restClient.get()
                     .uri(appointmentServiceBaseUrl + "/api/v1/appointments/{appointmentId}", appointmentId)
@@ -28,10 +28,9 @@ public class AppointmentServiceClient {
                     .body(AppointmentDTO.class);
         } catch (RestClientResponseException ex) {
             if (ex.getStatusCode() == HttpStatus.NOT_FOUND) {
-                System.out.println("Appointment not found: " + appointmentId);
-            } else {
-                System.err.println("Error calling appointment service: " + ex.getMessage());
+                return null;
             }
+            System.err.println("Error calling appointment service: " + ex.getMessage());
             throw ex;
         } catch (Exception ex) {
             System.err.println("Unexpected error calling appointment service: " + ex.getMessage());
@@ -40,19 +39,19 @@ public class AppointmentServiceClient {
     }
 
     public static class AppointmentDTO {
-        private Long id;
-        private Long patientId;
-        private Long doctorId;
+        private String id;
+        private String patientId;
+        private String doctorId;
         private String status;
 
-        public Long getId() { return id; }
-        public void setId(Long id) { this.id = id; }
+        public String getId() { return id; }
+        public void setId(String id) { this.id = id; }
 
-        public Long getPatientId() { return patientId; }
-        public void setPatientId(Long patientId) { this.patientId = patientId; }
+        public String getPatientId() { return patientId; }
+        public void setPatientId(String patientId) { this.patientId = patientId; }
 
-        public Long getDoctorId() { return doctorId; }
-        public void setDoctorId(Long doctorId) { this.doctorId = doctorId; }
+        public String getDoctorId() { return doctorId; }
+        public void setDoctorId(String doctorId) { this.doctorId = doctorId; }
 
         public String getStatus() { return status; }
         public void setStatus(String status) { this.status = status; }

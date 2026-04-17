@@ -6,6 +6,7 @@ import { queryKeys } from "./utils/queryKeys";
 
 export interface Doctor {
   id: string;
+  userId?: string;  // Links to the user-service account
   email?: string;
   firstName: string;
   lastName: string;
@@ -20,6 +21,7 @@ export interface Doctor {
   consultationFee: number;
   isVerified: boolean;
   isAvailable: boolean;
+  role?: string;  // e.g., "DOCTOR"
   languages?: string[];
 }
 
@@ -48,7 +50,8 @@ export interface Medicine {
 export interface Prescription {
   id: string;
   doctorId: string;
-  patientId: string;
+  patientId?: string;
+  patientUserId?: string;
   appointmentId?: string;
   diagnosis?: string;
   notes?: string;
@@ -75,7 +78,8 @@ export interface CreateDoctorPayload {
 export type UpdateDoctorPayload = Partial<CreateDoctorPayload>;
 
 export interface CreatePrescriptionPayload {
-  patientId: string;
+  patientId?: string;
+  patientUserId: string;
   appointmentId?: string;
   diagnosis?: string;
   notes?: string;
@@ -87,6 +91,9 @@ export const fetchMyDoctorProfile = () =>
 
 export const fetchAllDoctors = () =>
   apiClient.get<Doctor[]>(DOCTOR_ENDPOINTS.GET_ALL);
+
+export const fetchAdminAllDoctors = () =>
+  apiClient.get<Doctor[]>(DOCTOR_ENDPOINTS.ADMIN_ALL);
 
 export const fetchDoctorById = (id: string) =>
   apiClient.get<Doctor>(DOCTOR_ENDPOINTS.GET_BY_ID(id));
@@ -102,6 +109,10 @@ export const updateDoctor = ({
   payload: UpdateDoctorPayload;
 }) => apiClient.put<Doctor>(DOCTOR_ENDPOINTS.UPDATE(id), payload);
 
+export const toggleDoctorAvailability = (id: string) =>
+  apiClient.patch<Doctor>(DOCTOR_ENDPOINTS.TOGGLE_AVAILABILITY(id));
+
+
 export const deleteDoctor = (id: string) =>
   apiClient.delete(DOCTOR_ENDPOINTS.DELETE(id));
 
@@ -110,6 +121,16 @@ export const fetchDoctorsBySpecialty = (specialty: string) =>
 
 export const fetchDoctorAvailability = (id: string) =>
   apiClient.get<DoctorAvailability[]>(DOCTOR_ENDPOINTS.AVAILABILITY(id));
+
+export const verifyDoctor = (id: string) =>
+  apiClient.patch<Doctor>(DOCTOR_ENDPOINTS.VERIFY(id));
+
+export const fetchDoctorPatientProfile = (doctorId: string, patientId: string) =>
+  apiClient.get(DOCTOR_ENDPOINTS.GET_PATIENT(doctorId, patientId));
+
+export const fetchDoctorPatientReports = (doctorId: string, patientId: string) =>
+  apiClient.get(DOCTOR_ENDPOINTS.GET_PATIENT_REPORTS(doctorId, patientId));
+
 export const setDoctorAvailability = (id: string, payload: { dayOfWeek: string; timeSlots: Omit<AvailabilityTimeSlot, 'isBooked'>[] }) =>
   apiClient.post<DoctorAvailability>(DOCTOR_ENDPOINTS.AVAILABILITY(id), payload);
 
@@ -118,8 +139,14 @@ export const deleteDoctorAvailability = (id: string, day: string) =>
 export const fetchPrescriptionsByDoctor = (doctorId: string) =>
   apiClient.get<Prescription[]>(DOCTOR_ENDPOINTS.PRESCRIPTIONS_BY_DOCTOR(doctorId));
 
+export const fetchPrescriptionsByPatient = (patientUserId: string) =>
+  apiClient.get<Prescription[]>(DOCTOR_ENDPOINTS.PRESCRIPTIONS_BY_PATIENT(patientUserId));
+
 export const fetchPrescriptionById = (id: string) =>
   apiClient.get<Prescription>(DOCTOR_ENDPOINTS.PRESCRIPTION_BY_ID(id));
+
+export const fetchPrescriptionsByAppointment = (appointmentId: string) =>
+  apiClient.get<Prescription[]>(DOCTOR_ENDPOINTS.PRESCRIPTIONS_BY_APPOINTMENT(appointmentId));
 
 export const createPrescription = ({ doctorId, payload }: { doctorId: string; payload: CreatePrescriptionPayload }) =>
   apiClient.post<Prescription>(DOCTOR_ENDPOINTS.CREATE_PRESCRIPTION(doctorId), payload);
@@ -149,6 +176,12 @@ export const useGetAllDoctors = () =>
     queryFn: () => fetchAllDoctors().then((r) => r.data),
   });
 
+export const useGetAdminAllDoctors = () =>
+  useQuery({
+    queryKey: ["admin", "doctors"],
+    queryFn: () => fetchAdminAllDoctors().then((r) => r.data),
+  });
+
 export const useGetDoctorById = (id: string) =>
   useQuery({
     queryKey: queryKeys.doctor.detail(id),
@@ -169,6 +202,26 @@ export const useGetDoctorAvailability = (id: string) =>
     queryFn: () => fetchDoctorAvailability(id).then((r) => r.data),
     enabled: !!id,
   });
+
+export const useToggleDoctorAvailability = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: toggleDoctorAvailability,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.doctor.all });
+    },
+  });
+};
+
+export const useVerifyDoctor = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: verifyDoctor,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.doctor.all });
+    },
+  });
+};
 
 export const useSetDoctorAvailability = () => {
   const qc = useQueryClient();
@@ -212,18 +265,19 @@ export const useGetPrescriptionById = (id: string) =>
     enabled: !!id,
   });
 
-export const verifyDoctor = (id: string) =>
-  apiClient.patch<Doctor>(DOCTOR_ENDPOINTS.VERIFY(id));
-
-export const useVerifyDoctor = () => {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: verifyDoctor,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.doctor.lists() });
-    },
+export const useGetPrescriptionsByAppointment = (appointmentId: string) =>
+  useQuery({
+    queryKey: [...queryKeys.doctor.prescriptions.all, "appointment", appointmentId],
+    queryFn: () => fetchPrescriptionsByAppointment(appointmentId).then((r) => r.data),
+    enabled: !!appointmentId,
   });
-};
+
+export const useGetPrescriptionsByPatient = (patientUserId: string) =>
+  useQuery({
+    queryKey: [...queryKeys.doctor.prescriptions.all, "patient", patientUserId],
+    queryFn: () => fetchPrescriptionsByPatient(patientUserId).then((r) => r.data),
+    enabled: !!patientUserId,
+  });
 
 export const useCreateDoctor = () => {
   const qc = useQueryClient();

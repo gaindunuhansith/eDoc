@@ -2,12 +2,13 @@ package com.edoc.patientservice.dto.history;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.UUID;
 
 // Medical history entry returned to clients.
 public class MedicalHistoryResponseDTO {
 
-    private Long id;
-    private Long patientId;
+    private UUID id;
+    private UUID patientId;
     private String condition;
     private String diagnosis;
     private LocalDate visitDate;
@@ -17,19 +18,19 @@ public class MedicalHistoryResponseDTO {
     private String doctorNameSnapshot;
     private Instant createdAt;
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 
-    public Long getPatientId() {
+    public UUID getPatientId() {
         return patientId;
     }
 
-    public void setPatientId(Long patientId) {
+    public void setPatientId(UUID patientId) {
         this.patientId = patientId;
     }
 

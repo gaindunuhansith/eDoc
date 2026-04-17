@@ -3,8 +3,6 @@ package com.edoc.patientservice.entity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -15,6 +13,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -26,14 +25,11 @@ import lombok.Setter;
 public class Patient {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     @Column(name = "user_id", nullable = false, unique = true)
     private String userId;
-
-    @Column(length = 50)
-    private String phone;
 
     private Double height;
 
@@ -48,18 +44,20 @@ public class Patient {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private PatientStatus status;
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted = false;
 
-    @Column(name = "deactivated_at")
-    private Instant deactivatedAt;
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
 
-    @Column(name = "deactivated_by")
-    private Long deactivatedBy;
+    // Stores the internal patient-service UUID of the actor who triggered the soft-deletion.
+    // Set to the patient's own id for self-service deletion; null for admin-initiated changes
+    // (admins have no patient-service record).
+    @Column(name = "deleted_by")
+    private UUID deletedBy;
 
-    @Column(name = "deactivation_reason", length = 500)
-    private String deactivationReason;
+    @Column(name = "deletion_reason", length = 500)
+    private String deletionReason;
 
     @Column(length = 20)
     private String gender;
@@ -92,9 +90,6 @@ public class Patient {
         }
         if (updatedAt == null) {
             updatedAt = createdAt;
-        }
-        if (status == null) {
-            status = PatientStatus.ACTIVE;
         }
     }
 
