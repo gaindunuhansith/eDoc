@@ -152,8 +152,19 @@ log/
 .sonar/
 .scannerwork/
 
-mock-frontend
+mock-frontend 
 
-# UPLOADS
-uploads/
-**/uploads/
+# PYTHON
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+bin/
+lib/
+include/
+venv/
+.venv/
+uv.lock
+.uv/
