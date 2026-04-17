@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useGetAllUsers, useMarkProfileCreated } from "@/api/userApi";
-import { useCreateDoctor } from "@/api/doctorApi";
+import { useCreateDoctor, useVerifyDoctor } from "@/api/doctorApi";
 import { UserProfile } from "@/api/userApi";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ export default function PendingDoctorsPage() {
   const { data: users, isLoading } = useGetAllUsers();
   const markProfileCreatedMutation = useMarkProfileCreated();
   const createDoctorMutation = useCreateDoctor();
+  const verifyDoctorMutation = useVerifyDoctor();
 
   // Filter users who are doctors but not yet verified or profile created 
   // Because backend logic: after approval, profile gets created
@@ -39,14 +40,22 @@ export default function PendingDoctorsPage() {
       experienceYears: 0,
       consultationFee: 0,
     }, {
-      onSuccess: () => {
-        // 2. Mark profile as created so it's formally removed from the pending list
-        markProfileCreatedMutation.mutate(doc.userId, {
+      onSuccess: (createdDoctor) => {
+        // 2. Verify the doctor (set isVerified=true, isAvailable=true)
+        verifyDoctorMutation.mutate(createdDoctor.data.id, {
           onSuccess: () => {
-            toast.success("Doctor Approved", { description: `${doc.name} has been successfully verified.` });
+            // 3. Mark profile as created so it's removed from the pending list
+            markProfileCreatedMutation.mutate(doc.userId, {
+              onSuccess: () => {
+                toast.success("Doctor Approved", { description: `${doc.name} has been successfully verified.` });
+              },
+              onError: () => {
+                toast.error("Internal Error", { description: "Doctor verified but failed to mark profile as done."});
+              }
+            });
           },
           onError: () => {
-            toast.error("Internal Error", { description: "Doctor created but failed to mark profile as done."});
+            toast.error("Verification Failed", { description: "Doctor created but could not be verified." });
           }
         });
       },

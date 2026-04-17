@@ -37,7 +37,9 @@ export const DOCTOR_ENDPOINTS = {
   CREATE: "/api/v1/doctors/register",
   UPDATE: (id: string) => `/api/v1/doctors/${id}`,
   DELETE: (id: string) => `/api/v1/doctors/${id}`,
+  VERIFY: (id: string) => `/api/v1/doctors/${id}/verify`,
   AVAILABILITY: (id: string) => `/api/v1/doctors/${id}/availability`,
+  
   PRESCRIPTIONS: "/api/v1/prescriptions",
   PRESCRIPTION_BY_ID: (id: string) => `/api/v1/prescriptions/${id}`,
   CREATE_PRESCRIPTION: "/api/v1/prescriptions",

@@ -93,6 +93,14 @@ public class DoctorService {
         return doctorRepository.save(doctor);
     }
 
+    // Verify a doctor (admin only)
+    public Doctor verifyDoctor(String id) {
+        Doctor doctor = getDoctorById(id);
+        doctor.setVerified(true);
+        doctor.setAvailable(true);
+        return doctorRepository.save(doctor);
+    }
+
     // Toggle doctor availability on/off
     public Doctor toggleAvailability(String id) {
         Doctor doctor = getDoctorById(id);
