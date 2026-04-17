@@ -11,6 +11,7 @@ import com.edoc.feedbackservice.repository.FeedbackRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -96,6 +97,9 @@ public class FeedbackService {
     public FeedbackResponseDTO updateFeedback(Long id, FeedbackRequestDTO request) {
         Feedback feedback = feedbackRepository.findById(id)
                 .orElseThrow(() -> new FeedbackNotFoundException("Feedback not found"));
+        if (feedback.getEditableUntil() == null || LocalDateTime.now().isAfter(feedback.getEditableUntil())) {
+            throw new RuntimeException("Edit window has expired. Feedback can only be edited within 48 hours of submission.");
+        }
         feedback.setRating(request.getRating());
         feedback.setComment(request.getComment());
         Feedback updated = feedbackRepository.save(feedback);
@@ -103,8 +107,10 @@ public class FeedbackService {
     }
 
     public void deleteFeedback(Long id) {
-        if (!feedbackRepository.existsById(id)) {
-            throw new FeedbackNotFoundException("Feedback not found");
+        Feedback feedback = feedbackRepository.findById(id)
+                .orElseThrow(() -> new FeedbackNotFoundException("Feedback not found"));
+        if (feedback.getEditableUntil() == null || LocalDateTime.now().isAfter(feedback.getEditableUntil())) {
+            throw new RuntimeException("Delete window has expired. Feedback can only be deleted within 48 hours of submission.");
         }
         feedbackRepository.deleteById(id);
     }

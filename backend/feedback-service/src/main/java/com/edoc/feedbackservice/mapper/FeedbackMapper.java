@@ -16,12 +16,13 @@ public class FeedbackMapper {
         feedback.setRating(dto.getRating());
         feedback.setComment(dto.getComment());
         feedback.setTimestamp(java.time.LocalDateTime.now());
+        feedback.setEditableUntil(java.time.LocalDateTime.now().plusHours(48));
         feedback.setStatus(Feedback.FeedbackStatus.PENDING);
         return feedback;
     }
 
     public FeedbackResponseDTO toResponseDTO(Feedback feedback) {
-        return new FeedbackResponseDTO(
+        FeedbackResponseDTO dto = new FeedbackResponseDTO(
                 feedback.getId(),
                 feedback.getPatientId(),
                 feedback.getDoctorId(),
@@ -31,5 +32,7 @@ public class FeedbackMapper {
                 feedback.getTimestamp(),
                 feedback.getStatus().name()
         );
+        dto.setEditableUntil(feedback.getEditableUntil());
+        return dto;
     }
 }

@@ -18,9 +18,27 @@ export interface Feedback {
   rating: number;
   comment?: string;
   timestamp: string;
+  editableUntil: string;
   status: FeedbackStatus;
   createdAt: string;
   updatedAt?: string;
+}
+
+export function isFeedbackEditable(feedback: Feedback): boolean {
+  if (!feedback.editableUntil) return false;
+  return new Date() < new Date(feedback.editableUntil);
+}
+
+export function getEditableUntilLabel(feedback: Feedback): string {
+  if (!feedback.editableUntil) return "Not editable";
+  const deadline = new Date(feedback.editableUntil);
+  const now = new Date();
+  if (now >= deadline) return "Edit window expired";
+  const diffMs = deadline.getTime() - now.getTime();
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+  if (diffHours > 0) return `Editable for ${diffHours}h ${diffMins}m`;
+  return `Editable for ${diffMins}m`;
 }
 
 export interface FeedbackPayload {
