@@ -104,6 +104,10 @@ public class AppointmentService {
                 .orElseThrow(() -> new RuntimeException("Appointment not found with id: " + id));
     }
 
+    public List<Appointment> getAllAppointments() {
+        return appointmentRepository.findAll();
+    }
+
     public List<Appointment> getAppointmentsByPatient(String patientId) {
         return appointmentRepository.findByPatientId(patientId);
     }

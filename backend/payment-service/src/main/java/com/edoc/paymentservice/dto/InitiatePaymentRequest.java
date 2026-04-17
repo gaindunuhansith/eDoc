@@ -30,8 +30,9 @@ public class InitiatePaymentRequest {
     @Pattern(regexp = "^[A-Za-z]{3}$", message = "Currency must be a 3-letter ISO code")
     private String currency;
 
-    @NotNull(message = "Patient ID is required")
-    private UUID patientId;
+
+    @NotNull(message = "User ID is required")
+    private UUID userId;
 
     private String firstName;
 

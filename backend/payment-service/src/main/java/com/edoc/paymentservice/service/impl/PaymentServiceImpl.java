@@ -26,6 +26,7 @@ import com.edoc.paymentservice.util.ValidationUtils;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.HashMap;
+import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -49,12 +50,12 @@ public class PaymentServiceImpl implements IPaymentService {
 
     @Override
     @Transactional
-    public Payment createPayment(UUID appointmentId, UUID patientId, BigDecimal amount, String currency) {
-        validateCreatePaymentInput(appointmentId, patientId, amount, currency);
+    public Payment createPayment(UUID appointmentId, UUID userId, BigDecimal amount, String currency) {
+        validateCreatePaymentInput(appointmentId, userId, amount, currency);
 
         Payment payment = Payment.builder()
             .appointmentId(appointmentId)
-            .patientId(patientId)
+            .userId(userId)
             .amount(amount)
             .currency(currency.trim().toUpperCase(Locale.ROOT))
             .payhereOrderId(UUID.randomUUID().toString())
@@ -171,12 +172,17 @@ public class PaymentServiceImpl implements IPaymentService {
                 .orElseThrow(() -> new PaymentNotFoundException("Payment not found for id: " + paymentId));
     }
 
-    private void validateCreatePaymentInput(UUID appointmentId, UUID patientId, BigDecimal amount, String currency) {
+    @Override
+    public List<Payment> getAllPayments() {
+        return paymentRepository.findAll();
+    }
+
+    private void validateCreatePaymentInput(UUID appointmentId, UUID userId, BigDecimal amount, String currency) {
         if (appointmentId == null) {
             throw new IllegalArgumentException("appointmentId is required");
         }
-        if (patientId == null) {
-            throw new IllegalArgumentException("patientId is required");
+        if (userId == null) {
+            throw new IllegalArgumentException("userId is required");
         }
         if (amount == null || amount.signum() <= 0) {
             throw new IllegalArgumentException("amount must be greater than zero");

@@ -26,8 +26,9 @@ public class Payment {
     @Column(name = "appointment_id", nullable = false)
     private UUID appointmentId;
 
-    @Column(name = "patient_id", nullable = false)
-    private UUID patientId;
+
+    @Column(name = "user_id", nullable = false)
+    private UUID userId;
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;

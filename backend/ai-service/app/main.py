@@ -8,4 +8,4 @@ app.include_router(ai_controller.router)
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8090, reload=True)
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8087, reload=True)

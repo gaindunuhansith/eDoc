@@ -27,11 +27,19 @@ export interface Payment {
 }
 
 export interface InitiatePaymentPayload {
-  patientId: string;
-  appointmentId?: string;
+  userId: string;
+  appointmentId: string;
   amount: number;
-  currency?: string;
+  currency: string;
   method: PaymentMethod;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  country?: string;
+  metadata?: Record<string, string>;
 }
 
 export interface ConfirmPaymentPayload {

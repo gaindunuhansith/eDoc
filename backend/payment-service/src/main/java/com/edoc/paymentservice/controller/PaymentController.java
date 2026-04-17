@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -42,7 +43,7 @@ public class PaymentController {
     public ResponseEntity<CheckoutPayloadResponse> initiatePayment(@Valid @RequestBody InitiatePaymentRequest request) {
         Payment payment = paymentService.createPayment(
                 request.getAppointmentId(),
-                request.getPatientId(),
+                request.getUserId(),
                 request.getAmount(),
                 request.getCurrency()
         );
@@ -70,6 +71,15 @@ public class PaymentController {
     public ResponseEntity<PaymentResponse> getPayment(@PathVariable UUID id) {
         Payment payment = paymentService.getPaymentById(id);
         return ResponseEntity.ok(paymentMapper.toStatusResponse(payment));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<PaymentResponse>> getAllPayments() {
+        List<PaymentResponse> payments = paymentService.getAllPayments()
+                .stream()
+                .map(paymentMapper::toStatusResponse)
+                .toList();
+        return ResponseEntity.ok(payments);
     }
 
     @PostMapping(value = "/notify", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)

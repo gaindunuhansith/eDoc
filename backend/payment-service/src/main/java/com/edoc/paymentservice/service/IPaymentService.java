@@ -4,12 +4,13 @@ import com.edoc.paymentservice.model.CustomerData;
 import com.edoc.paymentservice.model.Payment;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 public interface IPaymentService {
 
-    Payment createPayment(UUID appointmentId, UUID patientId, BigDecimal amount, String currency);
+    Payment createPayment(UUID appointmentId, UUID userId, BigDecimal amount, String currency);
 
     String generatePayHereHash(String orderId, BigDecimal amount, String currency);
 
@@ -18,4 +19,6 @@ public interface IPaymentService {
     void handleNotification(Map<String, String> params);
 
     Payment getPaymentById(UUID paymentId);
+
+    List<Payment> getAllPayments();
 }

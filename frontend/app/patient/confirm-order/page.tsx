@@ -1,24 +1,159 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Plus, Minus, Mail, CheckCircle2, Building, ChevronDown, Check, ChevronRight } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Plus, Mail, Building, ChevronDown, Check, ChevronRight } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { useStore } from "@/store/store";
+import { useGetMyPatientProfile } from "@/api/patientApi";
+import { useGetAppointmentById } from "@/api/appointmentApi";
+import {
+  useInitiatePayment,
+  useConfirmPayment,
+  type PaymentMethod,
+} from "@/api/paymentApi";
 import {
   Dialog,
   DialogContent,
-  DialogTrigger,
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
 
 export default function ConfirmOrderPage() {
   const router = useRouter();
-  const [seats, setSeats] = useState(2);
-  const [billingCycle, setBillingCycle] = useState<"monthly" | "annually">("annually");
+  const searchParams = useSearchParams();
+  const user = useStore((s) => s.user);
+
+  const appointmentIdParam = searchParams.get("appointmentId") ?? "";
+  const amountParam = Number(searchParams.get("amount"));
+  const currencyParam = searchParams.get("currency") ?? "LKR";
+  const queryFirstName = searchParams.get("firstName") ?? "";
+  const queryLastName = searchParams.get("lastName") ?? "";
+  const queryEmail = searchParams.get("email") ?? "";
+  const queryPhone = searchParams.get("phone") ?? "";
+  const queryAddress = searchParams.get("address") ?? "";
+  const queryCity = searchParams.get("city") ?? "";
+  const queryCountry = searchParams.get("country") ?? "";
+  const queryDoctorId = searchParams.get("doctorId") ?? "";
+  const queryDoctorName = searchParams.get("doctorName") ?? "";
+
+  const nameParts = (user?.name ?? "").trim().split(/\s+/).filter(Boolean);
+  const defaultFirstName = queryFirstName || nameParts[0] || "";
+  const defaultLastName =
+    queryLastName || (nameParts.length > 1 ? nameParts.slice(1).join(" ") : "");
+
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "annually">("monthly");
+  const [firstName, setFirstName] = useState(defaultFirstName);
+  const [lastName, setLastName] = useState(defaultLastName);
+  const [email, setEmail] = useState(user?.email || queryEmail || "");
+  const [phone, setPhone] = useState(user?.phoneNumber || queryPhone);
+  const [address, setAddress] = useState(queryAddress);
+  const [city, setCity] = useState(queryCity);
+  const [country, setCountry] = useState(queryCountry || "Sri Lanka");
+  const [currency, setCurrency] = useState(currencyParam.toUpperCase());
+  const [successOpen, setSuccessOpen] = useState(false);
+
+  const { data: patient } = useGetMyPatientProfile();
+  const { data: appointment } = useGetAppointmentById(appointmentIdParam);
+
+  useEffect(() => {
+    if (!phone && patient?.phone) {
+      setPhone(patient.phone);
+    }
+    if (!address && patient?.address) {
+      setAddress(patient.address);
+    }
+  }, [phone, address, patient]);
+
+  const initiatePaymentMutation = useInitiatePayment();
+  const confirmPaymentMutation = useConfirmPayment();
+
+  const amount = Number.isFinite(amountParam)
+    ? amountParam
+    : (appointment?.consultationFee ?? 0);
+  const paymentMethod: PaymentMethod =
+    billingCycle === "monthly" ? "CARD" : "BANK_TRANSFER";
+  const isProcessing =
+    initiatePaymentMutation.isPending || confirmPaymentMutation.isPending;
+
+  const isValidEmail = (value: string) => {
+    if (!value) return true;
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  };
+
+  const resolveMetadata = () => {
+    const metadata: Record<string, string> = {
+      source: "confirm-order",
+      paymentMethod,
+    };
+
+    if (appointment?.timeSlot) metadata.timeSlot = appointment.timeSlot;
+    if (appointment?.appointmentDate) metadata.appointmentDate = appointment.appointmentDate;
+    if (appointment?.type) metadata.appointmentType = appointment.type;
+    if (appointment?.doctorId) metadata.doctorId = appointment.doctorId;
+    if (appointment?.doctorName) metadata.doctorName = appointment.doctorName;
+    if (queryDoctorId) metadata.redirectDoctorId = queryDoctorId;
+    if (queryDoctorName) metadata.redirectDoctorName = queryDoctorName;
+
+    searchParams.forEach((value, key) => {
+      if (key.startsWith("meta_") && value) {
+        metadata[key.replace("meta_", "")] = value;
+      }
+    });
+
+    return metadata;
+  };
+
+  const handleProceedToPay = async () => {
+    const userId = user?.userId || patient?.userId || "";
+    
+    if (!userId) {
+      toast.error("User ID is required before confirming payment.");
+      return;
+    }
+    if (!appointmentIdParam) {
+      toast.error("Appointment ID is required. Open this page from appointment booking.");
+      return;
+    }
+    if (!amount || amount <= 0) {
+      toast.error("Payment amount is missing. Open this page with a valid appointment.");
+      return;
+    }
+    if (!/^[A-Za-z]{3}$/.test(currency)) {
+      toast.error("Currency must be a 3-letter ISO code.");
+      return;
+    }
+    if (!isValidEmail(email)) {
+      toast.error("Email must be valid.");
+      return;
+    }
+
+    try {
+      await initiatePaymentMutation.mutateAsync({
+        userId,
+        appointmentId: appointmentIdParam,
+        amount,
+        currency: currency.toUpperCase(),
+        method: paymentMethod,
+        firstName: firstName.trim() || undefined,
+        lastName: lastName.trim() || undefined,
+        email: email.trim() || undefined,
+        phone: phone.trim() || undefined,
+        address: address.trim() || undefined,
+        city: city.trim() || undefined,
+        country: country.trim() || undefined,
+        metadata: resolveMetadata(),
+      });
+
+      setSuccessOpen(true);
+    } catch {
+      toast.error("Payment initiation failed. Please check details and retry.");
+    }
+  };
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -27,38 +162,11 @@ export default function ConfirmOrderPage() {
         {/* Left Column: Details */}
         <div className="space-y-8">
           <section>
-            <h2 className="text-lg font-semibold mb-4 text-foreground">Plan details</h2>
-            <Separator className="mb-6" />
-
-            {/* Number of seats */}
-            <div className="mb-8">
-              <h3 className="font-medium text-foreground">Number of seats</h3>
-              <p className="text-sm text-muted-foreground mb-4">Select how many seats you need.</p>
-              <div className="flex items-center w-full max-w-md h-12 border rounded-xl overflow-hidden ring-1 ring-border/50">
-                <Button 
-                  variant="ghost" 
-                  className="px-4 h-full flex items-center justify-center text-muted-foreground hover:bg-muted/50 transition-colors"
-                  onClick={() => setSeats(Math.max(1, seats - 1))}
-                >
-                  <Minus className="w-5 h-5" />
-                </Button>
-                <div className="flex-1 h-full flex items-center justify-center font-bold text-xl border-x">
-                  {seats}
-                </div>
-                <Button 
-                  variant="ghost" 
-                  className="px-4 h-full flex items-center justify-center text-muted-foreground hover:bg-muted/50 transition-colors"
-                  onClick={() => setSeats(seats + 1)}
-                >
-                  <Plus className="w-5 h-5" />
-                </Button>
-              </div>
-            </div>
 
             {/* Billing cycle */}
             <div>
-              <h3 className="font-medium text-foreground">Billing cycle</h3>
-              <p className="text-sm text-muted-foreground mb-4">Pay annually for a 20% discount.</p>
+              <h3 className="font-medium text-foreground">Payment method</h3>
+              <p className="text-sm text-muted-foreground mb-4">Choose how you want to complete payment.</p>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-xl">
                 {/* Monthly Option */}
@@ -71,8 +179,8 @@ export default function ConfirmOrderPage() {
                       {billingCycle === "monthly" && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
                     </div>
                     <div>
-                      <div className="font-medium text-foreground">Pay monthly</div>
-                      <div className="text-sm text-muted-foreground mt-0.5">$10 per seat / month</div>
+                      <div className="font-medium text-foreground">Card Payment</div>
+                      <div className="text-sm text-muted-foreground mt-0.5">Use debit or credit card.</div>
                     </div>
                   </div>
                 </div>
@@ -88,10 +196,9 @@ export default function ConfirmOrderPage() {
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-foreground">Pay annually</span>
-                        <span className="text-[10px] bg-muted font-medium px-2 py-0.5 rounded-sm text-muted-foreground">Save 20%</span>
+                        <span className="font-medium text-foreground">Bank Transfer</span>
                       </div>
-                      <div className="text-sm text-muted-foreground mt-0.5">$8.33 per seat / month</div>
+                      <div className="text-sm text-muted-foreground mt-0.5">Complete payment using bank transfer.</div>
                     </div>
                   </div>
                 </div>
@@ -104,6 +211,26 @@ export default function ConfirmOrderPage() {
             <Separator className="mb-6" />
 
             <div className="space-y-6 max-w-xl">
+              <div>
+                <h3 className="font-medium text-foreground mb-3">First name</h3>
+                <Input
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="h-11 rounded-lg border-border/60"
+                />
+              </div>
+
+              <div>
+                <h3 className="font-medium text-foreground mb-3">Last name</h3>
+                <Input
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="h-11 rounded-lg border-border/60"
+                />
+              </div>
+
               {/* Email Address */}
               <div>
                 <h3 className="font-medium text-foreground">Email address <span className="text-red-500">*</span></h3>
@@ -112,24 +239,66 @@ export default function ConfirmOrderPage() {
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input 
                     type="email" 
-                    defaultValue="admin@voxellabs.com" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     className="pl-9 h-11 rounded-lg border-border/60"
                   />
                 </div>
-                <button className="text-sm font-medium text-muted-foreground mt-3 flex items-center gap-1 hover:text-foreground transition-colors">
+                <button type="button" className="text-sm font-medium text-muted-foreground mt-3 flex items-center gap-1 hover:text-foreground transition-colors">
                   <Plus className="w-3.5 h-3.5" /> Add another
                 </button>
               </div>
 
+              <div>
+                <h3 className="font-medium text-foreground mb-3">Phone</h3>
+                <Input
+                  type="text"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="h-11 rounded-lg border-border/60"
+                />
+              </div>
+
               <Separator className="border-dashed" />
 
-              {/* Full Name */}
               <div>
-                <h3 className="font-medium text-foreground mb-3">Full name or Company name <span className="text-red-500">*</span></h3>
-                <Input 
-                  type="text" 
-                  defaultValue="Caitlyn King" 
+                <h3 className="font-medium text-foreground mb-3">Address</h3>
+                <Input
+                  type="text"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
                   className="h-11 rounded-lg border-border/60"
+                />
+              </div>
+
+              <div>
+                <h3 className="font-medium text-foreground mb-3">City</h3>
+                <Input
+                  type="text"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  className="h-11 rounded-lg border-border/60"
+                />
+              </div>
+
+              <div>
+                <h3 className="font-medium text-foreground mb-3">Country</h3>
+                <Input
+                  type="text"
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                  className="h-11 rounded-lg border-border/60"
+                />
+              </div>
+
+              <div>
+                <h3 className="font-medium text-foreground mb-3">Currency (ISO code)</h3>
+                <Input
+                  type="text"
+                  maxLength={3}
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value.toUpperCase())}
+                  className="h-11 rounded-lg border-border/60 uppercase"
                 />
               </div>
             </div>
@@ -152,8 +321,8 @@ export default function ConfirmOrderPage() {
                     <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></div>
                   </div>
                   <div>
-                    <div className="font-semibold text-sm">Voxel Labs</div>
-                    <div className="text-xs text-muted-foreground">admin@voxellabs.com</div>
+                    <div className="font-semibold text-sm">{`${firstName} ${lastName}`.trim() || "Payment Account"}</div>
+                    <div className="text-xs text-muted-foreground">{email || "No email provided"}</div>
                   </div>
                 </div>
                 <ChevronDown className="w-4 h-4 text-muted-foreground" />
@@ -162,48 +331,34 @@ export default function ConfirmOrderPage() {
               {/* Items */}
               <div className="flex items-start justify-between mb-2">
                 <div>
-                  <h3 className="font-bold text-base text-foreground">2x PRO license</h3>
-                  <p className="text-sm text-muted-foreground">Oct 11 2025 - Oct 11 2026</p>
+                  <h3 className="font-bold text-base text-foreground">Appointment payment</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {appointmentIdParam ? `Appointment ID: ${appointmentIdParam}` : "General payment"}
+                  </p>
                 </div>
-                <span className="font-bold text-base">$100.00</span>
+                <span className="font-bold text-base">LKR {amount.toLocaleString()}</span>
               </div>
               
               <Separator className="my-5" />
 
-              {/* Discount Code */}
-              <div className="mb-6">
-                <h3 className="text-sm font-medium mb-3 text-foreground">Discount code</h3>
-                <div className="relative">
-                  <Input 
-                    type="text" 
-                    defaultValue="FRIENDS" 
-                    className="h-11 rounded-lg border-border/60 font-medium pr-10"
-                  />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
-                    <Check className="w-3 h-3 text-white stroke-[3]" />
-                  </div>
-                </div>
-              </div>
 
               {/* Subtotals */}
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground font-medium">Subtotal</span>
-                  <span className="text-muted-foreground">$100.00</span>
+                  <span className="text-muted-foreground font-medium">Amount</span>
+                  <span className="text-muted-foreground">LKR {amount.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground font-medium">Discount</span>
-                    <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded font-medium text-muted-foreground">20%</span>
+                    <span className="text-muted-foreground font-medium">Method</span>
                   </div>
-                  <span className="text-muted-foreground">-$20.00</span>
+                  <span className="text-muted-foreground">{paymentMethod.replace("_", " ")}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground font-medium">GST</span>
-                    <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded font-medium text-muted-foreground">10%</span>
+                    <span className="text-muted-foreground font-medium">Currency</span>
                   </div>
-                  <span className="text-muted-foreground">+$8.00</span>
+                  <span className="text-muted-foreground">{currency.toUpperCase()}</span>
                 </div>
               </div>
 
@@ -212,15 +367,17 @@ export default function ConfirmOrderPage() {
               {/* Due Today */}
               <div className="flex justify-between items-center mb-6">
                 <span className="font-bold text-base text-foreground">Due today</span>
-                <span className="font-bold text-xl text-foreground">$88.00</span>
+                <span className="font-bold text-xl text-foreground">LKR {amount.toLocaleString()}</span>
               </div>
 
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button className="w-full h-12 bg-neutral-900 hover:bg-neutral-800 text-white font-medium text-base rounded-xl transition-all">
-                    Proceed to pay
-                  </Button>
-                </DialogTrigger>
+              <Dialog open={successOpen} onOpenChange={setSuccessOpen}>
+                <Button
+                  className="w-full h-12 bg-neutral-900 hover:bg-neutral-800 text-white font-medium text-base rounded-xl transition-all"
+                  onClick={handleProceedToPay}
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? "Processing payment..." : "Proceed to pay"}
+                </Button>
                 <DialogContent showCloseButton={false} className="sm:max-w-md text-center p-8 border-none shadow-2xl gap-0 rounded-2xl">
                   {/* Visually hidden accessible title/description */}
                   <DialogTitle className="sr-only">Payment Successful</DialogTitle>
