@@ -1,10 +1,12 @@
 package com.edoc.telemedicineservice.service;
 
+import com.edoc.telemedicineservice.controller.WebSocketController;
 import com.edoc.telemedicineservice.client.AppointmentServiceClient;
 import com.edoc.telemedicineservice.client.NotificationServiceClient;
 import com.edoc.telemedicineservice.model.SessionStatus;
 import com.edoc.telemedicineservice.model.VideoSession;
 import com.edoc.telemedicineservice.repository.VideoSessionRepository;
+import com.edoc.telemedicineservice.service.TwilioService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -21,15 +23,18 @@ public class TelemedicineService {
     private final TwilioService twilioService;
     private final AppointmentServiceClient appointmentClient;
     private final NotificationServiceClient notificationClient;
+    private final WebSocketController webSocketController;
 
     public TelemedicineService(VideoSessionRepository sessionRepository,
                              TwilioService twilioService,
                              AppointmentServiceClient appointmentClient,
-                             NotificationServiceClient notificationClient) {
+                             NotificationServiceClient notificationClient,
+                             WebSocketController webSocketController) {
         this.sessionRepository = sessionRepository;
         this.twilioService = twilioService;
         this.appointmentClient = appointmentClient;
         this.notificationClient = notificationClient;
+        this.webSocketController = webSocketController;
     }
 
     public VideoSession createSession(String appointmentId, String doctorId, String patientId, String authorizationHeader) {
@@ -66,6 +71,12 @@ public class TelemedicineService {
         return findByAppointmentIdOrThrow(appointmentId);
     }
 
+    public java.util.List<VideoSession> getAllSessions(String authorizationHeader) {
+        // For now, return all sessions. In a production system, you would filter by user role/permissions
+        // based on the authorization header (doctor sees their sessions, patient sees their sessions, admin sees all)
+        return sessionRepository.findAll();
+    }
+
     public String generateJoinToken(String appointmentId, String userId) {
         validateRequired("appointmentId", appointmentId);
         validateRequired("userId", userId);
@@ -85,6 +96,11 @@ public class TelemedicineService {
         session.setStatus(SessionStatus.ONGOING);
         session.setStartTime(LocalDateTime.now());
 
+        VideoSession savedSession = sessionRepository.save(session);
+
+        // Send WebSocket notification
+        webSocketController.sendSessionStartedNotification(appointmentId);
+
         try {
             AppointmentServiceClient.AppointmentDTO appointment = appointmentClient.getAppointment(appointmentId, authorizationHeader);
             String doctorMessage = "Your telemedicine session with " + appointment.getDoctorName() + " has started.";
@@ -103,13 +119,18 @@ public class TelemedicineService {
             System.err.println("Failed to send session start notifications: " + ex.getMessage());
         }
 
-        return sessionRepository.save(session);
+        return savedSession;
     }
 
     public VideoSession endSession(String appointmentId, String authorizationHeader) {
         VideoSession session = findByAppointmentIdOrThrow(appointmentId);
         session.setStatus(SessionStatus.COMPLETED);
         session.setEndTime(LocalDateTime.now());
+
+        VideoSession savedSession = sessionRepository.save(session);
+
+        // Send WebSocket notification
+        webSocketController.sendSessionEndedNotification(appointmentId);
 
         try {
             appointmentClient.updateAppointmentStatus(appointmentId,
@@ -136,7 +157,7 @@ public class TelemedicineService {
             System.err.println("Failed to send session completion notifications: " + ex.getMessage());
         }
 
-        return sessionRepository.save(session);
+        return savedSession;
     }
 
     public void deleteSession(String appointmentId) {

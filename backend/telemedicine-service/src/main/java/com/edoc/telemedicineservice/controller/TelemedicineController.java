@@ -30,6 +30,13 @@ public class TelemedicineController {
         return ResponseEntity.status(HttpStatus.CREATED).body(session);
     }
 
+    @GetMapping("/sessions")
+    public ResponseEntity<java.util.List<VideoSession>> getAllSessions(
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader) {
+        java.util.List<VideoSession> sessions = telemedicineService.getAllSessions(authorizationHeader);
+        return ResponseEntity.ok(sessions);
+    }
+
     @GetMapping("/sessions/{appointmentId}")
     public ResponseEntity<VideoSession> getSession(@PathVariable String appointmentId) {
         return ResponseEntity.ok(telemedicineService.getSession(appointmentId));
