@@ -55,8 +55,8 @@ export const queryKeys = {
   telemedicine: {
     all: ["telemedicine"] as const,
     sessions: () => ["telemedicine", "sessions"] as const,
-    session: (id: string) => ["telemedicine", "session", id] as const,
-    token: (id: string) => ["telemedicine", "token", id] as const,
+    session: (appointmentId: string) => ["telemedicine", "session", appointmentId] as const,
+    token: (appointmentId: string, userId: string) => ["telemedicine", "token", appointmentId, userId] as const,
   },
 
 
