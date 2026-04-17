@@ -30,13 +30,10 @@ export default function SubmitFeedbackPage() {
 
     submitFeedback(
       {
-        patientId: patient.id,
-        payload: {
-          appointmentId: Number(appointmentIdStr),
-          doctorId: Number(appointment.doctorId),
-          rating,
-          comment: comment || undefined,
-        },
+        appointmentId: Number(appointmentIdStr),
+        doctorId: Number(appointment.doctorId),
+        rating,
+        comment: comment || undefined,
       },
       {
         onSuccess: () => setSubmitted(true),
