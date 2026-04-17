@@ -13,7 +13,6 @@ import { useGetMyPatientProfile } from "@/api/patientApi";
 import { useGetAppointmentById } from "@/api/appointmentApi";
 import {
   useInitiatePayment,
-  useConfirmPayment,
   type PaymentMethod,
 } from "@/api/paymentApi";
 import {
@@ -24,6 +23,9 @@ import {
 } from "@/components/ui/dialog";
 
 export default function ConfirmOrderPage() {
+  const MOCK_APPOINTMENT_ID = "00000000-0000-0000-0000-000000000001";
+  const FALLBACK_AMOUNT = 2500;
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const user = useStore((s) => s.user);
@@ -40,6 +42,9 @@ export default function ConfirmOrderPage() {
   const queryCountry = searchParams.get("country") ?? "";
   const queryDoctorId = searchParams.get("doctorId") ?? "";
   const queryDoctorName = searchParams.get("doctorName") ?? "";
+  const shouldFetchAppointment = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    appointmentIdParam
+  );
 
   const nameParts = (user?.name ?? "").trim().split(/\s+/).filter(Boolean);
   const defaultFirstName = queryFirstName || nameParts[0] || "";
@@ -58,7 +63,9 @@ export default function ConfirmOrderPage() {
   const [successOpen, setSuccessOpen] = useState(false);
 
   const { data: patient } = useGetMyPatientProfile();
-  const { data: appointment } = useGetAppointmentById(appointmentIdParam);
+  const { data: appointment } = useGetAppointmentById(
+    shouldFetchAppointment ? appointmentIdParam : ""
+  );
 
   useEffect(() => {
     if (!phone && patient?.phone) {
@@ -70,15 +77,22 @@ export default function ConfirmOrderPage() {
   }, [phone, address, patient]);
 
   const initiatePaymentMutation = useInitiatePayment();
-  const confirmPaymentMutation = useConfirmPayment();
 
-  const amount = Number.isFinite(amountParam)
+  const amount = Number.isFinite(amountParam) && amountParam > 0
     ? amountParam
-    : (appointment?.consultationFee ?? 0);
+    : (appointment?.consultationFee ?? FALLBACK_AMOUNT);
   const paymentMethod: PaymentMethod =
     billingCycle === "monthly" ? "CARD" : "BANK_TRANSFER";
-  const isProcessing =
-    initiatePaymentMutation.isPending || confirmPaymentMutation.isPending;
+  const isProcessing = initiatePaymentMutation.isPending;
+
+  const isUuid = (value: string) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value
+    );
+
+  const resolvedAppointmentId = isUuid(appointmentIdParam)
+    ? appointmentIdParam
+    : MOCK_APPOINTMENT_ID;
 
   const isValidEmail = (value: string) => {
     if (!value) return true;
@@ -89,6 +103,8 @@ export default function ConfirmOrderPage() {
     const metadata: Record<string, string> = {
       source: "confirm-order",
       paymentMethod,
+      appointmentSource: appointment ? "appointment-api" : "mock-fallback",
+      mockAppointment: String(!appointment),
     };
 
     if (appointment?.timeSlot) metadata.timeSlot = appointment.timeSlot;
@@ -108,6 +124,24 @@ export default function ConfirmOrderPage() {
     return metadata;
   };
 
+  const submitCheckoutForm = (actionUrl: string, fields: Record<string, string>) => {
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = actionUrl;
+    form.style.display = "none";
+
+    Object.entries(fields).forEach(([key, value]) => {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = key;
+      input.value = value ?? "";
+      form.appendChild(input);
+    });
+
+    document.body.appendChild(form);
+    form.submit();
+  };
+
   const handleProceedToPay = async () => {
     const userId = user?.userId || patient?.userId || "";
     
@@ -115,12 +149,8 @@ export default function ConfirmOrderPage() {
       toast.error("User ID is required before confirming payment.");
       return;
     }
-    if (!appointmentIdParam) {
-      toast.error("Appointment ID is required. Open this page from appointment booking.");
-      return;
-    }
     if (!amount || amount <= 0) {
-      toast.error("Payment amount is missing. Open this page with a valid appointment.");
+      toast.error("Payment amount is missing. Please retry from appointment booking.");
       return;
     }
     if (!/^[A-Za-z]{3}$/.test(currency)) {
@@ -133,12 +163,11 @@ export default function ConfirmOrderPage() {
     }
 
     try {
-      await initiatePaymentMutation.mutateAsync({
+      const checkout = await initiatePaymentMutation.mutateAsync({
         userId,
-        appointmentId: appointmentIdParam,
+        appointmentId: resolvedAppointmentId,
         amount,
         currency: currency.toUpperCase(),
-        method: paymentMethod,
         firstName: firstName.trim() || undefined,
         lastName: lastName.trim() || undefined,
         email: email.trim() || undefined,
@@ -148,6 +177,16 @@ export default function ConfirmOrderPage() {
         country: country.trim() || undefined,
         metadata: resolveMetadata(),
       });
+
+      const checkoutPayload =
+        checkout && typeof checkout === "object" && "data" in checkout
+          ? (checkout as { data?: { actionUrl?: string; fields?: Record<string, string> } }).data
+          : checkout;
+
+      if (checkoutPayload?.actionUrl && checkoutPayload?.fields) {
+        submitCheckoutForm(checkoutPayload.actionUrl, checkoutPayload.fields);
+        return;
+      }
 
       setSuccessOpen(true);
     } catch {

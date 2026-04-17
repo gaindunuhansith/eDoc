@@ -31,7 +31,6 @@ export interface InitiatePaymentPayload {
   appointmentId: string;
   amount: number;
   currency: string;
-  method: PaymentMethod;
   firstName?: string;
   lastName?: string;
   email?: string;
@@ -40,6 +39,11 @@ export interface InitiatePaymentPayload {
   city?: string;
   country?: string;
   metadata?: Record<string, string>;
+}
+
+export interface CheckoutPayloadResponse {
+  actionUrl: string;
+  fields: Record<string, string>;
 }
 
 export interface ConfirmPaymentPayload {
@@ -53,7 +57,7 @@ export const fetchPaymentById = (id: string) =>
   apiClient.get<Payment>(PAYMENT_ENDPOINTS.GET_BY_ID(id));
 
 export const initiatePayment = (payload: InitiatePaymentPayload) =>
-  apiClient.post<Payment>(PAYMENT_ENDPOINTS.INITIATE, payload);
+  apiClient.post<CheckoutPayloadResponse>(PAYMENT_ENDPOINTS.INITIATE, payload);
 
 export const confirmPayment = ({
   id,
@@ -104,7 +108,8 @@ export const useGetPaymentsByAppointment = (appointmentId: string) =>
 export const useInitiatePayment = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: initiatePayment,
+    mutationFn: (payload: InitiatePaymentPayload) =>
+      initiatePayment(payload).then((r) => r.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.payment.lists() });
     },
