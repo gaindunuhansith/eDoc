@@ -10,14 +10,14 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/doctors/{doctorId}/availability")
+@RequestMapping("/api/v1/doctors/{doctorId}/availability")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class AvailabilityController {
 
     private final AvailabilityService availabilityService;
 
-    // POST /api/doctors/{doctorId}/availability
+    // POST /api/v1/doctors/{doctorId}/availability
     @PostMapping
     public ResponseEntity<Availability> setAvailability(
             @PathVariable String doctorId,
@@ -25,14 +25,14 @@ public class AvailabilityController {
         return ResponseEntity.ok(availabilityService.setAvailability(doctorId, request));
     }
 
-    // GET /api/doctors/{doctorId}/availability
+    // GET /api/v1/doctors/{doctorId}/availability
     @GetMapping
     public ResponseEntity<List<Availability>> getAvailability(
             @PathVariable String doctorId) {
         return ResponseEntity.ok(availabilityService.getDoctorAvailability(doctorId));
     }
 
-    // PATCH /api/doctors/{doctorId}/availability/book
+    // PATCH /api/v1/doctors/{doctorId}/availability/book
     // Called by appointment-service to mark a slot as booked
     @PatchMapping("/book")
     public ResponseEntity<Availability> markSlotBooked(
@@ -44,7 +44,7 @@ public class AvailabilityController {
         );
     }
 
-    // PATCH /api/doctors/{doctorId}/availability/free
+    // PATCH /api/v1/doctors/{doctorId}/availability/free
     // Called by appointment-service when appointment is cancelled
     @PatchMapping("/free")
     public ResponseEntity<Availability> markSlotFree(
@@ -56,7 +56,7 @@ public class AvailabilityController {
         );
     }
 
-    // DELETE /api/doctors/{doctorId}/availability/{dayOfWeek}
+    // DELETE /api/v1/doctors/{doctorId}/availability/{dayOfWeek}
     @DeleteMapping("/{dayOfWeek}")
     public ResponseEntity<String> deleteAvailability(
             @PathVariable String doctorId,

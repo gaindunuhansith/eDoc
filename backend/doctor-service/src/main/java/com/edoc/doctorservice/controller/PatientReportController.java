@@ -9,14 +9,14 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/doctors")
+@RequestMapping("/api/v1/doctors")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class PatientReportController {
 
     private final PatientServiceClient patientServiceClient;
 
-    // GET /api/doctors/{doctorId}/patients/{patientId}/reports
+    // GET /api/v1/doctors/{doctorId}/patients/{patientId}/reports
     // Doctor views all uploaded reports of a specific patient
     @GetMapping("/{doctorId}/patients/{patientId}/reports")
     public ResponseEntity<List<Map>> getPatientReports(
@@ -25,7 +25,7 @@ public class PatientReportController {
         return ResponseEntity.ok(patientServiceClient.getPatientReports(patientId));
     }
 
-    // GET /api/doctors/{doctorId}/patients/{patientId}
+    // GET /api/v1/doctors/{doctorId}/patients/{patientId}
     // Doctor views basic patient profile
     @GetMapping("/{doctorId}/patients/{patientId}")
     public ResponseEntity<Map> getPatientProfile(
