@@ -47,6 +47,10 @@ public class FeedbackService {
             throw new RuntimeException("Patient not authorized for this appointment");
         }
 
+        if (!"COMPLETED".equalsIgnoreCase(appointment.getStatus())) {
+            throw new RuntimeException("Feedback can only be submitted for completed appointments");
+        }
+
         Feedback feedback = feedbackMapper.toEntity(request, patientId);
         Feedback saved = feedbackRepository.save(feedback);
 
