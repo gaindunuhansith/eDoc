@@ -53,6 +53,8 @@ import {
   useSubmitFeedback,
   useUpdateFeedback,
   useDeleteFeedback,
+  isFeedbackEditable,
+  getEditableUntilLabel,
   type Feedback
 } from "@/api/feedbackApi";
 import { toast } from "sonner";
@@ -449,23 +451,32 @@ function PatientFeedbackContent() {
                     </Badge>
                   </TableCell>
                   <TableCell className="py-4">
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openEditDialog(feedback)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(feedback.id)}
-                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditDialog(feedback)}
+                          className="h-8 w-8 p-0"
+                          disabled={!isFeedbackEditable(feedback)}
+                          title={getEditableUntilLabel(feedback)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(feedback.id)}
+                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          disabled={!isFeedbackEditable(feedback)}
+                          title={getEditableUntilLabel(feedback)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <span className={cn("text-xs", isFeedbackEditable(feedback) ? "text-green-600" : "text-muted-foreground")}>
+                        {getEditableUntilLabel(feedback)}
+                      </span>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -499,6 +510,11 @@ function PatientFeedbackContent() {
             <DialogTitle>Edit Feedback</DialogTitle>
             <DialogDescription>
               Update your feedback details.
+              {editingFeedback && (
+                <span className={cn("block mt-1 text-xs font-medium", isFeedbackEditable(editingFeedback) ? "text-green-600" : "text-red-500")}>
+                  {getEditableUntilLabel(editingFeedback)}
+                </span>
+              )}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">

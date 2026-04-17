@@ -30,6 +30,19 @@ public class FeedbackController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @GetMapping("/all")
+    public ResponseEntity<List<FeedbackResponseDTO>> getAllFeedback() {
+        List<FeedbackResponseDTO> feedbacks = feedbackService.getAllFeedback();
+        return ResponseEntity.ok(feedbacks);
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<FeedbackResponseDTO> updateFeedbackStatus(@PathVariable Long id,
+                                                                    @RequestParam String status) {
+        FeedbackResponseDTO updated = feedbackService.updateFeedbackStatus(id, status);
+        return ResponseEntity.ok(updated);
+    }
+
     @GetMapping("/doctor/{doctorId}")
     public ResponseEntity<List<FeedbackResponseDTO>> getFeedbackForDoctor(@PathVariable Long doctorId) {
         List<FeedbackResponseDTO> feedbacks = feedbackService.getFeedbackForDoctor(doctorId);

@@ -142,10 +142,11 @@ function RejectDialog({
 
 // ─── Appointment Card ─────────────────────────────────────────────────────────
 
-function AppointmentCard({ appt, onAccept, onReject }: {
+function AppointmentCard({ appt, onAccept, onReject, onComplete }: {
   appt: Appointment;
   onAccept: (id: string) => void;
   onReject: (id: string) => void;
+  onComplete: (id: string) => void;
 }) {
   const badge = STATUS_BADGE[appt.status];
 
@@ -221,6 +222,20 @@ function AppointmentCard({ appt, onAccept, onReject }: {
             </Button>
           </div>
         )}
+
+        {/* Mark as Completed — only for CONFIRMED */}
+        {appt.status === "CONFIRMED" && (
+          <div className="flex gap-2 pt-1">
+            <Button
+              size="sm"
+              className="gap-1.5 h-8 text-xs bg-blue-600 hover:bg-blue-700"
+              onClick={() => onComplete(appt.id)}
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Mark as Completed
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -232,6 +247,7 @@ export default function DoctorAppointmentsPage() {
   const [tab, setTab] = useState<TabFilter>("ALL");
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [acceptId, setAcceptId] = useState<string | null>(null);
+  const [completeId, setCompleteId] = useState<string | null>(null);
 
   const { data: doctor, isLoading: doctorLoading } = useGetMyDoctorProfile();
   const { data: appointments = [], isLoading: apptLoading } =
@@ -262,6 +278,18 @@ export default function DoctorAppointmentsPage() {
       }
     );
     setRejectId(null);
+  };
+
+  const confirmComplete = () => {
+    if (!completeId) return;
+    updateStatus.mutate(
+      { id: completeId, update: { status: "COMPLETED" } },
+      {
+        onSuccess: () => toast.success("Appointment marked as completed. Patient has been notified."),
+        onError: () => toast.error("Failed to complete appointment."),
+      }
+    );
+    setCompleteId(null);
   };
 
   const sorted = [...appointments].sort(
@@ -315,6 +343,7 @@ export default function DoctorAppointmentsPage() {
               appt={appt}
               onAccept={setAcceptId}
               onReject={setRejectId}
+              onComplete={setCompleteId}
             />
           ))}
         </div>
@@ -348,6 +377,27 @@ export default function DoctorAppointmentsPage() {
         onConfirm={confirmReject}
         isPending={updateStatus.isPending}
       />
+
+      {/* Complete confirm dialog */}
+      <AlertDialog open={!!completeId} onOpenChange={(v) => !v && setCompleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mark as Completed?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will mark the appointment as completed and notify the patient. The patient will be able to leave feedback after this.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={confirmComplete}
+            >
+              Yes, Mark Completed
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

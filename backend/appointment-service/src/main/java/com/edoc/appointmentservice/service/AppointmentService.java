@@ -402,6 +402,24 @@ public class AppointmentService {
         data.put("date", appointment.getAppointmentDate() != null ? appointment.getAppointmentDate().toString() : "");
         data.put("timeSlot", appointment.getTimeSlot() != null ? appointment.getTimeSlot() : "");
         data.put("dayOfWeek", appointment.getDayOfWeek() != null ? appointment.getDayOfWeek() : "");
+
+        // Resolve patient name for personalised notification messages
+        try {
+            Map<String, Object> patient = patientServiceClient.getPatientById(appointment.getPatientId());
+            if (patient != null) {
+                String firstName = patient.get("firstName") instanceof String s ? s : null;
+                String lastName  = patient.get("lastName")  instanceof String s ? s : null;
+                String name      = patient.get("name")      instanceof String s ? s : null;
+                if (firstName != null) {
+                    data.put("patientName", lastName != null ? firstName + " " + lastName : firstName);
+                } else if (name != null) {
+                    data.put("patientName", name);
+                }
+            }
+        } catch (Exception ex) {
+            log.warn("Could not resolve patient name for notification, appointmentId={}", appointment.getId());
+        }
+
         return data;
     }
 }

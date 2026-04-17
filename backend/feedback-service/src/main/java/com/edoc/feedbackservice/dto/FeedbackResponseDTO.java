@@ -11,6 +11,7 @@ public class FeedbackResponseDTO {
     private int rating;
     private String comment;
     private LocalDateTime timestamp;
+    private LocalDateTime editableUntil;
     private String status;
 
     public FeedbackResponseDTO() {}
@@ -46,6 +47,9 @@ public class FeedbackResponseDTO {
 
     public LocalDateTime getTimestamp() { return timestamp; }
     public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
+
+    public LocalDateTime getEditableUntil() { return editableUntil; }
+    public void setEditableUntil(LocalDateTime editableUntil) { this.editableUntil = editableUntil; }
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }

@@ -3,14 +3,12 @@
 import React, { useState, useMemo } from "react";
 import {
   Search,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   CheckCircle,
   XCircle,
   Clock,
   Star,
-  Filter,
   BarChart3
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -42,60 +40,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { useGetAllFeedback, useUpdateFeedbackStatus, type Feedback, type FeedbackStatus } from "@/api/feedbackApi";
+import { toast } from "sonner";
 
-// Mock data for admin feedback (all feedback from all patients to all doctors)
-const mockFeedbacks = [
-  {
-    id: 1,
-    patientId: 1,
-    patientName: "John Doe",
-    doctorId: 101,
-    doctorName: "Dr. Smith",
-    appointmentId: 201,
-    rating: 5,
-    comment: "Excellent service! The doctor was very professional and caring.",
-    timestamp: "2024-04-15T10:30:00Z",
-    status: "APPROVED",
-  },
-  {
-    id: 2,
-    patientId: 2,
-    patientName: "Jane Smith",
-    doctorId: 102,
-    doctorName: "Dr. Johnson",
-    appointmentId: 202,
-    rating: 4,
-    comment: "Good consultation, but waiting time was a bit long.",
-    timestamp: "2024-04-12T14:15:00Z",
-    status: "PENDING",
-  },
-  {
-    id: 3,
-    patientId: 3,
-    patientName: "Bob Johnson",
-    doctorId: 103,
-    doctorName: "Dr. Aris",
-    appointmentId: 203,
-    rating: 3,
-    comment: "Average experience. Could be better.",
-    timestamp: "2024-04-10T09:00:00Z",
-    status: "PENDING",
-  },
-  {
-    id: 4,
-    patientId: 4,
-    patientName: "Alice Brown",
-    doctorId: 104,
-    doctorName: "Dr. Smith",
-    appointmentId: 204,
-    rating: 5,
-    comment: "Outstanding care! Highly recommend.",
-    timestamp: "2024-04-08T11:45:00Z",
-    status: "APPROVED",
-  },
-  {
-    id: 5,
-    patientId: 5,
+export default function AdminFeedbackPage() {
     patientName: "Charlie Wilson",
     doctorId: 105,
     doctorName: "Dr. Johnson",
@@ -144,18 +92,19 @@ const mockFeedbacks = [
 ];
 
 export default function AdminFeedbackPage() {
-  const [feedbacks] = useState(mockFeedbacks);
+  const { data: feedbacks = [], isLoading } = useGetAllFeedback();
+  const updateStatus = useUpdateFeedbackStatus();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [ratingFilter, setRatingFilter] = useState("all");
   const [doctorFilter, setDoctorFilter] = useState("all");
-  const [selectedFeedback, setSelectedFeedback] = useState<typeof mockFeedbacks[0] | null>(null);
+  const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
 
   const filteredFeedbacks = useMemo(() => {
     return feedbacks.filter((feedback) => {
       const matchesSearch = feedback.comment?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           feedback.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           feedback.doctorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           (feedback.patientName ?? "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           (feedback.doctorName ?? "").toLowerCase().includes(searchTerm.toLowerCase()) ||
                            feedback.rating.toString().includes(searchTerm);
       const matchesStatus = statusFilter === "all" || feedback.status === statusFilter;
       const matchesRating = ratingFilter === "all" || feedback.rating.toString() === ratingFilter;
@@ -172,11 +121,10 @@ export default function AdminFeedbackPage() {
     const averageRating = total > 0 ? feedbacks.reduce((sum, f) => sum + f.rating, 0) / total : 0;
 
     const doctorStats = feedbacks.reduce((acc, feedback) => {
-      if (!acc[feedback.doctorName]) {
-        acc[feedback.doctorName] = { total: 0, sum: 0 };
-      }
-      acc[feedback.doctorName].total++;
-      acc[feedback.doctorName].sum += feedback.rating;
+      const key = feedback.doctorName ?? "Unknown";
+      if (!acc[key]) acc[key] = { total: 0, sum: 0 };
+      acc[key].total++;
+      acc[key].sum += feedback.rating;
       return acc;
     }, {} as Record<string, { total: number; sum: number }>);
 
@@ -184,12 +132,17 @@ export default function AdminFeedbackPage() {
   }, [feedbacks]);
 
   const uniqueDoctors = useMemo(() => {
-    return Array.from(new Set(feedbacks.map(f => f.doctorName)));
+    return Array.from(new Set(feedbacks.map(f => f.doctorName).filter(Boolean))) as string[];
   }, [feedbacks]);
 
-  const handleStatusChange = (feedbackId: number, newStatus: "APPROVED" | "REJECTED") => {
-    // In a real app, this would call an API
-    console.log(`Changing feedback ${feedbackId} status to ${newStatus}`);
+  const handleStatusChange = (feedbackId: number, newStatus: FeedbackStatus) => {
+    updateStatus.mutate(
+      { id: String(feedbackId), status: newStatus },
+      {
+        onSuccess: () => toast.success(`Feedback ${newStatus.toLowerCase()} successfully`),
+        onError: () => toast.error("Failed to update feedback status"),
+      }
+    );
   };
 
   const renderStars = (rating: number) => {
@@ -234,6 +187,10 @@ export default function AdminFeedbackPage() {
           <p className="text-muted-foreground mt-1">Review and moderate all patient feedback</p>
         </div>
       </div>
+
+      {isLoading && (
+        <p className="text-muted-foreground text-sm">Loading feedback...</p>
+      )}
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -392,12 +349,12 @@ export default function AdminFeedbackPage() {
                   </TableCell>
                   <TableCell className="py-4">
                     <div className="font-medium text-foreground">
-                      {feedback.patientName}
+                      {feedback.patientName ?? "—"}
                     </div>
                   </TableCell>
                   <TableCell className="py-4">
                     <div className="font-medium text-foreground">
-                      {feedback.doctorName}
+                      {feedback.doctorName ?? "—"}
                     </div>
                   </TableCell>
                   <TableCell className="py-4">
@@ -412,7 +369,7 @@ export default function AdminFeedbackPage() {
                     </p>
                   </TableCell>
                   <TableCell className="py-4 text-sm text-muted-foreground">
-                    {new Date(feedback.timestamp).toLocaleDateString()}
+                    {new Date(feedback.timestamp ?? feedback.createdAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="py-4">
                     <Badge
@@ -485,7 +442,7 @@ export default function AdminFeedbackPage() {
           <DialogHeader>
             <DialogTitle>Feedback Details</DialogTitle>
             <DialogDescription>
-              Review feedback from {selectedFeedback?.patientName} to {selectedFeedback?.doctorName}
+              Review feedback from {selectedFeedback?.patientName ?? "patient"} to {selectedFeedback?.doctorName ?? "doctor"}
             </DialogDescription>
           </DialogHeader>
           {selectedFeedback && (
@@ -493,11 +450,11 @@ export default function AdminFeedbackPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <span className="font-medium">Patient:</span>
-                  <p className="mt-1">{selectedFeedback.patientName}</p>
+                  <p className="mt-1">{selectedFeedback.patientName ?? "—"}</p>
                 </div>
                 <div>
                   <span className="font-medium">Doctor:</span>
-                  <p className="mt-1">{selectedFeedback.doctorName}</p>
+                  <p className="mt-1">{selectedFeedback.doctorName ?? "—"}</p>
                 </div>
               </div>
               <div className="flex items-center justify-between">
@@ -509,7 +466,7 @@ export default function AdminFeedbackPage() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="font-medium">Date:</span>
-                <span>{new Date(selectedFeedback.timestamp).toLocaleDateString()}</span>
+                <span>{new Date(selectedFeedback.timestamp ?? selectedFeedback.createdAt).toLocaleDateString()}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="font-medium">Status:</span>

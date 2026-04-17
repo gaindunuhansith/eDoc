@@ -3,11 +3,9 @@
 import React, { useState, useMemo } from "react";
 import {
   Search,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Star,
-  Filter,
   CheckCircle,
   XCircle,
   Clock
@@ -41,6 +39,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { useGetFeedbackByDoctor, type Feedback } from "@/api/feedbackApi";
+import { useUser } from "@/store/store";
 
 // Mock data for doctor feedback (feedback from patients)
 const mockFeedbacks = [
@@ -107,11 +107,12 @@ const mockFeedbacks = [
 ];
 
 export default function DoctorFeedbackPage() {
-  const [feedbacks] = useState(mockFeedbacks);
+  const user = useUser();
+  const { data: feedbacks = [], isLoading } = useGetFeedbackByDoctor(user?.userId ?? "");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [ratingFilter, setRatingFilter] = useState("all");
-  const [selectedFeedback, setSelectedFeedback] = useState<typeof mockFeedbacks[0] | null>(null);
+  const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
 
   const filteredFeedbacks = useMemo(() => {
     return feedbacks.filter((feedback) => {
@@ -129,9 +130,8 @@ export default function DoctorFeedbackPage() {
     return feedbacks.reduce((sum, f) => sum + f.rating, 0) / feedbacks.length;
   }, [feedbacks]);
 
-  const handleStatusChange = (feedbackId: number, newStatus: "APPROVED" | "REJECTED") => {
-    // In a real app, this would call an API
-    console.log(`Changing feedback ${feedbackId} status to ${newStatus}`);
+  const handleStatusChange = (_feedbackId: number, _newStatus: "APPROVED" | "REJECTED") => {
+    // Status changes are admin-only
   };
 
   const renderStars = (rating: number) => {
@@ -176,6 +176,10 @@ export default function DoctorFeedbackPage() {
           <p className="text-muted-foreground mt-1">Reviews and ratings from your patients</p>
         </div>
       </div>
+
+      {isLoading && (
+        <p className="text-muted-foreground text-sm">Loading feedback...</p>
+      )}
 
       {/* Average Rating Card */}
       <Card className="bg-white border border-gray-200 shadow-sm">
@@ -257,7 +261,7 @@ export default function DoctorFeedbackPage() {
                   </TableCell>
                   <TableCell className="py-4">
                     <div className="font-medium text-foreground">
-                      {feedback.patientName}
+                      {feedback.patientName ?? "—"}
                     </div>
                   </TableCell>
                   <TableCell className="py-4">
@@ -272,7 +276,7 @@ export default function DoctorFeedbackPage() {
                     </p>
                   </TableCell>
                   <TableCell className="py-4 text-sm text-muted-foreground">
-                    {new Date(feedback.timestamp).toLocaleDateString()}
+                    {new Date(feedback.timestamp ?? feedback.createdAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="py-4">
                     <Badge
@@ -363,7 +367,7 @@ export default function DoctorFeedbackPage() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="font-medium">Date:</span>
-                <span>{new Date(selectedFeedback.timestamp).toLocaleDateString()}</span>
+                <span>{new Date(selectedFeedback.timestamp ?? selectedFeedback.createdAt).toLocaleDateString()}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="font-medium">Status:</span>

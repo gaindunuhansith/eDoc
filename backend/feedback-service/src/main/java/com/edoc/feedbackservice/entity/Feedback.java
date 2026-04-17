@@ -29,6 +29,9 @@ public class Feedback {
     @Column(name = "timestamp", nullable = false)
     private LocalDateTime timestamp;
 
+    @Column(name = "editable_until", nullable = false)
+    private LocalDateTime editableUntil;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private FeedbackStatus status;
@@ -54,6 +57,9 @@ public class Feedback {
 
     public LocalDateTime getTimestamp() { return timestamp; }
     public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
+
+    public LocalDateTime getEditableUntil() { return editableUntil; }
+    public void setEditableUntil(LocalDateTime editableUntil) { this.editableUntil = editableUntil; }
 
     public FeedbackStatus getStatus() { return status; }
     public void setStatus(FeedbackStatus status) { this.status = status; }

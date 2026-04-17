@@ -5,12 +5,14 @@ import com.edoc.feedbackservice.client.NotificationServiceClient;
 import com.edoc.feedbackservice.dto.FeedbackRequestDTO;
 import com.edoc.feedbackservice.dto.FeedbackResponseDTO;
 import com.edoc.feedbackservice.entity.Feedback;
+import com.edoc.feedbackservice.entity.FeedbackStatus;
 import com.edoc.feedbackservice.exception.FeedbackNotFoundException;
 import com.edoc.feedbackservice.mapper.FeedbackMapper;
 import com.edoc.feedbackservice.repository.FeedbackRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +48,10 @@ public class FeedbackService {
             throw new RuntimeException("Patient not authorized for this appointment");
         }
 
+        if (!"COMPLETED".equalsIgnoreCase(appointment.getStatus())) {
+            throw new RuntimeException("Feedback can only be submitted for completed appointments");
+        }
+
         Feedback feedback = feedbackMapper.toEntity(request, patientId);
         Feedback saved = feedbackRepository.save(feedback);
 
@@ -64,6 +70,21 @@ public class FeedbackService {
         } catch (Exception error) {
             System.err.println("Failed to send feedback notification: " + error.getMessage());
         }
+    }
+
+    public List<FeedbackResponseDTO> getAllFeedback() {
+        return feedbackRepository.findAll()
+                .stream()
+                .map(feedbackMapper::toResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    public FeedbackResponseDTO updateFeedbackStatus(Long id, String status) {
+        Feedback feedback = feedbackRepository.findById(id)
+                .orElseThrow(() -> new FeedbackNotFoundException("Feedback not found"));
+        feedback.setStatus(FeedbackStatus.valueOf(status.toUpperCase()));
+        Feedback updated = feedbackRepository.save(feedback);
+        return feedbackMapper.toResponseDTO(updated);
     }
 
     public List<FeedbackResponseDTO> getFeedbackForDoctor(Long doctorId) {
@@ -96,6 +117,9 @@ public class FeedbackService {
     public FeedbackResponseDTO updateFeedback(Long id, FeedbackRequestDTO request) {
         Feedback feedback = feedbackRepository.findById(id)
                 .orElseThrow(() -> new FeedbackNotFoundException("Feedback not found"));
+        if (feedback.getEditableUntil() == null || LocalDateTime.now().isAfter(feedback.getEditableUntil())) {
+            throw new RuntimeException("Edit window has expired. Feedback can only be edited within 48 hours of submission.");
+        }
         feedback.setRating(request.getRating());
         feedback.setComment(request.getComment());
         Feedback updated = feedbackRepository.save(feedback);
@@ -103,8 +127,10 @@ public class FeedbackService {
     }
 
     public void deleteFeedback(Long id) {
-        if (!feedbackRepository.existsById(id)) {
-            throw new FeedbackNotFoundException("Feedback not found");
+        Feedback feedback = feedbackRepository.findById(id)
+                .orElseThrow(() -> new FeedbackNotFoundException("Feedback not found"));
+        if (feedback.getEditableUntil() == null || LocalDateTime.now().isAfter(feedback.getEditableUntil())) {
+            throw new RuntimeException("Delete window has expired. Feedback can only be deleted within 48 hours of submission.");
         }
         feedbackRepository.deleteById(id);
     }
