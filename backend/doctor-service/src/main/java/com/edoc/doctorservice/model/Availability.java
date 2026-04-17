@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
@@ -26,6 +27,7 @@ public class Availability {
     // Each slot is like "09:00-09:30", "09:30-10:00"
     private List<TimeSlot> timeSlots;
 
+    @JsonProperty("isActive")
     private boolean isActive;      // Can be turned on/off by the doctor
 
     // Inner class for time slots
@@ -35,6 +37,7 @@ public class Availability {
     public static class TimeSlot {
         private String startTime;   // "09:00"
         private String endTime;     // "09:30"
+        @JsonProperty("isBooked")
         private boolean isBooked;   // Will be set to true when appointment is made
     }
 }
