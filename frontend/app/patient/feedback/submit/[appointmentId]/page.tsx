@@ -31,7 +31,15 @@ export default function SubmitFeedbackPage() {
   const isLoading = apptLoading || profileLoading;
 
   const handleSubmit = (rating: number, comment: string) => {
-    if (!patient?.id) return;
+    if (!patient?.id) {
+      toast.error("Patient profile not loaded. Please refresh and try again.");
+      return;
+    }
+
+    if (rating < 1 || rating > 5) {
+      toast.error("Please provide a rating between 1 and 5 stars.");
+      return;
+    }
 
     const finalDoctorId = doctorId ? Number(doctorId) : (appointment ? Number(appointment.doctorId) : null);
     if (!finalDoctorId) {
@@ -48,7 +56,10 @@ export default function SubmitFeedbackPage() {
       },
       {
         onSuccess: () => setSubmitted(true),
-        onError: () => toast.error("Failed to submit feedback. Please try again."),
+        onError: (error: any) => {
+          toast.error(error?.message || "Failed to submit feedback. Please try again.");
+          console.error("Submit feedback error:", error);
+        },
       }
     );
   };
@@ -93,7 +104,28 @@ export default function SubmitFeedbackPage() {
       <div className="p-6">
         <Card className="bg-white border border-gray-200">
           <CardContent className="pt-6">
-            <p className="text-red-600">Appointment not found.</p>
+            <div className="text-center space-y-4">
+              <div className="text-red-600">
+                <p className="font-medium">Appointment not found</p>
+                <p className="text-sm mt-1">
+                  The appointment you're trying to provide feedback for doesn't exist or has been removed.
+                </p>
+              </div>
+              <div className="flex gap-2 justify-center">
+                <Button
+                  onClick={() => router.push("/patient/appointments")}
+                  variant="outline"
+                >
+                  View My Appointments
+                </Button>
+                <Button
+                  onClick={() => router.back()}
+                  variant="ghost"
+                >
+                  Go Back
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

@@ -19,14 +19,42 @@ export function FeedbackForm({ appointmentId, doctorId, doctorName, onSubmit, is
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [hoverRating, setHoverRating] = useState(0);
+  const [errors, setErrors] = useState<{rating?: string; comment?: string}>({});
+
+  const validateForm = () => {
+    const newErrors: {rating?: string; comment?: string} = {};
+
+    if (rating === 0) {
+      newErrors.rating = "Please select a rating";
+    }
+
+    if (comment.length > 1000) {
+      newErrors.comment = "Comment must be less than 1000 characters";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleStarClick = (starRating: number) => {
     setRating(starRating);
+    // Clear rating error when user selects a rating
+    if (errors.rating) {
+      setErrors({ ...errors, rating: undefined });
+    }
+  };
+
+  const handleCommentChange = (value: string) => {
+    setComment(value);
+    // Clear comment error when user types
+    if (errors.comment && value.length <= 1000) {
+      setErrors({ ...errors, comment: undefined });
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (rating === 0) return;
+    if (!validateForm()) return;
     onSubmit(rating, comment);
   };
 
@@ -71,8 +99,8 @@ export function FeedbackForm({ appointmentId, doctorId, doctorName, onSubmit, is
             <div className="flex gap-1 mt-2">
               {renderStars()}
             </div>
-            <p className="text-sm text-gray-500 mt-1">
-              {rating > 0 ? `You rated ${rating} star${rating > 1 ? "s" : ""}` : "Please select a rating"}
+            <p className={`text-sm mt-1 ${errors.rating ? 'text-red-500' : 'text-gray-500'}`}>
+              {errors.rating || (rating > 0 ? `You rated ${rating} star${rating > 1 ? "s" : ""}` : "Please select a rating")}
             </p>
           </div>
 
@@ -84,18 +112,33 @@ export function FeedbackForm({ appointmentId, doctorId, doctorName, onSubmit, is
               id="comment"
               placeholder="Share your experience..."
               value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              className="mt-2"
+              onChange={(e) => handleCommentChange(e.target.value)}
+              className={`mt-2 ${errors.comment ? 'border-red-500' : ''}`}
               rows={4}
             />
+            <div className="flex justify-between mt-1">
+              {errors.comment && (
+                <p className="text-sm text-red-500">{errors.comment}</p>
+              )}
+              <p className="text-sm text-gray-500 ml-auto">
+                {comment.length}/1000 characters
+              </p>
+            </div>
           </div>
 
           <Button
             type="submit"
             disabled={rating === 0 || isLoading}
-            className="w-full bg-gray-800 hover:bg-gray-700 text-white"
+            className="w-full bg-gray-800 hover:bg-gray-700 text-white disabled:opacity-50"
           >
-            {isLoading ? "Submitting..." : "Submit Feedback"}
+            {isLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Submitting Feedback...
+              </>
+            ) : (
+              "Submit Feedback"
+            )}
           </Button>
         </form>
       </CardContent>

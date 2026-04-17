@@ -61,6 +61,8 @@ export const deleteFeedback = (id: string) =>
 
 // ─── Hooks ────────────────────────────────────────────────────────────────────
 
+// ─── Hooks ────────────────────────────────────────────────────────────────────
+
 export const useSubmitFeedback = () => {
   const qc = useQueryClient();
   return useMutation({
@@ -68,6 +70,20 @@ export const useSubmitFeedback = () => {
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: queryKeys.feedback.byPatient(String(data.data.patientId)) });
       qc.invalidateQueries({ queryKey: queryKeys.feedback.byDoctor(String(data.data.doctorId)) });
+    },
+    onError: (error: any) => {
+      // Enhanced error handling
+      if (error?.response?.status === 409) {
+        throw new Error("Feedback already exists for this appointment");
+      } else if (error?.response?.status === 400) {
+        throw new Error("Invalid feedback data. Please check your input.");
+      } else if (error?.response?.status === 404) {
+        throw new Error("Appointment or doctor not found.");
+      } else if (!error?.response) {
+        throw new Error("Network error. Please check your connection and try again.");
+      } else {
+        throw new Error("Failed to submit feedback. Please try again.");
+      }
     },
   });
 };
@@ -84,6 +100,15 @@ export const useGetFeedbackByPatient = (patientId: string) =>
     queryKey: queryKeys.feedback.byPatient(patientId),
     queryFn: () => fetchFeedbackByPatient(patientId).then((r) => r.data),
     enabled: !!patientId,
+    retry: (failureCount, error: any) => {
+      // Don't retry on 4xx errors (client errors)
+      if (error?.response?.status >= 400 && error?.response?.status < 500) {
+        return false;
+      }
+      // Retry up to 3 times for other errors
+      return failureCount < 3;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
 export const useGetFeedbackByDoctor = (doctorId: string) =>
@@ -110,6 +135,17 @@ export const useUpdateFeedback = () => {
       qc.invalidateQueries({ queryKey: queryKeys.feedback.byPatient(String(data.data.patientId)) });
       qc.invalidateQueries({ queryKey: queryKeys.feedback.byDoctor(String(data.data.doctorId)) });
     },
+    onError: (error: any) => {
+      if (error?.response?.status === 404) {
+        throw new Error("Feedback not found.");
+      } else if (error?.response?.status === 400) {
+        throw new Error("Invalid feedback data. Please check your input.");
+      } else if (!error?.response) {
+        throw new Error("Network error. Please check your connection and try again.");
+      } else {
+        throw new Error("Failed to update feedback. Please try again.");
+      }
+    },
   });
 };
 
@@ -119,6 +155,17 @@ export const useDeleteFeedback = () => {
     mutationFn: deleteFeedback,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.feedback.all });
+    },
+    onError: (error: any) => {
+      if (error?.response?.status === 404) {
+        throw new Error("Feedback not found.");
+      } else if (error?.response?.status === 403) {
+        throw new Error("You don't have permission to delete this feedback.");
+      } else if (!error?.response) {
+        throw new Error("Network error. Please check your connection and try again.");
+      } else {
+        throw new Error("Failed to delete feedback. Please try again.");
+      }
     },
   });
 };

@@ -44,7 +44,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
+import { FeedbackErrorBoundary } from "@/components/feedback/error-boundary";
 import { useUser } from "@/store/store";
 import {
   useGetFeedbackByPatient,
@@ -54,6 +54,8 @@ import {
   type Feedback
 } from "@/api/feedbackApi";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 interface FeedbackFormData {
   appointmentId?: number;
@@ -63,7 +65,16 @@ interface FeedbackFormData {
 }
 
 export default function PatientFeedbackPage() {
+  return (
+    <FeedbackErrorBoundary>
+      <PatientFeedbackContent />
+    </FeedbackErrorBoundary>
+  );
+}
+
+function PatientFeedbackContent() {
   const user = useUser();
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [ratingFilter, setRatingFilter] = useState("all");
@@ -97,6 +108,11 @@ export default function PatientFeedbackPage() {
       return;
     }
 
+    if (formData.rating < 1 || formData.rating > 5) {
+      toast.error("Please provide a rating between 1 and 5 stars.");
+      return;
+    }
+
     submitFeedbackMutation.mutate(
       {
         appointmentId: formData.appointmentId,
@@ -110,8 +126,8 @@ export default function PatientFeedbackPage() {
           setFormData({ rating: 5, comment: "" });
           setIsCreateDialogOpen(false);
         },
-        onError: (error) => {
-          toast.error("Failed to submit feedback. Please try again.");
+        onError: (error: any) => {
+          toast.error(error?.message || "Failed to submit feedback. Please try again.");
           console.error("Submit feedback error:", error);
         },
       }
@@ -120,6 +136,11 @@ export default function PatientFeedbackPage() {
 
   const handleUpdate = () => {
     if (!editingFeedback) return;
+
+    if (formData.rating < 1 || formData.rating > 5) {
+      toast.error("Please provide a rating between 1 and 5 stars.");
+      return;
+    }
 
     updateFeedbackMutation.mutate(
       {
@@ -135,8 +156,8 @@ export default function PatientFeedbackPage() {
           setEditingFeedback(null);
           setFormData({ rating: 5, comment: "" });
         },
-        onError: (error) => {
-          toast.error("Failed to update feedback. Please try again.");
+        onError: (error: any) => {
+          toast.error(error?.message || "Failed to update feedback. Please try again.");
           console.error("Update feedback error:", error);
         },
       }
@@ -144,14 +165,14 @@ export default function PatientFeedbackPage() {
   };
 
   const handleDelete = (id: number) => {
-    if (!confirm("Are you sure you want to delete this feedback?")) return;
+    if (!confirm("Are you sure you want to delete this feedback? This action cannot be undone.")) return;
 
     deleteFeedbackMutation.mutate(id.toString(), {
       onSuccess: () => {
         toast.success("Feedback deleted successfully!");
       },
-      onError: (error) => {
-        toast.error("Failed to delete feedback. Please try again.");
+      onError: (error: any) => {
+        toast.error(error?.message || "Failed to delete feedback. Please try again.");
         console.error("Delete feedback error:", error);
       },
     });
@@ -222,14 +243,28 @@ export default function PatientFeedbackPage() {
         </div>
         <Card className="bg-white border border-gray-200">
           <CardContent className="pt-6">
-            <p className="text-red-600">Failed to load feedback. Please try again later.</p>
-            <Button
-              onClick={() => window.location.reload()}
-              className="mt-4"
-              variant="outline"
-            >
-              Retry
-            </Button>
+            <div className="text-center space-y-4">
+              <div className="text-red-600">
+                <p className="font-medium">Failed to load feedback</p>
+                <p className="text-sm mt-1">
+                  {error?.message || "Please check your connection and try again."}
+                </p>
+              </div>
+              <div className="flex gap-2 justify-center">
+                <Button
+                  onClick={() => window.location.reload()}
+                  variant="outline"
+                >
+                  Retry
+                </Button>
+                <Button
+                  onClick={() => router.push("/patient/dashboard")}
+                  variant="ghost"
+                >
+                  Go to Dashboard
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

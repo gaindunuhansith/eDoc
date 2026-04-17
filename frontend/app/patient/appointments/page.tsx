@@ -97,7 +97,7 @@ export default function AppointmentsPage() {
   const { data: appointments = [], isLoading: apptLoading } =
     useGetAppointmentsByPatient(patientId);
 
-  const { data: feedbackData } = useGetFeedbackByPatient(patient?.id ? String(patient.id) : "");
+  const { data: feedbackData, isLoading: feedbackLoading, error: feedbackError } = useGetFeedbackByPatient(patient?.id ? String(patient.id) : "");
 
   const cancelMutation = useCancelAppointment();
 
@@ -126,11 +126,24 @@ export default function AppointmentsPage() {
 
   // Check if feedback exists for an appointment
   const checkFeedbackExists = (appointmentId: string) => {
+    if (feedbackLoading || feedbackError) return false; // Show button while loading or on error
     if (!feedbackData) return false;
     return feedbackData.some(feedback => feedback.appointmentId === Number(appointmentId));
   };
 
   const handleLeaveFeedback = (appointment: Appointment) => {
+    // Validate appointment data
+    if (!appointment.id || !appointment.doctorId) {
+      toast.error("Invalid appointment data. Please refresh and try again.");
+      return;
+    }
+
+    // Check if feedback already exists (double-check)
+    if (checkFeedbackExists(appointment.id.toString())) {
+      toast.error("Feedback already exists for this appointment.");
+      return;
+    }
+
     // Navigate to feedback creation with appointment data
     router.push(`/patient/feedback/submit/${appointment.id}?doctorId=${appointment.doctorId}&doctorName=${appointment.doctorName || 'Doctor'}`);
   };
