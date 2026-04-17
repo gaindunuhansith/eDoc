@@ -105,9 +105,13 @@ coverage/
 *.p12
 *.pfx
 secrets/
+*/secrets/
+**/secrets/
 *.secret
 *.secrets
 config/secrets.*
+src/main/resources/secrets/
+src/main/resources/secrets/*.pem
 
 
 # DATABASES & MIGRATIONS 

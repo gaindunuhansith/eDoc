@@ -8,7 +8,6 @@ import com.edoc.doctorservice.repository.AvailabilityRepository;
 import com.edoc.doctorservice.repository.DoctorRepository;
 import com.edoc.doctorservice.repository.PrescriptionRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,7 +19,6 @@ public class DoctorService {
     private final DoctorRepository doctorRepository;
     private final AvailabilityRepository availabilityRepository;
     private final PrescriptionRepository prescriptionRepository;
-    private final PasswordEncoder passwordEncoder;
 
     // Register a new doctor
     public Doctor registerDoctor(DoctorRegistrationRequest request) {
@@ -32,7 +30,6 @@ public class DoctorService {
         doctor.setFirstName(request.getFirstName());
         doctor.setLastName(request.getLastName());
         doctor.setEmail(request.getEmail());
-        doctor.setPassword(passwordEncoder.encode(request.getPassword())); // Hash password
         doctor.setPhoneNumber(request.getPhoneNumber());
         doctor.setSpecialty(request.getSpecialty());
         doctor.setQualification(request.getQualification());

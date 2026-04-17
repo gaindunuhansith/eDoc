@@ -32,10 +32,10 @@ public class MedicalHistoryService {
     }
 
     @Transactional(readOnly = true)
-    public List<MedicalHistoryResponseDTO> getHistoryForPatient(Long patientId) {
+    public List<MedicalHistoryResponseDTO> getHistoryForPatient(String userId) {
         // Ensure the patient exists before returning history.
-        findPatientOrThrow(patientId);
-        return medicalHistoryRepository.findByPatientId(patientId).stream()
+        Patient patient = findPatientByUserIdOrThrow(userId);
+        return medicalHistoryRepository.findByPatientId(patient.getId()).stream()
                 .map(medicalHistoryMapper::toResponse)
                 .collect(Collectors.toList());
     }
@@ -52,11 +52,19 @@ public class MedicalHistoryService {
     @Transactional(readOnly = true)
     public List<MedicalHistoryResponseDTO> getHistoryInternal(Long patientId) {
         // Internal endpoint for staff services to read history.
-        return getHistoryForPatient(patientId);
+        findPatientOrThrow(patientId);
+        return medicalHistoryRepository.findByPatientId(patientId).stream()
+                .map(medicalHistoryMapper::toResponse)
+                .collect(Collectors.toList());
     }
 
     private Patient findPatientOrThrow(Long patientId) {
         return patientRepository.findById(patientId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient not found"));
+    }
+
+    private Patient findPatientByUserIdOrThrow(String userId) {
+        return patientRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient not found"));
     }
 

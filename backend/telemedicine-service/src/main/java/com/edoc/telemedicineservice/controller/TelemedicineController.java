@@ -8,7 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/telemedicine")
+@RequestMapping("/api/v1/telemedicine")
 public class TelemedicineController {
 
     private final TelemedicineService telemedicineService;
@@ -17,31 +17,24 @@ public class TelemedicineController {
         this.telemedicineService = telemedicineService;
     }
 
-    /**
-     * Create a video session associated with an appointment.
-     */
     @PostMapping("/sessions")
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<VideoSession> createSession(@RequestBody VideoSessionRequest request) {
+    public ResponseEntity<VideoSession> createSession(@RequestBody VideoSessionRequest request,
+                                                     @RequestHeader(value = "Authorization", required = false) String authorizationHeader) {
         VideoSession session = telemedicineService.createSession(
                 request.getAppointmentId(),
                 request.getDoctorId(),
-                request.getPatientId()
+                request.getPatientId(),
+                authorizationHeader
         );
         return ResponseEntity.status(HttpStatus.CREATED).body(session);
     }
 
-    /**
-     * Read a video session by appointment id.
-     */
     @GetMapping("/sessions/{appointmentId}")
     public ResponseEntity<VideoSession> getSession(@PathVariable String appointmentId) {
         return ResponseEntity.ok(telemedicineService.getSession(appointmentId));
     }
 
-    /**
-     * Generate an access token for a doctor or patient to join a specific appointment room.
-     */
     @GetMapping("/sessions/{appointmentId}/token")
     public ResponseEntity<String> getJoinToken(
             @PathVariable String appointmentId,
@@ -50,27 +43,20 @@ public class TelemedicineController {
         return ResponseEntity.ok(token);
     }
 
-    /**
-     * Start the video session (Called when someone enters the room)
-     */
     @PutMapping("/sessions/{appointmentId}/start")
-    public ResponseEntity<VideoSession> startSession(@PathVariable String appointmentId) {
-        VideoSession session = telemedicineService.startSession(appointmentId);
+    public ResponseEntity<VideoSession> startSession(@PathVariable String appointmentId,
+                                                    @RequestHeader(value = "Authorization", required = false) String authorizationHeader) {
+        VideoSession session = telemedicineService.startSession(appointmentId, authorizationHeader);
         return ResponseEntity.ok(session);
     }
 
-    /**
-     * Complete the video session (Called when the call drops/ends)
-     */
     @PutMapping("/sessions/{appointmentId}/complete")
-    public ResponseEntity<VideoSession> endSession(@PathVariable String appointmentId) {
-        VideoSession session = telemedicineService.endSession(appointmentId);
+    public ResponseEntity<VideoSession> endSession(@PathVariable String appointmentId,
+                                                  @RequestHeader(value = "Authorization", required = false) String authorizationHeader) {
+        VideoSession session = telemedicineService.endSession(appointmentId, authorizationHeader);
         return ResponseEntity.ok(session);
     }
 
-    /**
-     * Delete a video session by appointment id.
-     */
     @DeleteMapping("/sessions/{appointmentId}")
     public ResponseEntity<Void> deleteSession(@PathVariable String appointmentId) {
         telemedicineService.deleteSession(appointmentId);

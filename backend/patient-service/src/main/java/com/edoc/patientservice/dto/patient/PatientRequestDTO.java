@@ -1,25 +1,10 @@
 package com.edoc.patientservice.dto.patient;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 
 // Payload for patient registration and profile updates.
 public class PatientRequestDTO {
-
-    @NotBlank
-    @Size(max = 100)
-    private String firstName;
-
-    @NotBlank
-    @Size(max = 100)
-    private String lastName;
-
-    @NotBlank
-    @Email
-    @Size(max = 150)
-    private String email;
 
     @Size(max = 50)
     private String phone;
@@ -29,29 +14,24 @@ public class PatientRequestDTO {
     @Size(max = 500)
     private String address;
 
-    public String getFirstName() {
-        return firstName;
-    }
+    @Size(max = 20)
+    private String gender;
 
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
+    @Size(max = 10)
+    private String bloodGroup;
 
-    public String getLastName() {
-        return lastName;
-    }
+    @Size(max = 20)
+    private String nicNumber;
 
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
+    @Size(max = 4000)
+    private String allergies;
 
-    public String getEmail() {
-        return email;
-    }
+    @Size(max = 50)
+    private String emergencyContactPhone;
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
+    private Double height;
+
+    private Double weight;
 
     public String getPhone() {
         return phone;
@@ -75,5 +55,61 @@ public class PatientRequestDTO {
 
     public void setAddress(String address) {
         this.address = address;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public String getBloodGroup() {
+        return bloodGroup;
+    }
+
+    public void setBloodGroup(String bloodGroup) {
+        this.bloodGroup = bloodGroup;
+    }
+
+    public String getNicNumber() {
+        return nicNumber;
+    }
+
+    public void setNicNumber(String nicNumber) {
+        this.nicNumber = nicNumber;
+    }
+
+    public String getAllergies() {
+        return allergies;
+    }
+
+    public void setAllergies(String allergies) {
+        this.allergies = allergies;
+    }
+
+    public String getEmergencyContactPhone() {
+        return emergencyContactPhone;
+    }
+
+    public void setEmergencyContactPhone(String emergencyContactPhone) {
+        this.emergencyContactPhone = emergencyContactPhone;
+    }
+
+    public Double getHeight() {
+        return height;
+    }
+
+    public void setHeight(Double height) {
+        this.height = height;
+    }
+
+    public Double getWeight() {
+        return weight;
+    }
+
+    public void setWeight(Double weight) {
+        this.weight = weight;
     }
 }

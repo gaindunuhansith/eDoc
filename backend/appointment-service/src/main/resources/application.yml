@@ -1,0 +1,30 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: appointment-service
+  data:
+    mongodb:
+      uri: ${MONGO_URI}
+      database: edoc_appointment_db
+
+jwt:
+  public-key-path: ${JWT_PUBLIC_KEY_PATH:classpath:secrets/public.pem}
+  expiration: 86400000
+
+doctor:
+  service:
+    url: http://localhost:8082
+
+patient:
+  service:
+    url: http://localhost:8084
+
+notification:
+  service:
+    url: http://localhost:8083
+
+logging:
+  level:
+    com.edoc: DEBUG

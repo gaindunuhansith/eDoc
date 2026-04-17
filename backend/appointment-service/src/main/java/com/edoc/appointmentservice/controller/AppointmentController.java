@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/appointments")
+@RequestMapping("/api/v1/appointments")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class AppointmentController {
@@ -24,7 +24,7 @@ public class AppointmentController {
 
     // ─── BOOK ─────────────────────────────────────────────────────────────────
 
-    // POST /api/appointments
+    // POST /api/v1/appointments
     @PostMapping
     public ResponseEntity<Appointment> bookAppointment(
             @Valid @RequestBody AppointmentRequest request) {
@@ -34,27 +34,27 @@ public class AppointmentController {
 
     // ─── GET ──────────────────────────────────────────────────────────────────
 
-    // GET /api/appointments/{id}
+    // GET /api/v1/appointments/{id}
     @GetMapping("/{id}")
     public ResponseEntity<Appointment> getAppointmentById(@PathVariable String id) {
         return ResponseEntity.ok(appointmentService.getAppointmentById(id));
     }
 
-    // GET /api/appointments/patient/{patientId}
+    // GET /api/v1/appointments/patient/{patientId}
     @GetMapping("/patient/{patientId}")
     public ResponseEntity<List<Appointment>> getAppointmentsByPatient(
             @PathVariable String patientId) {
         return ResponseEntity.ok(appointmentService.getAppointmentsByPatient(patientId));
     }
 
-    // GET /api/appointments/doctor/{doctorId}
+    // GET /api/v1/appointments/doctor/{doctorId}
     @GetMapping("/doctor/{doctorId}")
     public ResponseEntity<List<Appointment>> getAppointmentsByDoctor(
             @PathVariable String doctorId) {
         return ResponseEntity.ok(appointmentService.getAppointmentsByDoctor(doctorId));
     }
 
-    // GET /api/appointments/doctor/{doctorId}/pending
+    // GET /api/v1/appointments/doctor/{doctorId}/pending
     // Doctor sees all pending appointments they need to accept/reject
     @GetMapping("/doctor/{doctorId}/pending")
     public ResponseEntity<List<Appointment>> getPendingAppointments(
@@ -64,7 +64,7 @@ public class AppointmentController {
         );
     }
 
-    // GET /api/appointments/patient/{patientId}/status/{status}
+    // GET /api/v1/appointments/patient/{patientId}/status/{status}
     // Patient filters their appointments by status
     @GetMapping("/patient/{patientId}/status/{status}")
     public ResponseEntity<List<Appointment>> getPatientAppointmentsByStatus(
@@ -86,7 +86,7 @@ public class AppointmentController {
 
     // ─── UPDATE ───────────────────────────────────────────────────────────────
 
-    // PATCH /api/appointments/{id}/status
+    // PATCH /api/v1/appointments/{id}/status
     // Doctor uses this to CONFIRM, REJECT, COMPLETE, or add notes
     @PatchMapping("/{id}/status")
     public ResponseEntity<Appointment> updateAppointmentStatus(
@@ -97,7 +97,7 @@ public class AppointmentController {
         );
     }
 
-    // PUT /api/appointments/{id}
+    // PUT /api/v1/appointments/{id}
     // Patient modifies their appointment (date/time change)
     @PutMapping("/{id}")
     public ResponseEntity<Appointment> modifyAppointment(
@@ -116,7 +116,7 @@ public class AppointmentController {
 
     // ─── CANCEL ───────────────────────────────────────────────────────────────
 
-    // DELETE /api/appointments/{id}/cancel
+    // DELETE /api/v1/appointments/{id}/cancel
     @DeleteMapping("/{id}/cancel")
     public ResponseEntity<Appointment> cancelAppointment(
             @PathVariable String id,

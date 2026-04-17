@@ -42,7 +42,7 @@ public class TwilioService {
                     .create();
             return room.getSid();
         } catch (TwilioException e) {
-            // Room might already exist, try to fetch it
+
             Room room = Room.fetcher(roomName).fetch();
             return room.getSid();
         }

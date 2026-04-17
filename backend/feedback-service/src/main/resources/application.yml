@@ -7,11 +7,25 @@ spring:
     password: ${DB_PASSWORD:password}
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
     properties:
       hibernate:
         format_sql: true
 
+# Service URLs - following patient service pattern
+appointment:
+  service:
+    base-url: ${APPOINTMENT_SERVICE_URL:http://localhost:8081}
+notification:
+  service:
+    base-url: ${NOTIFICATION_SERVICE_URL:http://localhost:8083}
+user:
+  service:
+    base-url: ${USER_SERVICE_URL:http://localhost:8088}
+
 server:
   port: ${SERVER_PORT:8089}
+
+jwt:
+  public-key-path: ${JWT_PUBLIC_KEY_PATH:classpath:secrets/public.pem}
 

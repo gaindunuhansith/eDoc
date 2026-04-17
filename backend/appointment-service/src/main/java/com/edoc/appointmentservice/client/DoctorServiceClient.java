@@ -21,11 +21,11 @@ public class DoctorServiceClient {
 
     // Get doctor details by ID from doctor-service
     // Returns a Map because we don't want to duplicate the Doctor model here
-    public Map getDoctorById(String doctorId) {
+    public Map<?, ?> getDoctorById(String doctorId) {
         try {
             return webClientBuilder.build()
                     .get()
-                    .uri(doctorServiceUrl + "/api/doctors/" + doctorId)
+                    .uri(doctorServiceUrl + "/api/v1/doctors/" + doctorId)
                     .retrieve()
                     .bodyToMono(Map.class)
                     .block(); // block() makes it synchronous - simpler for now
@@ -40,7 +40,7 @@ public class DoctorServiceClient {
         try {
             webClientBuilder.build()
                     .patch()
-                    .uri(doctorServiceUrl + "/api/doctors/" + doctorId
+                    .uri(doctorServiceUrl + "/api/v1/doctors/" + doctorId
                             + "/availability/book"
                             + "?dayOfWeek=" + dayOfWeek
                             + "&startTime=" + startTime)
@@ -58,7 +58,7 @@ public class DoctorServiceClient {
         try {
             webClientBuilder.build()
                     .patch()
-                    .uri(doctorServiceUrl + "/api/doctors/" + doctorId
+                    .uri(doctorServiceUrl + "/api/v1/doctors/" + doctorId
                             + "/availability/free"
                             + "?dayOfWeek=" + dayOfWeek
                             + "&startTime=" + startTime)

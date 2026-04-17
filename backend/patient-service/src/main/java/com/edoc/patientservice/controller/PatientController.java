@@ -2,6 +2,7 @@ package com.edoc.patientservice.controller;
 
 import com.edoc.patientservice.dto.patient.PatientRequestDTO;
 import com.edoc.patientservice.dto.patient.PatientResponseDTO;
+import com.edoc.patientservice.dto.patient.PatientStatusResponseDTO;
 import com.edoc.patientservice.dto.patient.PatientStatusUpdateRequestDTO;
 import com.edoc.patientservice.service.CurrentPatientProvider;
 import com.edoc.patientservice.service.PatientService;
@@ -13,10 +14,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequestMapping("/api/v1")
 public class PatientController {
 
     private final PatientService patientService;
@@ -29,33 +32,39 @@ public class PatientController {
 
     @PostMapping("/patients/register")
     @ResponseStatus(HttpStatus.CREATED)
-    // Register a new patient account with profile details.
+    // Register a new patient profile linked to the authenticated user-service account.
     public PatientResponseDTO registerPatient(@Valid @RequestBody PatientRequestDTO request) {
-        return patientService.registerPatient(request);
+        return patientService.registerPatient(request, currentPatientProvider.getCurrentPatientId());
     }
 
     @GetMapping("/patients/me")
-    // Read the current patient's profile using the authenticated identity.
+    // Read the current patient's profile using the authenticated user-service identity.
     public PatientResponseDTO getCurrentPatient() {
-        return patientService.getPatient(currentPatientProvider.getCurrentPatientId());
+        return patientService.getPatientByUserId(currentPatientProvider.getCurrentPatientId());
     }
 
     @PutMapping("/patients/me")
     // Update the current patient's profile.
     public PatientResponseDTO updateCurrentPatient(@Valid @RequestBody PatientRequestDTO request) {
-        return patientService.updatePatient(currentPatientProvider.getCurrentPatientId(), request);
+        return patientService.updatePatientByUserId(currentPatientProvider.getCurrentPatientId(), request);
     }
 
     @PatchMapping("/patients/me/status")
     // Change the current patient's account status and keep deactivation audit data.
     public PatientResponseDTO updateCurrentPatientStatus(@Valid @RequestBody PatientStatusUpdateRequestDTO request) {
-        return patientService.changeCurrentPatientStatus(currentPatientProvider.getCurrentPatientId(), request);
+        return patientService.changePatientStatusByUserId(currentPatientProvider.getCurrentPatientId(), request);
     }
 
     @GetMapping("/internal/patients/{id}")
-    // Internal lookup for other services by patient id.
+    // Internal lookup for other services by internal patient id.
     public PatientResponseDTO getPatientInternal(@PathVariable Long id) {
         return patientService.getPatient(id);
+    }
+
+    @GetMapping("/internal/patients/{id}/status")
+    // Internal lightweight status lookup for booking and authorization checks.
+    public PatientStatusResponseDTO getPatientStatusInternal(@PathVariable Long id) {
+        return patientService.getPatientStatus(id);
     }
 
     @PatchMapping("/internal/patients/{id}/status")

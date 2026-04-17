@@ -10,7 +10,7 @@ import java.util.Optional;
 @Repository
 public interface DoctorRepository extends MongoRepository<Doctor, String> {
 
-    // Find a doctor by their email (used for login)
+    // Find a doctor by email
     Optional<Doctor> findByEmail(String email);
 
     // Find all doctors of a specific specialty (used by appointment service)

@@ -21,8 +21,6 @@ public class Doctor {
     @Indexed(unique = true)    // Email must be unique
     private String email;
 
-    private String password;   // Will be stored as a hashed value, never plain text
-
     private String firstName;
     private String lastName;
     private String phoneNumber;

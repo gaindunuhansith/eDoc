@@ -11,10 +11,14 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.time.LocalDate;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "medical_history")
 // Structured medical history entries for a patient.
+@Getter
+@Setter
 public class MedicalHistory {
 
     @Id
@@ -34,6 +38,17 @@ public class MedicalHistory {
     @Column(name = "visit_date")
     private LocalDate visitDate;
 
+    // Cross-service reference IDs (no FK constraint — microservices pattern)
+    @Column(name = "doctor_id")
+    private String doctorId;
+
+    @Column(name = "appointment_id")
+    private String appointmentId;
+
+    // Snapshot of doctor name at time of entry — avoids calling doctor-service on every read
+    @Column(name = "doctor_name_snapshot", length = 200)
+    private String doctorNameSnapshot;
+
     @Column(columnDefinition = "TEXT")
     private String notes;
 
@@ -45,61 +60,5 @@ public class MedicalHistory {
         if (createdAt == null) {
             createdAt = Instant.now();
         }
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Patient getPatient() {
-        return patient;
-    }
-
-    public void setPatient(Patient patient) {
-        this.patient = patient;
-    }
-
-    public String getCondition() {
-        return condition;
-    }
-
-    public void setCondition(String condition) {
-        this.condition = condition;
-    }
-
-    public String getDiagnosis() {
-        return diagnosis;
-    }
-
-    public void setDiagnosis(String diagnosis) {
-        this.diagnosis = diagnosis;
-    }
-
-    public LocalDate getVisitDate() {
-        return visitDate;
-    }
-
-    public void setVisitDate(LocalDate visitDate) {
-        this.visitDate = visitDate;
-    }
-
-    public String getNotes() {
-        return notes;
-    }
-
-    public void setNotes(String notes) {
-        this.notes = notes;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
     }
 }

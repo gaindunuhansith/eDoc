@@ -51,7 +51,7 @@ spring:
         - id: patient-service
           uri: http://localhost:8084
           predicates:
-            - Path=/patients/**
+            - Path=/api/v1/patients/**
           filters:
             - name: Retry
               args:
@@ -62,7 +62,7 @@ spring:
         - id: doctor-service-doctors
           uri: http://localhost:8082
           predicates:
-            - Path=/api/doctors/**
+            - Path=/api/v1/doctors/**
           filters:
             - name: Retry
               args:
@@ -72,7 +72,7 @@ spring:
         - id: doctor-service-prescriptions
           uri: http://localhost:8082
           predicates:
-            - Path=/api/prescriptions/**
+            - Path=/api/v1/prescriptions/**
           filters:
             - name: Retry
               args:
@@ -83,7 +83,7 @@ spring:
         - id: appointment-service
           uri: http://localhost:8081
           predicates:
-            - Path=/api/appointments/**
+            - Path=/api/v1/appointments/**
           filters:
             - name: Retry
               args:
@@ -94,7 +94,7 @@ spring:
         - id: payment-service
           uri: http://localhost:8085
           predicates:
-            - Path=/payments/**
+            - Path=/api/v1/payments/**
           filters:
             - name: Retry
               args:
@@ -105,7 +105,7 @@ spring:
         - id: notification-service
           uri: http://localhost:8083
           predicates:
-            - Path=/notifications/**
+            - Path=/api/v1/notifications/**
           filters:
             - name: Retry
               args:
@@ -116,7 +116,7 @@ spring:
         - id: telemedicine-service
           uri: http://localhost:8086
           predicates:
-            - Path=/api/telemedicine/**
+            - Path=/api/v1/telemedicine/**
           filters:
             - name: Retry
               args:
@@ -127,7 +127,7 @@ spring:
         - id: feedback-service
           uri: http://localhost:8089
           predicates:
-            - Path=/api/feedback/**
+            - Path=/api/v1/feedback/**
           filters:
             - name: Retry
               args:
@@ -169,3 +169,6 @@ gateway:
 logging:
   level:
     org.springframework.cloud.gateway: INFO
+
+jwt:
+  public-key-path: ${JWT_PUBLIC_KEY_PATH:classpath:secrets/public.pem}

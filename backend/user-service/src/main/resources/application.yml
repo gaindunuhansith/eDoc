@@ -7,13 +7,14 @@ spring:
     password: ${DB_PASSWORD:password}
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
     properties:
       hibernate:
         format_sql: true
 
 jwt:
-  secret: ${JWT_SECRET:change-this-default-jwt-secret-key-to-at-least-32-bytes}
+  private-key-path: ${JWT_PRIVATE_KEY_PATH:classpath:secrets/private.pem}
+  public-key-path: ${JWT_PUBLIC_KEY_PATH:classpath:secrets/public.pem}
   expiration: ${JWT_EXPIRATION:86400000}
 
 microservices:
@@ -22,7 +23,7 @@ microservices:
     delete-by-user-id-path: ${PATIENT_DELETE_BY_USER_ID_PATH:/patients/{userId}}
   doctor:
     base-url: ${DOCTOR_SERVICE_URL:http://localhost:8082}
-    delete-by-user-id-path: ${DOCTOR_DELETE_BY_USER_ID_PATH:/api/doctors/{userId}}
+    delete-by-user-id-path: ${DOCTOR_DELETE_BY_USER_ID_PATH:/api/v1/doctors/{userId}}
 
 server:
   port: ${SERVER_PORT:8088}

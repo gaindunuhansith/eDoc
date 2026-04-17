@@ -9,6 +9,9 @@ public class MedicalReportResponseDTO {
     private Long id;
     private Long patientId;
     private String reportName;
+    private String reportType;
+    private String doctorId;
+    private String appointmentId;
     private String notes;
     private Instant createdAt;
 
@@ -42,6 +45,30 @@ public class MedicalReportResponseDTO {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public String getReportType() {
+        return reportType;
+    }
+
+    public void setReportType(String reportType) {
+        this.reportType = reportType;
+    }
+
+    public String getDoctorId() {
+        return doctorId;
+    }
+
+    public void setDoctorId(String doctorId) {
+        this.doctorId = doctorId;
+    }
+
+    public String getAppointmentId() {
+        return appointmentId;
+    }
+
+    public void setAppointmentId(String appointmentId) {
+        this.appointmentId = appointmentId;
     }
 
     public Instant getCreatedAt() {
