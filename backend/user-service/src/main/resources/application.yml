@@ -23,7 +23,7 @@ microservices:
     delete-by-user-id-path: ${PATIENT_DELETE_BY_USER_ID_PATH:/patients/{userId}}
   doctor:
     base-url: ${DOCTOR_SERVICE_URL:http://localhost:8082}
-    delete-by-user-id-path: ${DOCTOR_DELETE_BY_USER_ID_PATH:/api/doctors/{userId}}
+    delete-by-user-id-path: ${DOCTOR_DELETE_BY_USER_ID_PATH:/api/v1/doctors/{userId}}
 
 server:
   port: ${SERVER_PORT:8088}
