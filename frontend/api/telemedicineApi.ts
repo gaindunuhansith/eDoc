@@ -1,20 +1,170 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import apiClient from "./utils/axiosInstance";
 import { TELEMEDICINE_ENDPOINTS } from "./utils/endpoints";
 import { queryKeys } from "./utils/queryKeys";
 import { useStore } from "../store/store";
 
+// ─── Error Classes ────────────────────────────────────────────────────────────
+export class TelemedicineError extends Error {
+  constructor(
+    message: string,
+    public code: string,
+    public statusCode?: number,
+    public originalError?: unknown
+  ) {
+    super(message);
+    this.name = "TelemedicineError";
+  }
+}
+
+export class AuthenticationError extends TelemedicineError {
+  constructor(message = "Authentication required for telemedicine access") {
+    super(message, "AUTH_REQUIRED", 401);
+    this.name = "AuthenticationError";
+  }
+}
+
+export class AuthorizationError extends TelemedicineError {
+  constructor(message = "You don't have permission to access this telemedicine session") {
+    super(message, "ACCESS_DENIED", 403);
+    this.name = "AuthorizationError";
+  }
+}
+
+export class SessionNotFoundError extends TelemedicineError {
+  constructor(appointmentId: string) {
+    super(
+      `Telemedicine session not found for appointment ${appointmentId}`,
+      "SESSION_NOT_FOUND",
+      404
+    );
+    this.name = "SessionNotFoundError";
+  }
+}
+
+export class SessionAlreadyActiveError extends TelemedicineError {
+  constructor(appointmentId: string) {
+    super(
+      `Session for appointment ${appointmentId} is already active`,
+      "SESSION_ALREADY_ACTIVE",
+      409
+    );
+    this.name = "SessionAlreadyActiveError";
+  }
+}
+
+export class NetworkError extends TelemedicineError {
+  constructor(message = "Network connection failed. Please check your internet connection.") {
+    super(message, "NETWORK_ERROR", 0);
+    this.name = "NetworkError";
+  }
+}
+
 // ─── Utility Functions ────────────────────────────────────────────────────────
 export const checkTelemedicineAccess = () => {
   const user = useStore.getState().user;
   if (!user) {
-    throw new Error("Authentication required for telemedicine access");
+    throw new AuthenticationError();
   }
   if (!["PATIENT", "DOCTOR"].includes(user.role)) {
-    throw new Error("Only patients and doctors can access telemedicine features");
+    throw new AuthorizationError();
   }
   return user;
+};
+
+export const handleTelemedicineError = (error: unknown, context: string): TelemedicineError => {
+  console.error(`Telemedicine error in ${context}:`, error);
+
+  if (error instanceof TelemedicineError) {
+    return error;
+  }
+
+  if (error && typeof error === "object" && "response" in error) {
+    const axiosError = error as any;
+    const status = axiosError.response?.status;
+    const data = axiosError.response?.data;
+
+    switch (status) {
+      case 401:
+        return new AuthenticationError();
+      case 403:
+        return new AuthorizationError();
+      case 404:
+        return new SessionNotFoundError(data?.appointmentId || "unknown");
+      case 409:
+        if (data?.message?.includes("already active")) {
+          return new SessionAlreadyActiveError(data?.appointmentId || "unknown");
+        }
+        return new TelemedicineError(data?.message || "Conflict error", "CONFLICT", status);
+      case 500:
+        return new TelemedicineError(
+          "Server error occurred. Please try again later.",
+          "SERVER_ERROR",
+          status
+        );
+      default:
+        return new TelemedicineError(
+          data?.message || `Request failed with status ${status}`,
+          "API_ERROR",
+          status,
+          error
+        );
+    }
+  }
+
+  if (error instanceof Error && error.message.includes("Network")) {
+    return new NetworkError();
+  }
+
+  return new TelemedicineError(
+    "An unexpected error occurred. Please try again.",
+    "UNKNOWN_ERROR",
+    undefined,
+    error
+  );
+};
+
+export const showTelemedicineErrorToast = (error: TelemedicineError) => {
+  let title = "Error";
+  let description = error.message;
+
+  switch (error.code) {
+    case "AUTH_REQUIRED":
+      title = "Authentication Required";
+      description = "Please log in to access telemedicine features.";
+      break;
+    case "ACCESS_DENIED":
+      title = "Access Denied";
+      description = "You don't have permission to access this telemedicine session.";
+      break;
+    case "SESSION_NOT_FOUND":
+      title = "Session Not Found";
+      description = "The requested telemedicine session could not be found.";
+      break;
+    case "SESSION_ALREADY_ACTIVE":
+      title = "Session Already Active";
+      description = "This telemedicine session is already in progress.";
+      break;
+    case "NETWORK_ERROR":
+      title = "Connection Error";
+      description = "Please check your internet connection and try again.";
+      break;
+    case "SERVER_ERROR":
+      title = "Server Error";
+      description = "Our servers are experiencing issues. Please try again later.";
+      break;
+    default:
+      title = "Something went wrong";
+      description = "An unexpected error occurred. Please try again.";
+  }
+
+  toast.error(title, { description });
+};
+
+export const showTelemedicineSuccessToast = (message: string, description?: string) => {
+  toast.success(message, description ? { description } : undefined);
 };
 
 export type SessionStatus =
@@ -47,48 +197,83 @@ export interface CreateSessionPayload {
   scheduledAt: string;
 }
 
-export const fetchAllSessions = () => {
-  checkTelemedicineAccess();
-  return apiClient.get<TelemedicineSession[]>(TELEMEDICINE_ENDPOINTS.SESSIONS);
+export const fetchAllSessions = async () => {
+  try {
+    checkTelemedicineAccess();
+    const response = await apiClient.get<TelemedicineSession[]>(TELEMEDICINE_ENDPOINTS.SESSIONS);
+    return response;
+  } catch (error) {
+    throw handleTelemedicineError(error, "fetchAllSessions");
+  }
 };
 
-export const fetchSessionByAppointmentId = (appointmentId: string) => {
-  checkTelemedicineAccess();
-  return apiClient.get<TelemedicineSession>(
-    TELEMEDICINE_ENDPOINTS.SESSION_BY_APPOINTMENT_ID(appointmentId)
-  );
+export const fetchSessionByAppointmentId = async (appointmentId: string) => {
+  try {
+    checkTelemedicineAccess();
+    const response = await apiClient.get<TelemedicineSession>(
+      TELEMEDICINE_ENDPOINTS.SESSION_BY_APPOINTMENT_ID(appointmentId)
+    );
+    return response;
+  } catch (error) {
+    throw handleTelemedicineError(error, "fetchSessionByAppointmentId");
+  }
 };
 
-export const createSession = (payload: CreateSessionPayload) => {
-  checkTelemedicineAccess();
-  return apiClient.post<TelemedicineSession>(
-    TELEMEDICINE_ENDPOINTS.CREATE_SESSION,
-    payload
-  );
+export const createSession = async (payload: CreateSessionPayload) => {
+  try {
+    checkTelemedicineAccess();
+    const response = await apiClient.post<TelemedicineSession>(
+      TELEMEDICINE_ENDPOINTS.CREATE_SESSION,
+      payload
+    );
+    return response;
+  } catch (error) {
+    throw handleTelemedicineError(error, "createSession");
+  }
 };
 
-export const startSession = (appointmentId: string) => {
-  checkTelemedicineAccess();
-  return apiClient.put<TelemedicineSession>(
-    TELEMEDICINE_ENDPOINTS.START_SESSION(appointmentId)
-  );
+export const startSession = async (appointmentId: string) => {
+  try {
+    checkTelemedicineAccess();
+    const response = await apiClient.put<TelemedicineSession>(
+      TELEMEDICINE_ENDPOINTS.START_SESSION(appointmentId)
+    );
+    return response;
+  } catch (error) {
+    throw handleTelemedicineError(error, "startSession");
+  }
 };
 
-export const endSession = (appointmentId: string) => {
-  checkTelemedicineAccess();
-  return apiClient.put<TelemedicineSession>(TELEMEDICINE_ENDPOINTS.END_SESSION(appointmentId));
+export const endSession = async (appointmentId: string) => {
+  try {
+    checkTelemedicineAccess();
+    const response = await apiClient.put<TelemedicineSession>(TELEMEDICINE_ENDPOINTS.END_SESSION(appointmentId));
+    return response;
+  } catch (error) {
+    throw handleTelemedicineError(error, "endSession");
+  }
 };
 
-export const fetchSessionToken = (appointmentId: string) => {
-  const user = checkTelemedicineAccess();
-  return apiClient.get<SessionToken>(
-    `${TELEMEDICINE_ENDPOINTS.SESSION_TOKEN(appointmentId)}?userId=${user.userId}`
-  );
+export const fetchSessionToken = async (appointmentId: string) => {
+  try {
+    const user = checkTelemedicineAccess();
+    const response = await apiClient.get<SessionToken>(
+      `${TELEMEDICINE_ENDPOINTS.SESSION_TOKEN(appointmentId)}?userId=${user.userId}`
+    );
+    return response;
+  } catch (error) {
+    throw handleTelemedicineError(error, "fetchSessionToken");
+  }
 };
 
-export const deleteSession = (appointmentId: string) => {
-  checkTelemedicineAccess();
-  return apiClient.delete(TELEMEDICINE_ENDPOINTS.DELETE_SESSION(appointmentId));
+export const deleteSession = async (appointmentId: string) => {
+  try {
+    checkTelemedicineAccess();
+    const response = await apiClient.delete(TELEMEDICINE_ENDPOINTS.DELETE_SESSION(appointmentId));
+    return response;
+  } catch (error) {
+    throw handleTelemedicineError(error, "deleteSession");
+  }
 };
 
 export const useGetAllSessions = () =>
@@ -97,6 +282,15 @@ export const useGetAllSessions = () =>
     queryFn: () => fetchAllSessions().then((r) => r.data),
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
+    retry: (failureCount, error) => {
+      // Don't retry on authentication/authorization errors
+      if (error instanceof AuthenticationError || error instanceof AuthorizationError) {
+        return false;
+      }
+      // Retry up to 3 times for other errors
+      return failureCount < 3;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
 export const useGetSessionByAppointmentId = (appointmentId: string) =>
@@ -106,6 +300,13 @@ export const useGetSessionByAppointmentId = (appointmentId: string) =>
     enabled: !!appointmentId,
     staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 5 * 60 * 1000, // 5 minutes
+    retry: (failureCount, error) => {
+      if (error instanceof AuthenticationError || error instanceof AuthorizationError) {
+        return false;
+      }
+      return failureCount < 3;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
 export const useGetSessionToken = (appointmentId: string) => {
@@ -116,6 +317,13 @@ export const useGetSessionToken = (appointmentId: string) => {
     enabled: !!appointmentId && !!userId,
     staleTime: 1 * 60 * 1000, // 1 minute - tokens expire quickly
     gcTime: 2 * 60 * 1000, // 2 minutes
+    retry: (failureCount, error) => {
+      if (error instanceof AuthenticationError || error instanceof AuthorizationError) {
+        return false;
+      }
+      return failureCount < 2; // Fewer retries for tokens
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 };
 
@@ -128,9 +336,14 @@ export const useCreateSession = () => {
       qc.invalidateQueries({ queryKey: queryKeys.telemedicine.sessions() });
       // Set the new session in cache for immediate UI update
       qc.setQueryData(queryKeys.telemedicine.session(data.data.appointmentId), data.data);
+      showTelemedicineSuccessToast("Session Created", "Your telemedicine session has been scheduled successfully.");
     },
     onError: (error) => {
-      console.error("Failed to create telemedicine session:", error);
+      if (error instanceof TelemedicineError) {
+        showTelemedicineErrorToast(error);
+      } else {
+        showTelemedicineErrorToast(new TelemedicineError("Failed to create session", "CREATE_FAILED"));
+      }
     },
   });
 };
@@ -163,6 +376,7 @@ export const useStartSession = () => {
       // Update with server response
       qc.setQueryData(queryKeys.telemedicine.session(data.data.appointmentId), data.data);
       qc.invalidateQueries({ queryKey: queryKeys.telemedicine.sessions() });
+      showTelemedicineSuccessToast("Session Started", "Your telemedicine session is now active.");
     },
     onError: (error, appointmentId, context) => {
       // Revert optimistic update on error
@@ -172,7 +386,11 @@ export const useStartSession = () => {
           context.previousSession
         );
       }
-      console.error("Failed to start telemedicine session:", error);
+      if (error instanceof TelemedicineError) {
+        showTelemedicineErrorToast(error);
+      } else {
+        showTelemedicineErrorToast(new TelemedicineError("Failed to start session", "START_FAILED"));
+      }
     },
   });
 };
@@ -207,6 +425,7 @@ export const useEndSession = () => {
       qc.invalidateQueries({ queryKey: queryKeys.telemedicine.sessions() });
       // Invalidate token cache since session is ended
       qc.invalidateQueries({ queryKey: queryKeys.telemedicine.token(data.data.appointmentId, "") });
+      showTelemedicineSuccessToast("Session Ended", "Your telemedicine session has been completed.");
     },
     onError: (error, appointmentId, context) => {
       // Revert optimistic update on error
@@ -216,7 +435,11 @@ export const useEndSession = () => {
           context.previousSession
         );
       }
-      console.error("Failed to end telemedicine session:", error);
+      if (error instanceof TelemedicineError) {
+        showTelemedicineErrorToast(error);
+      } else {
+        showTelemedicineErrorToast(new TelemedicineError("Failed to end session", "END_FAILED"));
+      }
     },
   });
 };
@@ -231,9 +454,14 @@ export const useDeleteSession = () => {
       qc.invalidateQueries({ queryKey: queryKeys.telemedicine.sessions() });
       // Invalidate token cache
       qc.invalidateQueries({ queryKey: queryKeys.telemedicine.token(appointmentId, "") });
+      showTelemedicineSuccessToast("Session Deleted", "The telemedicine session has been removed.");
     },
     onError: (error) => {
-      console.error("Failed to delete telemedicine session:", error);
+      if (error instanceof TelemedicineError) {
+        showTelemedicineErrorToast(error);
+      } else {
+        showTelemedicineErrorToast(new TelemedicineError("Failed to delete session", "DELETE_FAILED"));
+      }
     },
   });
 };
