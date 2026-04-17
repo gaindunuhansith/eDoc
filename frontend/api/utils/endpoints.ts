@@ -11,12 +11,10 @@ export const USER_ENDPOINTS = {
   DELETE_USER: (id: string) => `/api/v1/admin/users/${id}`,
 } as const;
 export const PATIENT_ENDPOINTS = {
-  GET_ALL: "/api/v1/patients",
-  GET_BY_ID: (id: string) => `/api/v1/patients/${id}`,
-  CREATE: "/api/v1/patients",
-  UPDATE: (id: string) => `/api/v1/patients/${id}`,
-  DELETE: (id: string) => `/api/v1/patients/${id}`,
-  MEDICAL_HISTORY: (id: string) => `/api/v1/patients/${id}/medical-history`,
+  REGISTER: "/api/v1/patients/register",
+  ME: "/api/v1/patients/me",
+  UPDATE_ME: "/api/v1/patients/me",
+  UPDATE_STATUS: "/api/v1/patients/me/status",
 } as const;
 
 

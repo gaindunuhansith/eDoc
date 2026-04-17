@@ -4,111 +4,77 @@ import apiClient from "./utils/axiosInstance";
 import { PATIENT_ENDPOINTS } from "./utils/endpoints";
 import { queryKeys } from "./utils/queryKeys";
 
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+export type PatientStatus = "ACTIVE" | "INACTIVE" | "SUSPENDED";
+
 export interface Patient {
-  id: string;
-  userId: string;
-  firstName: string;
-  lastName: string;
-  dateOfBirth: string;
-  gender: "MALE" | "FEMALE" | "OTHER";
-  bloodGroup?: string;
+  id: number;
+  userId: number;
+  phone?: string;
+  dateOfBirth?: string;
   address?: string;
-  phoneNumber?: string;
-  emergencyContact?: string;
+  gender?: string;
+  bloodGroup?: string;
+  nicNumber?: string;
+  allergies?: string;
+  emergencyContactPhone?: string;
+  height?: number;
+  weight?: number;
+  status: PatientStatus;
   createdAt: string;
+  updatedAt?: string;
 }
 
-export interface MedicalHistory {
-  id: string;
-  patientId: string;
-  condition: string;
-  diagnosedDate: string;
-  notes?: string;
-}
-
-export interface CreatePatientPayload {
-  firstName: string;
-  lastName: string;
-  dateOfBirth: string;
-  gender: "MALE" | "FEMALE" | "OTHER";
-  bloodGroup?: string;
+export interface PatientPayload {
+  phone?: string;
+  dateOfBirth?: string; // "YYYY-MM-DD"
   address?: string;
-  phoneNumber?: string;
-  emergencyContact?: string;
+  gender?: string;
+  bloodGroup?: string;
+  nicNumber?: string;
+  allergies?: string;
+  emergencyContactPhone?: string;
+  height?: number;
+  weight?: number;
 }
 
-export type UpdatePatientPayload = Partial<CreatePatientPayload>;
+// ─── API Functions ────────────────────────────────────────────────────────────
 
-export const fetchAllPatients = () =>
-  apiClient.get<Patient[]>(PATIENT_ENDPOINTS.GET_ALL);
+export const registerPatient = (payload: PatientPayload) =>
+  apiClient.post<Patient>(PATIENT_ENDPOINTS.REGISTER, payload);
 
-export const fetchPatientById = (id: string) =>
-  apiClient.get<Patient>(PATIENT_ENDPOINTS.GET_BY_ID(id));
+export const fetchMyPatientProfile = () =>
+  apiClient.get<Patient>(PATIENT_ENDPOINTS.ME);
 
-export const createPatient = (payload: CreatePatientPayload) =>
-  apiClient.post<Patient>(PATIENT_ENDPOINTS.CREATE, payload);
+export const updateMyPatientProfile = (payload: PatientPayload) =>
+  apiClient.put<Patient>(PATIENT_ENDPOINTS.UPDATE_ME, payload);
 
-export const updatePatient = ({
-  id,
-  payload,
-}: {
-  id: string;
-  payload: UpdatePatientPayload;
-}) => apiClient.put<Patient>(PATIENT_ENDPOINTS.UPDATE(id), payload);
+// ─── Hooks ────────────────────────────────────────────────────────────────────
 
-export const deletePatient = (id: string) =>
-  apiClient.delete(PATIENT_ENDPOINTS.DELETE(id));
-
-export const fetchMedicalHistory = (id: string) =>
-  apiClient.get<MedicalHistory[]>(PATIENT_ENDPOINTS.MEDICAL_HISTORY(id));
-
-export const useGetAllPatients = () =>
-  useQuery({
-    queryKey: queryKeys.patient.lists(),
-    queryFn: () => fetchAllPatients().then((r) => r.data),
-  });
-
-export const useGetPatientById = (id: string) =>
-  useQuery({
-    queryKey: queryKeys.patient.detail(id),
-    queryFn: () => fetchPatientById(id).then((r) => r.data),
-    enabled: !!id,
-  });
-
-export const useGetMedicalHistory = (patientId: string) =>
-  useQuery({
-    queryKey: queryKeys.patient.medicalHistory(patientId),
-    queryFn: () => fetchMedicalHistory(patientId).then((r) => r.data),
-    enabled: !!patientId,
-  });
-
-export const useCreatePatient = () => {
+export const useRegisterPatient = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: createPatient,
+    mutationFn: registerPatient,
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.patient.lists() });
+      qc.invalidateQueries({ queryKey: queryKeys.patient.me() });
     },
   });
 };
 
-export const useUpdatePatient = () => {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: updatePatient,
-    onSuccess: (_, { id }) => {
-      qc.invalidateQueries({ queryKey: queryKeys.patient.detail(id) });
-      qc.invalidateQueries({ queryKey: queryKeys.patient.lists() });
-    },
+export const useGetMyPatientProfile = () =>
+  useQuery({
+    queryKey: queryKeys.patient.me(),
+    queryFn: () => fetchMyPatientProfile().then((r) => r.data),
+    retry: false,
   });
-};
 
-export const useDeletePatient = () => {
+export const useUpdateMyPatientProfile = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: deletePatient,
+    mutationFn: updateMyPatientProfile,
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.patient.lists() });
+      qc.invalidateQueries({ queryKey: queryKeys.patient.me() });
     },
   });
 };
