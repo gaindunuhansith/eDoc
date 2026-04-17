@@ -166,6 +166,36 @@ export default function AppointmentsPage() {
         </TabsList>
       </Tabs>
 
+      {/* Feedback Summary */}
+      {filtered.some(appt => appt.status === "COMPLETED") && (
+        <Card className="bg-blue-50 border-blue-200">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-medium text-blue-900">Feedback Summary</span>
+              </div>
+              <div className="flex items-center gap-4 text-sm">
+                <span className="text-blue-700">
+                  {filtered.filter(appt => appt.status === "COMPLETED" && checkFeedbackExists(appt.id)).length} of{" "}
+                  {filtered.filter(appt => appt.status === "COMPLETED").length} completed appointments have feedback
+                </span>
+                {(() => {
+                  const completedCount = filtered.filter(appt => appt.status === "COMPLETED").length;
+                  const feedbackCount = filtered.filter(appt => appt.status === "COMPLETED" && checkFeedbackExists(appt.id)).length;
+                  const percentage = completedCount > 0 ? Math.round((feedbackCount / completedCount) * 100) : 0;
+                  return (
+                    <span className={`font-medium ${percentage === 100 ? 'text-green-600' : percentage >= 50 ? 'text-blue-600' : 'text-orange-600'}`}>
+                      {percentage}% completion rate
+                    </span>
+                  );
+                })()}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Table */}
       <Card className="bg-white border border-gray-200 shadow-none">
         <CardHeader className="pb-3 border-b border-gray-100">
@@ -198,6 +228,7 @@ export default function AppointmentsPage() {
                   <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Type</TableHead>
                   <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Fee</TableHead>
                   <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</TableHead>
+                  <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Feedback</TableHead>
                   <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wide text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -256,6 +287,23 @@ export default function AppointmentsPage() {
                         >
                           {badge.label}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {appt.status === "COMPLETED" ? (
+                          checkFeedbackExists(appt.id) ? (
+                            <div className="flex items-center gap-1 text-green-600">
+                              <MessageSquare className="h-3.5 w-3.5" />
+                              <span className="text-xs font-medium">Submitted</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1 text-orange-600">
+                              <Star className="h-3.5 w-3.5" />
+                              <span className="text-xs font-medium">Pending</span>
+                            </div>
+                          )
+                        ) : (
+                          <span className="text-xs text-gray-400">—</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         {canCancel(appt.status) && (

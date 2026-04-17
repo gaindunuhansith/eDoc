@@ -11,7 +11,9 @@ import {
   Trash2,
   Star,
   Filter,
-  Loader2
+  Loader2,
+  MessageSquare,
+  CheckCircle2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -539,6 +541,87 @@ function PatientFeedbackContent() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Feedback Insights */}
+      {feedbacks.length > 0 && (
+        <div className="mt-8 space-y-4">
+          <h2 className="text-lg font-semibold text-gray-900">Feedback Insights</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="border border-gray-200">
+              <CardContent className="pt-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Total Reviews</p>
+                    <p className="text-2xl font-bold text-gray-900">{feedbacks.length}</p>
+                  </div>
+                  <MessageSquare className="h-8 w-8 text-blue-500" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border border-gray-200">
+              <CardContent className="pt-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Average Rating</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {feedbacks.length > 0
+                        ? (feedbacks.reduce((sum, f) => sum + f.rating, 0) / feedbacks.length).toFixed(1)
+                        : "0.0"
+                      } ⭐
+                    </p>
+                  </div>
+                  <Star className="h-8 w-8 text-yellow-500" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border border-gray-200">
+              <CardContent className="pt-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Approved Reviews</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {feedbacks.filter(f => f.status === 'APPROVED').length}
+                    </p>
+                  </div>
+                  <CheckCircle2 className="h-8 w-8 text-green-500" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Rating Distribution */}
+          <Card className="border border-gray-200">
+            <CardHeader>
+              <CardTitle className="text-base font-medium">Rating Distribution</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {[5, 4, 3, 2, 1].map(rating => {
+                  const count = feedbacks.filter(f => f.rating === rating).length;
+                  const percentage = feedbacks.length > 0 ? (count / feedbacks.length) * 100 : 0;
+                  return (
+                    <div key={rating} className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 w-12">
+                        <span className="text-sm font-medium">{rating}</span>
+                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                      </div>
+                      <div className="flex-1 bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-yellow-400 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                      <span className="text-sm text-gray-600 w-8">{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
