@@ -22,6 +22,12 @@ export default function PatientTelemedicineSessionPage() {
     if (session?.status === "ACTIVE") {
       setCurrentStep("calling");
     }
+    if (session?.status === "ENDED") {
+      toast.success("Session ended. Please leave your feedback.");
+      router.push(
+        `/patient/feedback/submit/${appointmentId}?doctorId=${session.doctorId}&doctorName=${encodeURIComponent(session.doctorName ?? "Doctor")}`
+      );
+    }
   }, [session?.status]);
 
   const handleJoinCall = async () => {

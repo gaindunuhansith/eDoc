@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   CalendarDays,
   Clock,
@@ -46,6 +47,7 @@ import {
   type Appointment,
   type AppointmentStatus,
 } from "@/api/appointmentApi";
+import { useCreateSession } from "@/api/telemedicineApi";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -142,11 +144,12 @@ function RejectDialog({
 
 // ─── Appointment Card ─────────────────────────────────────────────────────────
 
-function AppointmentCard({ appt, onAccept, onReject, onComplete }: {
+function AppointmentCard({ appt, onAccept, onReject, onComplete, onGoToSession }: {
   appt: Appointment;
   onAccept: (id: string) => void;
   onReject: (id: string) => void;
   onComplete: (id: string) => void;
+  onGoToSession: (id: string) => void;
 }) {
   const badge = STATUS_BADGE[appt.status];
 
@@ -234,6 +237,16 @@ function AppointmentCard({ appt, onAccept, onReject, onComplete }: {
               <CheckCircle2 className="h-3.5 w-3.5" />
               Mark as Completed
             </Button>
+            {appt.type === "VIDEO" && (
+              <Button
+                size="sm"
+                className="gap-1.5 h-8 text-xs bg-violet-600 hover:bg-violet-700"
+                onClick={() => onGoToSession(appt.id)}
+              >
+                <Video className="h-3.5 w-3.5" />
+                Go to Session
+              </Button>
+            )}
           </div>
         )}
       </CardContent>
@@ -244,6 +257,7 @@ function AppointmentCard({ appt, onAccept, onReject, onComplete }: {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function DoctorAppointmentsPage() {
+  const router = useRouter();
   const [tab, setTab] = useState<TabFilter>("ALL");
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [acceptId, setAcceptId] = useState<string | null>(null);
@@ -253,15 +267,28 @@ export default function DoctorAppointmentsPage() {
   const { data: appointments = [], isLoading: apptLoading } =
     useGetAppointmentsByDoctor(doctor?.id ?? "");
   const updateStatus = useUpdateAppointmentStatus();
+  const createSession = useCreateSession();
 
   const isLoading = doctorLoading || (!!doctor?.id && apptLoading);
 
   const confirmAccept = () => {
     if (!acceptId) return;
+    const appt = appointments.find((a) => a.id === acceptId);
     updateStatus.mutate(
       { id: acceptId, update: { status: "CONFIRMED" } },
       {
-        onSuccess: () => toast.success("Appointment confirmed. Patient has been notified."),
+        onSuccess: () => {
+          toast.success("Appointment confirmed. Patient has been notified.");
+          if (appt?.type === "VIDEO") {
+            createSession.mutate(
+              { appointmentId: appt.id, doctorId: appt.doctorId, patientId: appt.patientId },
+              {
+                onSuccess: () => toast.success("Video session created."),
+                onError: () => toast.error("Appointment confirmed but failed to create video session."),
+              }
+            );
+          }
+        },
         onError: () => toast.error("Failed to confirm appointment."),
       }
     );
@@ -344,6 +371,7 @@ export default function DoctorAppointmentsPage() {
               onAccept={setAcceptId}
               onReject={setRejectId}
               onComplete={setCompleteId}
+              onGoToSession={(id) => router.push(`/doctor/telemedicine/session/${id}`)}
             />
           ))}
         </div>
