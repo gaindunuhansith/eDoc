@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   MessageSquare,
   Star,
+  Pencil,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -32,11 +33,143 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 import { useStore } from "@/store/store";
-import { useRegisterPatient, useGetMyPatientProfile, type PatientPayload } from "@/api/patientApi";
+import { useRegisterPatient, useGetMyPatientProfile, useUpdateMyPatientProfile, type PatientPayload, type Patient } from "@/api/patientApi";
 import { useGetFeedbackByPatient } from "@/api/feedbackApi";
 import { markProfileCreated } from "@/api/userApi";
+
+// ─── Edit Profile Dialog ─────────────────────────────────────────────────────
+
+const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
+
+function EditProfileDialog({ open, onClose, current }: { open: boolean; onClose: () => void; current: Patient }) {
+  const [form, setForm] = useState<PatientPayload>({
+    phone: current.phone ?? "",
+    dateOfBirth: current.dateOfBirth ?? "",
+    address: current.address ?? "",
+    gender: current.gender ?? "",
+    bloodGroup: current.bloodGroup ?? "",
+    nicNumber: current.nicNumber ?? "",
+    allergies: current.allergies ?? "",
+    emergencyContactPhone: current.emergencyContactPhone ?? "",
+    height: current.height,
+    weight: current.weight,
+  });
+
+  const updatePatient = useUpdateMyPatientProfile();
+
+  const set = (field: keyof PatientPayload, value: string | number | undefined) =>
+    setForm((prev) => ({ ...prev, [field]: value }));
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.phone || !form.dateOfBirth || !form.gender) {
+      toast.error("Phone, date of birth and gender are required.");
+      return;
+    }
+    updatePatient.mutate(form, {
+      onSuccess: () => {
+        toast.success("Profile updated successfully!");
+        onClose();
+      },
+      onError: () => {
+        toast.error("Failed to update profile. Please try again.");
+      },
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Edit Profile</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-5 py-2">
+          {/* Personal Details */}
+          <div className="space-y-3">
+            <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Personal Details</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="ep-phone">Phone <span className="text-rose-500">*</span></Label>
+                <Input id="ep-phone" placeholder="+94 77 123 4567" value={form.phone} onChange={(e) => set("phone", e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="ep-dob">Date of Birth <span className="text-rose-500">*</span></Label>
+                <Input id="ep-dob" type="date" value={form.dateOfBirth} onChange={(e) => set("dateOfBirth", e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="ep-gender">Gender <span className="text-rose-500">*</span></Label>
+                <Select value={form.gender} onValueChange={(v) => set("gender", v)}>
+                  <SelectTrigger id="ep-gender"><SelectValue placeholder="Select gender" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="MALE">Male</SelectItem>
+                    <SelectItem value="FEMALE">Female</SelectItem>
+                    <SelectItem value="OTHER">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="ep-nic">NIC Number</Label>
+                <Input id="ep-nic" placeholder="123456789V" value={form.nicNumber} onChange={(e) => set("nicNumber", e.target.value)} />
+              </div>
+              <div className="sm:col-span-2 space-y-1.5">
+                <Label htmlFor="ep-address">Address</Label>
+                <Textarea id="ep-address" placeholder="123 Main St, Colombo" value={form.address} onChange={(e) => set("address", e.target.value)} className="resize-none" rows={2} />
+              </div>
+            </div>
+          </div>
+
+          {/* Medical Details */}
+          <div className="space-y-3">
+            <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Medical Details</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="ep-blood">Blood Group</Label>
+                <Select value={form.bloodGroup} onValueChange={(v) => set("bloodGroup", v)}>
+                  <SelectTrigger id="ep-blood"><SelectValue placeholder="Select blood group" /></SelectTrigger>
+                  <SelectContent>
+                    {BLOOD_GROUPS.map((bg) => <SelectItem key={bg} value={bg}>{bg}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="ep-emergency">Emergency Contact Phone</Label>
+                <Input id="ep-emergency" placeholder="+94 77 987 6543" value={form.emergencyContactPhone} onChange={(e) => set("emergencyContactPhone", e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="ep-height">Height (cm)</Label>
+                <Input id="ep-height" type="number" placeholder="170" value={form.height ?? ""} onChange={(e) => set("height", e.target.value ? parseFloat(e.target.value) : undefined)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="ep-weight">Weight (kg)</Label>
+                <Input id="ep-weight" type="number" placeholder="65" value={form.weight ?? ""} onChange={(e) => set("weight", e.target.value ? parseFloat(e.target.value) : undefined)} />
+              </div>
+              <div className="sm:col-span-2 space-y-1.5">
+                <Label htmlFor="ep-allergies">Allergies</Label>
+                <Textarea id="ep-allergies" placeholder="Penicillin, Peanuts..." value={form.allergies} onChange={(e) => set("allergies", e.target.value)} className="resize-none" rows={2} />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={onClose} disabled={updatePatient.isPending}>Cancel</Button>
+            <Button type="submit" disabled={updatePatient.isPending}>
+              {updatePatient.isPending ? "Saving…" : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 // ─── Profile Creation Form ────────────────────────────────────────────────────
 
@@ -287,6 +420,7 @@ function ProfileCreationForm() {
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
 function PatientDashboardContent() {
+  const [editOpen, setEditOpen] = useState(false);
   const user = useStore((s) => s.user);
   const { data: profile, isLoading: profileLoading } = useGetMyPatientProfile();
   const { data: feedbacks = [] } = useGetFeedbackByPatient(user?.userId || "");
@@ -441,6 +575,11 @@ function PatientDashboardContent() {
         </Card>
       </div>
 
+      {/* Edit dialog */}
+      {profile && (
+        <EditProfileDialog open={editOpen} onClose={() => setEditOpen(false)} current={profile} />
+      )}
+
       {/* Profile detail table */}
       <Card className="border-border/60">
         <CardHeader className="pb-4 flex flex-row items-center justify-between">
@@ -448,6 +587,10 @@ function PatientDashboardContent() {
             <CreditCard className="w-4 h-4 text-muted-foreground" />
             Profile Details
           </CardTitle>
+          <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs" onClick={() => setEditOpen(true)}>
+            <Pencil className="h-3.5 w-3.5" />
+            Edit Profile
+          </Button>
         </CardHeader>
         <CardContent>
           <div className="w-full overflow-x-auto">
