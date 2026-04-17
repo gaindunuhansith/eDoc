@@ -2,7 +2,6 @@ package com.edoc.feedbackservice.service;
 
 import com.edoc.feedbackservice.client.AppointmentServiceClient;
 import com.edoc.feedbackservice.client.NotificationServiceClient;
-import com.edoc.feedbackservice.client.UserServiceClient;
 import com.edoc.feedbackservice.dto.FeedbackRequestDTO;
 import com.edoc.feedbackservice.dto.FeedbackResponseDTO;
 import com.edoc.feedbackservice.entity.Feedback;
@@ -24,18 +23,15 @@ public class FeedbackService {
     private final FeedbackMapper feedbackMapper;
     private final AppointmentServiceClient appointmentServiceClient;
     private final NotificationServiceClient notificationServiceClient;
-    private final UserServiceClient userServiceClient;
 
     @Autowired
     public FeedbackService(FeedbackRepository feedbackRepository, FeedbackMapper feedbackMapper,
                           AppointmentServiceClient appointmentServiceClient,
-                          NotificationServiceClient notificationServiceClient,
-                          UserServiceClient userServiceClient) {
+                          NotificationServiceClient notificationServiceClient) {
         this.feedbackRepository = feedbackRepository;
         this.feedbackMapper = feedbackMapper;
         this.appointmentServiceClient = appointmentServiceClient;
         this.notificationServiceClient = notificationServiceClient;
-        this.userServiceClient = userServiceClient;
     }
 
     public FeedbackResponseDTO submitFeedback(FeedbackRequestDTO request, Long patientId, String authHeader) {
