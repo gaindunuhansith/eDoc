@@ -25,7 +25,7 @@ public class DoctorServiceClient {
         try {
             return webClientBuilder.build()
                     .get()
-                    .uri(doctorServiceUrl + "/api/doctors/" + doctorId)
+                    .uri(doctorServiceUrl + "/api/v1/doctors/" + doctorId)
                     .retrieve()
                     .bodyToMono(Map.class)
                     .block(); // block() makes it synchronous - simpler for now
@@ -40,7 +40,7 @@ public class DoctorServiceClient {
         try {
             webClientBuilder.build()
                     .patch()
-                    .uri(doctorServiceUrl + "/api/doctors/" + doctorId
+                    .uri(doctorServiceUrl + "/api/v1/doctors/" + doctorId
                             + "/availability/book"
                             + "?dayOfWeek=" + dayOfWeek
                             + "&startTime=" + startTime)
@@ -58,7 +58,7 @@ public class DoctorServiceClient {
         try {
             webClientBuilder.build()
                     .patch()
-                    .uri(doctorServiceUrl + "/api/doctors/" + doctorId
+                    .uri(doctorServiceUrl + "/api/v1/doctors/" + doctorId
                             + "/availability/free"
                             + "?dayOfWeek=" + dayOfWeek
                             + "&startTime=" + startTime)

@@ -22,7 +22,7 @@ public class AppointmentServiceClient {
     public AppointmentDTO getAppointment(Long appointmentId, String authHeader) {
         try {
             return restClient.get()
-                    .uri(appointmentServiceBaseUrl + "/api/appointments/{appointmentId}", appointmentId)
+                    .uri(appointmentServiceBaseUrl + "/api/v1/appointments/{appointmentId}", appointmentId)
                     .header(HttpHeaders.AUTHORIZATION, authHeader)
                     .retrieve()
                     .body(AppointmentDTO.class);

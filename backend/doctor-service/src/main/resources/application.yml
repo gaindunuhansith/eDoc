@@ -11,7 +11,6 @@ spring:
 
 jwt:
   public-key-path: ${JWT_PUBLIC_KEY_PATH:classpath:secrets/public.pem}
-  expiration: 86400000
 
 patient:
   service:

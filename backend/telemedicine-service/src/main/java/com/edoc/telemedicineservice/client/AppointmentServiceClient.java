@@ -25,7 +25,7 @@ public class AppointmentServiceClient {
             
             return webClient
                     .get()
-                    .uri(appointmentServiceUrl + "/api/appointments/" + appointmentId)
+                    .uri(appointmentServiceUrl + "/api/v1/appointments/" + appointmentId)
                     .retrieve()
                     .bodyToMono(AppointmentDTO.class)
                     .block();
@@ -44,7 +44,7 @@ public class AppointmentServiceClient {
             
             return webClient
                     .patch()
-                    .uri(appointmentServiceUrl + "/api/appointments/" + appointmentId + "/status")
+                    .uri(appointmentServiceUrl + "/api/v1/appointments/" + appointmentId + "/status")
                     .bodyValue(update)
                     .retrieve()
                     .bodyToMono(AppointmentDTO.class)

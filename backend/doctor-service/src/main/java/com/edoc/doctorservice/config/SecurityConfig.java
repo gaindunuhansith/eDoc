@@ -11,6 +11,7 @@ import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Locale;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,6 +19,7 @@ import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -26,24 +28,18 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
@@ -53,12 +49,41 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+                        .accessDeniedHandler((request, response, accessDeniedException) ->
+                                response.sendError(HttpStatus.FORBIDDEN.value()))
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .anyRequest().permitAll()
+
+                        .requestMatchers(HttpMethod.GET, "/api/v1/doctors/admin/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/doctors/**").hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.POST, "/api/v1/doctors/register").hasAnyRole("DOCTOR", "ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/doctors/**").hasAnyRole("DOCTOR", "ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/doctors/*/toggle-availability").hasAnyRole("DOCTOR", "ADMIN")
+
+                        .requestMatchers(HttpMethod.GET, "/api/v1/doctors/*/patients/**").hasAnyRole("DOCTOR", "ADMIN")
+
+                        .requestMatchers(HttpMethod.POST, "/api/v1/prescriptions/**").hasAnyRole("DOCTOR", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/prescriptions/patient/**").hasAnyRole("PATIENT", "DOCTOR", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/prescriptions/**").hasAnyRole("PATIENT", "DOCTOR", "ADMIN")
+
+                        .requestMatchers(HttpMethod.GET, "/api/v1/doctors/*/availability/**")
+                        .hasAnyRole("PATIENT", "DOCTOR", "ADMIN", "APPOINTMENT_SERVICE")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/doctors/*/availability/**")
+                        .hasAnyRole("DOCTOR", "ADMIN", "APPOINTMENT_SERVICE")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/doctors/*/availability/**")
+                        .hasAnyRole("DOCTOR", "ADMIN", "APPOINTMENT_SERVICE")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/doctors/*/availability/**")
+                        .hasAnyRole("DOCTOR", "ADMIN", "APPOINTMENT_SERVICE")
+
+                        .requestMatchers(HttpMethod.GET, "/api/v1/doctors/**")
+                        .hasAnyRole("PATIENT", "DOCTOR", "ADMIN", "APPOINTMENT_SERVICE")
+
+                        .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthConverter))
@@ -128,12 +153,28 @@ public class SecurityConfig {
     }
 
     private Collection<GrantedAuthority> extractAuthorities(Jwt jwt) {
-        String role = jwt.getClaimAsString("role");
-        if (role == null || role.isBlank()) {
+        Object roleClaim = jwt.getClaims().get("role");
+        if (roleClaim == null) {
             return Collections.emptyList();
         }
 
-        String normalizedRole = role.trim().toUpperCase(Locale.ROOT);
-        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + normalizedRole));
+        if (roleClaim instanceof String role) {
+            if (role.isBlank()) {
+                return Collections.emptyList();
+            }
+            return Collections.singletonList(
+                    new SimpleGrantedAuthority("ROLE_" + role.trim().toUpperCase(Locale.ROOT))
+            );
+        }
+
+        if (roleClaim instanceof Collection<?> roles) {
+            return roles.stream()
+                    .filter(item -> item != null && !item.toString().isBlank())
+                    .map(item -> "ROLE_" + item.toString().trim().toUpperCase(Locale.ROOT))
+                    .map(SimpleGrantedAuthority::new)
+                    .collect(Collectors.toSet());
+        }
+
+        return Collections.emptyList();
     }
 }
