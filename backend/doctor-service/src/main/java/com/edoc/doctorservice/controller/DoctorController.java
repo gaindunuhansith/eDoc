@@ -7,6 +7,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,6 +28,13 @@ public class DoctorController {
             @Valid @RequestBody DoctorRegistrationRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(doctorService.registerDoctor(request));
+    }
+
+    // GET /api/v1/doctors/me — returns the currently authenticated doctor's profile
+    @GetMapping("/me")
+    public ResponseEntity<Doctor> getMyProfile(@AuthenticationPrincipal Jwt jwt) {
+        String email = jwt.getSubject();
+        return ResponseEntity.ok(doctorService.getDoctorByEmail(email));
     }
 
     // GET /api/v1/doctors/{id}

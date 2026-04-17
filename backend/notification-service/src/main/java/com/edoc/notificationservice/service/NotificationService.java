@@ -224,6 +224,7 @@ public class NotificationService {
         return switch (type) {
             case APPOINTMENT_BOOKED -> "Appointment Booked";
             case APPOINTMENT_CONFIRMED -> "Appointment Confirmed";
+            case APPOINTMENT_REJECTED -> "Appointment Rejected";
             case APPOINTMENT_CANCELLED -> "Appointment Cancelled";
             case APPOINTMENT_COMPLETED -> "Consultation Completed";
             case FEEDBACK_RECEIVED -> "New Feedback Received";
@@ -244,6 +245,13 @@ public class NotificationService {
                     + " (" + valueOrDefault(data, "dayOfWeek", "") + ")"
                     + " at " + valueOrDefault(data, "timeSlot", "the scheduled time")
                     + " has been confirmed.";
+            case APPOINTMENT_REJECTED -> "Hello " + valueOrDefault(data, "patientName", "there")
+                    + ", unfortunately your appointment request with Dr. "
+                    + valueOrDefault(data, "doctorName", "your doctor")
+                    + " on " + valueOrDefault(data, "date", "the scheduled date")
+                    + " (" + valueOrDefault(data, "dayOfWeek", "") + ")"
+                    + " at " + valueOrDefault(data, "timeSlot", "the scheduled time")
+                    + " has been rejected. Please book a new appointment.";
             case APPOINTMENT_CANCELLED -> "Hello " + valueOrDefault(data, "patientName", "there")
                     + ", your appointment on " + valueOrDefault(data, "date", "the scheduled date")
                     + " (" + valueOrDefault(data, "dayOfWeek", "") + ")"

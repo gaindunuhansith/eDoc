@@ -30,6 +30,7 @@ export const PRESCRIPTION_PATIENT_ENDPOINTS = {
 
 
 export const DOCTOR_ENDPOINTS = {
+  ME: "/api/v1/doctors/me",
   GET_ALL: "/api/v1/doctors",
   GET_BY_ID: (id: string) => `/api/v1/doctors/${id}`,
   BY_SPECIALTY: (specialty: string) => `/api/v1/doctors/specialty/${specialty}`,
@@ -48,8 +49,10 @@ export const APPOINTMENT_ENDPOINTS = {
   GET_BY_ID: (id: string) => `/api/v1/appointments/${id}`,
   CREATE: "/api/v1/appointments",
   CANCEL: (id: string) => `/api/v1/appointments/${id}/cancel`,
+  UPDATE_STATUS: (id: string) => `/api/v1/appointments/${id}/status`,
   BY_PATIENT: (patientId: string) => `/api/v1/appointments/patient/${patientId}`,
   BY_DOCTOR: (doctorId: string) => `/api/v1/appointments/doctor/${doctorId}`,
+  PENDING_BY_DOCTOR: (doctorId: string) => `/api/v1/appointments/doctor/${doctorId}/pending`,
 } as const;
 
 
