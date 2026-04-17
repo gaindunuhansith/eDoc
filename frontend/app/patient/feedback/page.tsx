@@ -76,9 +76,8 @@ export default function PatientFeedbackPage() {
   }
 
   return (
-    <div className="space-y-6 p-8">
+    <div className="space-y-6 p-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">My Feedback</h1>
         <p className="text-gray-600 mt-1">View feedback you've submitted for appointments</p>
       </div>
 

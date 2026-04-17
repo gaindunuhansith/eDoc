@@ -48,6 +48,7 @@ const patientNav: SidebarNavItem[] = [
   { title: "Prescriptions", url: "/patient/prescriptions", icon: Pill },
   { title: "Feedback", url: "/patient/feedback", icon: MessageSquare },
   { title: "Telemedicine", url: "/patient/telemedicine", icon: Video },
+  { title: "Confirm Order", url: "/patient/confirm-order", icon: CreditCard },
   { title: "Payments", url: "/patient/payments", icon: CreditCard },
 ];
 

@@ -56,7 +56,7 @@ export default function SubmitFeedbackPage() {
   }
 
   return (
-    <div className="space-y-6 p-8">
+    <div className="space-y-6 p-6">
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"
@@ -67,7 +67,6 @@ export default function SubmitFeedbackPage() {
           Back
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Submit Feedback</h1>
           <p className="text-gray-600 mt-1">Share your experience for Appointment #{appointmentId}</p>
         </div>
       </div>

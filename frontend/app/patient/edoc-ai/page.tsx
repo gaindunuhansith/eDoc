@@ -41,7 +41,7 @@ export default function PatientDashboardAssistant() {
   };
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-4rem)] p-8 bg-background text-foreground w-full relative font-sans">
+    <div className="flex flex-col min-h-[calc(100vh-4rem)] p-6 bg-background text-foreground w-full relative font-sans">
       {/* Top action bar */}
       <div className="flex items-center justify-between pb-2">
         <div className="flex items-center gap-2">
