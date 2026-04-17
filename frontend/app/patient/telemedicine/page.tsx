@@ -7,51 +7,29 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SessionCard } from "@/components/telemedicine";
 import { Video, Calendar, Clock, CheckCircle, AlertCircle } from "lucide-react";
-
-// Mock data - replace with actual API calls
-const mockSessions = [
-  {
-    id: "1",
-    appointmentId: "APT-001",
-    doctorName: "Dr. Sarah Johnson",
-    doctorSpecialty: "Cardiology",
-    scheduledDate: "2024-01-15",
-    scheduledTime: "10:00 AM",
-    status: "scheduled",
-    duration: 30,
-    notes: "Follow-up consultation"
-  },
-  {
-    id: "2",
-    appointmentId: "APT-002",
-    doctorName: "Dr. Michael Chen",
-    doctorSpecialty: "Dermatology",
-    scheduledDate: "2024-01-10",
-    scheduledTime: "2:30 PM",
-    status: "completed",
-    duration: 25,
-    notes: "Skin condition check"
-  },
-  {
-    id: "3",
-    appointmentId: "APT-003",
-    doctorName: "Dr. Emily Davis",
-    doctorSpecialty: "Pediatrics",
-    scheduledDate: "2024-01-08",
-    scheduledTime: "11:15 AM",
-    status: "cancelled",
-    duration: 30,
-    notes: "Regular checkup"
-  }
-];
+import { useGetSessions } from "@/api/telemedicineApi";
 
 export default function PatientTelemedicinePage() {
-  const [sessions, setSessions] = useState(mockSessions);
+  const { data: sessions = [], isLoading, error } = useGetSessions();
   const [activeTab, setActiveTab] = useState("upcoming");
 
-  const upcomingSessions = sessions.filter(session => session.status === "scheduled");
-  const completedSessions = sessions.filter(session => session.status === "completed");
-  const cancelledSessions = sessions.filter(session => session.status === "cancelled");
+  // Transform API data to match SessionCard interface
+  const transformedSessions = sessions.map(session => ({
+    id: session.id,
+    appointmentId: session.appointmentId,
+    doctorName: session.doctorName,
+    doctorSpecialty: undefined, // Not provided by API
+    patientName: session.patientName,
+    scheduledDate: new Date(session.scheduledAt).toLocaleDateString(),
+    scheduledTime: new Date(session.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    status: session.status.toLowerCase(),
+    duration: session.duration,
+    notes: session.notes,
+  }));
+
+  const upcomingSessions = transformedSessions.filter(session => session.status === "scheduled");
+  const completedSessions = transformedSessions.filter(session => session.status === "ended");
+  const cancelledSessions = transformedSessions.filter(session => session.status === "cancelled");
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -165,7 +143,7 @@ export default function PatientTelemedicinePage() {
                       userRole="patient"
                       onJoinCall={() => {
                         // Navigate to video call page
-                        window.location.href = `/patient/telemedicine/session/${session.id}`;
+                        window.location.href = `/patient/telemedicine/session/${session.appointmentId}`;
                       }}
                       onViewDetails={() => {
                         // Show session details modal

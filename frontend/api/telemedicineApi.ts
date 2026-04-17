@@ -6,6 +6,37 @@ import { TELEMEDICINE_ENDPOINTS } from "./utils/endpoints";
 import { queryKeys } from "./utils/queryKeys";
 import { useStore } from "../store/store";
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+export interface TelemedicineSession {
+  id: string;
+  appointmentId: string;
+  patientId: string;
+  doctorId: string;
+  patientName?: string;
+  doctorName?: string;
+  doctorSpecialty?: string;
+  scheduledAt: string;
+  duration: number;
+  status: SessionStatus;
+  roomName?: string;
+  notes?: string;
+  startedAt?: string;
+  endedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateSessionPayload {
+  appointmentId: string;
+  notes?: string;
+}
+
+export interface JoinTokenResponse {
+  token: string;
+  roomName: string;
+  identity: string;
+}
+
 // ─── Error Classes ────────────────────────────────────────────────────────────
 export class TelemedicineError extends Error {
   constructor(
@@ -466,7 +497,21 @@ export const useDeleteSession = () => {
   });
 };
 
-// ─── Composite Hooks ──────────────────────────────────────────────────────────
+export const useGetSessions = () => {
+  return useQuery({
+    queryKey: queryKeys.telemedicine.sessions(),
+    queryFn: () => fetchAllSessions().then((r) => r.data),
+    staleTime: 1 * 60 * 1000, // 1 minute
+    gcTime: 5 * 60 * 1000, // 5 minutes
+    retry: (failureCount, error) => {
+      if (error instanceof AuthenticationError || error instanceof AuthorizationError) {
+        return false;
+      }
+      return failureCount < 3;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+  });
+};
 export const useTelemedicineSession = (appointmentId: string) => {
   const sessionQuery = useGetSessionByAppointmentId(appointmentId);
   const tokenQuery = useGetSessionToken(appointmentId);

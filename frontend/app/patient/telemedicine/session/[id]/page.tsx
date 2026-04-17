@@ -7,53 +7,29 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { WaitingRoom, VideoCall } from "@/components/telemedicine";
 import { Video, ArrowLeft, AlertCircle } from "lucide-react";
-
-// Mock data - replace with actual API calls
-const mockSessionData = {
-  id: "1",
-  appointmentId: "APT-001",
-  doctorName: "Dr. Sarah Johnson",
-  doctorSpecialty: "Cardiology",
-  patientName: "John Doe",
-  scheduledDate: "2024-01-15",
-  scheduledTime: "10:00 AM",
-  status: "scheduled",
-  duration: 30,
-  notes: "Follow-up consultation",
-  twilioToken: "mock-token", // This would come from backend
-  roomName: "room-APT-001"
-};
+import { useTelemedicineSession, useGetSessionToken } from "@/api/telemedicineApi";
+import { toast } from "sonner";
 
 export default function PatientTelemedicineSessionPage() {
   const params = useParams();
   const router = useRouter();
-  const sessionId = params.id as string;
+  const appointmentId = params.id as string;
 
-  const [session, setSession] = useState(mockSessionData);
+  const { session, token, isLoading, error } = useTelemedicineSession(appointmentId);
   const [currentStep, setCurrentStep] = useState<"waiting" | "calling">("waiting");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // In a real app, fetch session data from API
-    // For now, using mock data
-    if (sessionId !== "1") {
-      setError("Session not found");
+    if (session?.status === "ACTIVE") {
+      setCurrentStep("calling");
     }
-  }, [sessionId]);
+  }, [session?.status]);
 
   const handleJoinCall = async () => {
-    setIsLoading(true);
-    try {
-      // In a real app, get Twilio token from backend
-      // For now, simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setCurrentStep("calling");
-    } catch (err) {
-      setError("Failed to join call. Please try again.");
-    } finally {
-      setIsLoading(false);
+    if (!token) {
+      toast.error("Unable to get video call token");
+      return;
     }
+    setCurrentStep("calling");
   };
 
   const handleLeaveCall = () => {
@@ -70,7 +46,7 @@ export default function PatientTelemedicineSessionPage() {
             <div className="text-center">
               <AlertCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
               <h2 className="text-xl font-semibold text-gray-900 mb-2">Error</h2>
-              <p className="text-gray-600 mb-4">{error}</p>
+              <p className="text-gray-600 mb-4">{error.message || "Session not found"}</p>
               <Button
                 onClick={() => router.push("/patient/telemedicine")}
                 variant="outline"
@@ -86,11 +62,26 @@ export default function PatientTelemedicineSessionPage() {
     );
   }
 
+  if (isLoading || !session) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-6">
+        <Card className="bg-white border border-gray-200 shadow-sm">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading session...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (currentStep === "calling") {
     return (
       <VideoCall
-        token={session.twilioToken}
-        roomName={session.roomName}
+        token={token?.token || ""}
+        roomName={token?.roomName || session.roomName || `room-${appointmentId}`}
         onLeaveCall={handleLeaveCall}
         userName={session.patientName}
       />
@@ -139,12 +130,12 @@ export default function PatientTelemedicineSessionPage() {
               <div>
                 <label className="text-sm font-medium text-gray-700">Doctor</label>
                 <p className="text-gray-900">{session.doctorName}</p>
-                <p className="text-sm text-gray-600">{session.doctorSpecialty}</p>
+                <p className="text-sm text-gray-600">{/* doctorSpecialty not available */}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-700">Date & Time</label>
                 <p className="text-gray-900">
-                  {session.scheduledDate} at {session.scheduledTime}
+                  {new Date(session.scheduledAt).toLocaleDateString()} at {new Date(session.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </p>
               </div>
             </div>
@@ -155,7 +146,7 @@ export default function PatientTelemedicineSessionPage() {
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-700">Notes</label>
-                <p className="text-gray-900">{session.notes}</p>
+                <p className="text-gray-900">{session.notes || "No notes provided"}</p>
               </div>
             </div>
           </div>
@@ -168,7 +159,7 @@ export default function PatientTelemedicineSessionPage() {
         doctorName={session.doctorName}
         patientName={session.patientName}
         onJoinCall={handleJoinCall}
-        isLoading={isLoading}
+        isLoading={false}
       />
     </div>
   );
