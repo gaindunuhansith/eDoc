@@ -6,24 +6,35 @@ import { queryKeys } from "./utils/queryKeys";
 
 export interface Doctor {
   id: string;
-  userId: string;
+  email?: string;
   firstName: string;
   lastName: string;
-  specialization: string;
-  licenseNumber: string;
-  yearsOfExperience: number;
-  consultationFee: number;
   phoneNumber?: string;
+  specialty?: string;
+  qualification?: string;
+  licenseNumber?: string;
+  experienceYears: number;
+  hospital?: string;
   bio?: string;
+  profileImageUrl?: string;
+  consultationFee: number;
+  isVerified: boolean;
   isAvailable: boolean;
-  createdAt: string;
+  languages?: string[];
+}
+
+export interface AvailabilityTimeSlot {
+  startTime: string;  // "09:00"
+  endTime: string;    // "09:30"
+  isBooked: boolean;
 }
 
 export interface DoctorAvailability {
+  id: string;
   doctorId: string;
-  dayOfWeek: string;
-  startTime: string;
-  endTime: string;
+  dayOfWeek: string;         // "MONDAY", "TUESDAY", etc.
+  timeSlots: AvailabilityTimeSlot[];
+  isActive: boolean;
 }
 
 export interface Prescription {
@@ -39,9 +50,11 @@ export interface Prescription {
 export interface CreateDoctorPayload {
   firstName: string;
   lastName: string;
-  specialization: string;
+  specialty: string;
+  qualification?: string;
   licenseNumber: string;
-  yearsOfExperience: number;
+  experienceYears: number;
+  hospital?: string;
   consultationFee: number;
   phoneNumber?: string;
   bio?: string;
@@ -75,6 +88,9 @@ export const updateDoctor = ({
 
 export const deleteDoctor = (id: string) =>
   apiClient.delete(DOCTOR_ENDPOINTS.DELETE(id));
+
+export const fetchDoctorsBySpecialty = (specialty: string) =>
+  apiClient.get<Doctor[]>(DOCTOR_ENDPOINTS.BY_SPECIALTY(specialty));
 
 export const fetchDoctorAvailability = (id: string) =>
   apiClient.get<DoctorAvailability[]>(DOCTOR_ENDPOINTS.AVAILABILITY(id));
@@ -112,6 +128,13 @@ export const useGetDoctorById = (id: string) =>
     queryKey: queryKeys.doctor.detail(id),
     queryFn: () => fetchDoctorById(id).then((r) => r.data),
     enabled: !!id,
+  });
+
+export const useGetDoctorsBySpecialty = (specialty: string) =>
+  useQuery({
+    queryKey: ["doctor", "specialty", specialty],
+    queryFn: () => fetchDoctorsBySpecialty(specialty).then((r) => r.data),
+    enabled: !!specialty,
   });
 
 export const useGetDoctorAvailability = (id: string) =>

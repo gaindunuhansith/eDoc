@@ -21,7 +21,8 @@ export const PATIENT_ENDPOINTS = {
 export const DOCTOR_ENDPOINTS = {
   GET_ALL: "/api/v1/doctors",
   GET_BY_ID: (id: string) => `/api/v1/doctors/${id}`,
-  CREATE: "/api/v1/doctors",
+  BY_SPECIALTY: (specialty: string) => `/api/v1/doctors/specialty/${specialty}`,
+  CREATE: "/api/v1/doctors/register",
   UPDATE: (id: string) => `/api/v1/doctors/${id}`,
   DELETE: (id: string) => `/api/v1/doctors/${id}`,
   AVAILABILITY: (id: string) => `/api/v1/doctors/${id}/availability`,
