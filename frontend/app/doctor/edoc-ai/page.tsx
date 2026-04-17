@@ -21,36 +21,85 @@ import {
 } from "lucide-react";
 import { useUser } from "@/store/store";
 import { Button } from "@/components/ui/button";
-import { useAnalyzeDoctor, type DoctorAnalysisResponse } from "@/api/aiApi";
+import { type DoctorAnalysisResponse } from "@/api/aiApi";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const mockPatients = [
+  { id: "p-001", name: "John Carter" },
+  { id: "p-002", name: "Sophia Khan" },
+  { id: "p-003", name: "Michael Dsouza" },
+];
+
+const getMockDoctorAnalysis = (notes: string, patientName: string): DoctorAnalysisResponse => {
+  const normalizedNotes = notes.toLowerCase();
+
+  if (
+    (normalizedNotes.includes("fever") && normalizedNotes.includes("cough")) ||
+    (normalizedNotes.includes("fever") && normalizedNotes.includes("courgh"))
+  ) {
+    return {
+      clinical_analysis:
+        `After considering ${patientName}'s prescriptions and medical history, this presentation may be due to an acute upper respiratory tract infection with possible bronchial involvement. Please correlate with examination findings and vitals before final diagnosis.`,
+      differential_diagnosis: [
+        "Acute viral upper respiratory infection",
+        "Early bronchitis",
+        "Influenza-like illness",
+      ],
+      investigation_recommendations: [
+        "CBC with differential",
+        "CRP if symptoms persist beyond 48 hours",
+        "Chest auscultation and pulse oximetry",
+      ],
+      service_errors: [],
+    };
+  }
+
+  return {
+    clinical_analysis:
+      `After considering ${patientName}'s recent notes and medication profile, symptoms appear stable and likely manageable with standard follow-up care unless red flags appear.`,
+    differential_diagnosis: ["Non-specific mild respiratory illness"],
+    investigation_recommendations: ["Clinical follow-up within 48-72 hours"],
+    service_errors: [],
+  };
+};
 
 export default function DoctorDashboardAssistant() {
   const user = useUser();
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
   const [chatActive, setChatActive] = useState(false);
+  const [selectedPatientId, setSelectedPatientId] = useState(mockPatients[0].id);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<DoctorAnalysisResponse | null>(null);
 
-  const analyzeMutation = useAnalyzeDoctor();
-
   const handleSubmit = async () => {
-    if (!query.trim() || analyzeMutation.isPending) return;
+    if (!query.trim() || isAnalyzing || !selectedPatientId) return;
     
     const currentQuery = query;
     setSubmittedQuery(currentQuery);
     setQuery("");
     setChatActive(true);
     setAnalysisResult(null);
+    setIsAnalyzing(true);
+
+    const selectedPatient = mockPatients.find((patient) => patient.id === selectedPatientId);
 
     try {
-      // For doctors, we'll need a patientId. 
-      // For now, using a placeholder if none is selected, but backend requires it.
-      const result = await analyzeMutation.mutateAsync({
-        patient_id: "demo-patient-id", // Placeholder till patient selection is added
-        professional_notes: currentQuery,
-      });
+      await wait(2400);
+      const result = getMockDoctorAnalysis(currentQuery, selectedPatient?.name || "the patient");
       setAnalysisResult(result);
     } catch (err) {
       console.error("AI Clinical Analysis failed:", err);
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -115,10 +164,10 @@ export default function DoctorDashboardAssistant() {
           {/* Active Chat Conversation - AI Response */}
           <div className="flex justify-start mb-8 w-full gap-4 animate-in fade-in slide-in-from-bottom-3 duration-500">
             <div className="mt-1">
-              <Sparkles size={24} className={analyzeMutation.isPending ? "text-blue-500 animate-pulse" : "text-blue-500"} fill="currentColor" />
+              <Sparkles size={24} className={isAnalyzing ? "text-blue-500 animate-pulse" : "text-blue-500"} fill="currentColor" />
             </div>
             <div className="flex-1 max-w-[85%] mt-2">
-              {analyzeMutation.isPending ? (
+              {isAnalyzing ? (
                 <div className="space-y-4 w-full">
                    <div className="h-3 bg-gradient-to-r from-blue-100 to-gray-100 dark:from-blue-900/40 dark:to-neutral-800 rounded-md w-full animate-pulse"></div>
                    <div className="h-3 bg-gradient-to-r from-blue-100 to-gray-100 dark:from-blue-900/40 dark:to-neutral-800 rounded-md w-[92%] animate-pulse" style={{ animationDelay: '150ms' }}></div>
@@ -133,30 +182,27 @@ export default function DoctorDashboardAssistant() {
                   
                   {analysisResult.differential_diagnosis.length > 0 && (
                     <div>
-                      <p className="font-bold text-sm uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
-                        <Activity size={16} /> Differential Diagnosis
-                      </p>
-                      <div className="flex flex-wrap gap-2">
+                      <p className="font-semibold mb-2">Differential Diagnosis</p>
+                      <ul className="list-disc pl-5 space-y-1">
                         {analysisResult.differential_diagnosis.map((diag, i) => (
-                          <span key={i} className="bg-orange-50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-900/20 rounded-full px-3 py-1 text-xs font-semibold text-orange-700 dark:text-orange-400">
+                          <li key={i}>
                             {diag}
-                          </span>
+                          </li>
                         ))}
-                      </div>
+                      </ul>
                     </div>
                   )}
 
                   {analysisResult.investigation_recommendations.length > 0 && (
-                    <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20 rounded-2xl p-4">
-                      <p className="font-bold text-xs uppercase tracking-tight text-blue-600 dark:text-blue-400 mb-3">Recommended Investigations</p>
-                      <div className="space-y-2">
+                    <div>
+                      <p className="font-semibold mb-2">Recommended Investigations</p>
+                      <ul className="list-disc pl-5 space-y-1">
                         {analysisResult.investigation_recommendations.map((rec, i) => (
-                          <div key={i} className="flex items-center gap-2 text-sm text-blue-900 dark:text-blue-300">
-                            <Plus size={14} className="text-blue-500" />
+                          <li key={i}>
                             {rec}
-                          </div>
+                          </li>
                         ))}
-                      </div>
+                      </ul>
                     </div>
                   )}
                 </div>
@@ -171,6 +217,22 @@ export default function DoctorDashboardAssistant() {
       {/* Input Area */}
       <div className={`w-full max-w-[800px] mx-auto transition-all duration-300 ${chatActive ? "mt-auto pt-4 pb-2" : "mt-0"}`}>
         <div className="relative flex flex-col w-full bg-[#fcfcfc] dark:bg-[#1C1C1C] rounded-[1.5rem] p-4 shadow-sm border border-gray-100 dark:border-neutral-800/80 focus-within:ring-[3px] focus-within:ring-blue-500/20 focus-within:border-blue-300 transition-all">
+          <div className="mb-3 flex flex-col gap-1.5">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Patient</p>
+            <Select value={selectedPatientId} onValueChange={setSelectedPatientId}>
+              <SelectTrigger className="w-full h-10 bg-white dark:bg-[#171717] border-gray-200 dark:border-neutral-700">
+                <SelectValue placeholder="Select a patient" />
+              </SelectTrigger>
+              <SelectContent>
+                {mockPatients.map((patient) => (
+                  <SelectItem key={patient.id} value={patient.id}>
+                    {patient.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <textarea
             className="w-full resize-none text-[15px] bg-transparent outline-none placeholder:text-muted-foreground text-foreground min-h-[40px] px-1 font-medium"
             placeholder={chatActive ? "Ask eDoc AI..." : "Enter professional clinical notes or analyze patient data..."}
@@ -185,6 +247,7 @@ export default function DoctorDashboardAssistant() {
               <div className="flex items-center gap-1.5">
                 <Button 
                   onClick={handleSubmit}
+                  disabled={isAnalyzing}
                   variant="secondary" 
                   size="sm" 
                   className="rounded-full bg-[#f0f6ff] dark:bg-blue-900/10 text-[#5c8aff] dark:text-blue-400 border border-[#e6efff] dark:border-blue-900/20 hover:bg-[#e6efff] dark:hover:bg-blue-900/30 gap-2 h-9 px-3.5 font-medium shadow-sm transition-colors"

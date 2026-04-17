@@ -4,41 +4,63 @@ import React, { useState } from "react";
 import { 
   Bot, 
   Sparkles, 
-  ChevronDown, 
-  MoreHorizontal, 
-  Link as LinkIcon, 
-  Activity,
-  Plus
+  ChevronDown,
+  Activity
 } from "lucide-react";
-import { useUser } from "@/store/store";
 import { Button } from "@/components/ui/button";
-import { useAnalyzeAdmin, type AdminAnalysisResponse } from "@/api/aiApi";
+import { type AdminAnalysisResponse } from "@/api/aiApi";
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const getMockAdminAnalysis = (query: string): AdminAnalysisResponse => {
+  const normalizedQuery = query.toLowerCase();
+
+  if (normalizedQuery.includes("appointment") && normalizedQuery.includes("analytics")) {
+    return {
+      operational_insight:
+        "Appointment analytics show stronger booking activity in late morning and early evening slots, with moderate no-show patterns in mid-afternoon.",
+      actionable_metrics: [
+        "Peak booking windows: 10 AM-12 PM and 5 PM-7 PM.",
+        "No-show trend is highest for 2 PM-4 PM slots.",
+        "Average appointment completion rate remains stable above target.",
+      ],
+      service_errors: [],
+    };
+  }
+
+  return {
+    operational_insight:
+      "System indicators are stable. No critical operational anomaly detected for the selected query.",
+    actionable_metrics: ["Continue monitoring appointment volume and no-show rates daily."],
+    service_errors: [],
+  };
+};
 
 export default function AdminDashboardAssistant() {
-  const user = useUser();
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
   const [chatActive, setChatActive] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AdminAnalysisResponse | null>(null);
 
-  const analyzeMutation = useAnalyzeAdmin();
-
   const handleSubmit = async () => {
-    if (!query.trim() || analyzeMutation.isPending) return;
+    if (!query.trim() || isAnalyzing) return;
     
     const currentQuery = query;
     setSubmittedQuery(currentQuery);
     setQuery("");
     setChatActive(true);
     setAnalysisResult(null);
+    setIsAnalyzing(true);
 
     try {
-      const result = await analyzeMutation.mutateAsync({
-        query: currentQuery,
-      });
+      await wait(2000);
+      const result = getMockAdminAnalysis(currentQuery);
       setAnalysisResult(result);
     } catch (err) {
       console.error("AI Admin Analysis failed:", err);
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -81,10 +103,10 @@ export default function AdminDashboardAssistant() {
           
           <div className="flex justify-start mb-8 w-full gap-4">
             <div className="mt-1">
-              <Sparkles size={24} className={analyzeMutation.isPending ? "text-blue-500 animate-pulse" : "text-blue-500"} fill="currentColor" />
+              <Sparkles size={24} className={isAnalyzing ? "text-blue-500 animate-pulse" : "text-blue-500"} fill="currentColor" />
             </div>
             <div className="flex-1 max-w-[85%] mt-2">
-              {analyzeMutation.isPending ? (
+              {isAnalyzing ? (
                 <div className="space-y-4 w-full animate-pulse">
                    <div className="h-3 bg-blue-100 dark:bg-blue-900/40 rounded-md w-full"></div>
                    <div className="h-3 bg-blue-100 dark:bg-blue-900/40 rounded-md w-[92%]"></div>
@@ -97,12 +119,11 @@ export default function AdminDashboardAssistant() {
                   </div>
                   
                   {analysisResult.actionable_metrics.length > 0 && (
-                    <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20 rounded-2xl p-4">
-                      <p className="font-bold text-xs uppercase tracking-tight text-blue-600 dark:text-blue-400 mb-3">Actionable Metrics</p>
-                      <ul className="space-y-2">
+                    <div>
+                      <p className="font-semibold mb-2">Actionable Metrics</p>
+                      <ul className="list-disc pl-5 space-y-1">
                         {analysisResult.actionable_metrics.map((metric, i) => (
-                          <li key={i} className="flex items-start gap-2 text-sm text-blue-900 dark:text-blue-300">
-                            <Activity size={14} className="mt-1 text-blue-500" />
+                          <li key={i}>
                             {metric}
                           </li>
                         ))}
@@ -129,7 +150,7 @@ export default function AdminDashboardAssistant() {
             rows={1}
           />
           <div className="flex items-center justify-between mt-6">
-            <Button onClick={handleSubmit} variant="secondary" size="sm" className="rounded-full bg-blue-50 text-blue-600">
+            <Button onClick={handleSubmit} disabled={isAnalyzing} variant="secondary" size="sm" className="rounded-full bg-blue-50 text-blue-600">
               <Sparkles size={16} className="mr-2" /> Analyze System
             </Button>
           </div>

@@ -20,6 +20,7 @@ export type SidebarNavItem = {
 
 const adminNav: SidebarNavItem[] = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
+  { title: "eDoc AI", url: "/admin/edoc-ai", icon: Bot },
   { title: "Users", url: "/admin/users", icon: Users },
   { title: "Pending Doctors", url: "/admin/pending-doctors", icon: Building2 },
   { title: "Patients", url: "/admin/patients", icon: Users },

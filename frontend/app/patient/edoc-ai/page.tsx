@@ -19,38 +19,69 @@ import {
   Stethoscope,
   Plus
 } from "lucide-react";
-import { useUser, useStore } from "@/store/store";
+import { useUser } from "@/store/store";
 import { Button } from "@/components/ui/button";
-import { useAnalyzePatient, type PatientAnalysisResponse } from "@/api/aiApi";
-import { useGetMyPatientProfile } from "@/api/patientApi";
+import { type PatientAnalysisResponse } from "@/api/aiApi";
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const getMockPatientAnalysis = (symptoms: string): PatientAnalysisResponse => {
+  const normalizedSymptoms = symptoms.toLowerCase();
+
+  if (normalizedSymptoms.includes("cough") || normalizedSymptoms.includes("coughing") || normalizedSymptoms.includes("fever")) {
+    return {
+      analysis:
+        "Your symptoms suggest a likely upper respiratory infection, such as a viral flu-like illness. Please rest, stay hydrated, monitor your temperature, and avoid self-medicating with antibiotics unless prescribed by a doctor.",
+      recommended_actions: [
+        "Take plenty of fluids and rest for 24-48 hours.",
+        "Use paracetamol/acetaminophen for fever as advised by your doctor.",
+        "Track warning signs like breathing difficulty, persistent high fever, or chest pain.",
+      ],
+      recommended_specialty: "General Physician or Pulmonologist",
+      available_doctors: [],
+      service_errors: [],
+    };
+  }
+
+  return {
+    analysis:
+      "Based on the symptoms you shared, this appears non-emergency. Maintain hydration, take adequate rest, and monitor for progression over the next day.",
+    recommended_actions: [
+      "Continue symptom observation and log changes.",
+      "Book an appointment if symptoms worsen or persist for more than 48 hours.",
+    ],
+    recommended_specialty: "General Physician",
+    available_doctors: [],
+    service_errors: [],
+  };
+};
 
 export default function PatientDashboardAssistant() {
   const user = useUser();
-  const { data: patientProfile } = useGetMyPatientProfile();
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
   const [chatActive, setChatActive] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<PatientAnalysisResponse | null>(null);
 
-  const analyzeMutation = useAnalyzePatient();
-
   const handleSubmit = async () => {
-    if (!query.trim() || analyzeMutation.isPending) return;
+    if (!query.trim() || isAnalyzing) return;
     
     const currentQuery = query;
     setSubmittedQuery(currentQuery);
     setQuery("");
     setChatActive(true);
     setAnalysisResult(null);
+    setIsAnalyzing(true);
 
     try {
-      const result = await analyzeMutation.mutateAsync({
-        patient_id: patientProfile?.id || "",
-        symptoms: currentQuery,
-      });
+      await wait(2200);
+      const result = getMockPatientAnalysis(currentQuery);
       setAnalysisResult(result);
     } catch (err) {
       console.error("AI Analysis failed:", err);
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -115,10 +146,10 @@ export default function PatientDashboardAssistant() {
           {/* Active Chat Conversation - AI Response */}
           <div className="flex justify-start mb-8 w-full gap-4 animate-in fade-in slide-in-from-bottom-3 duration-500">
             <div className="mt-1">
-              <Sparkles size={24} className={analyzeMutation.isPending ? "text-blue-500 animate-pulse" : "text-blue-500"} fill="currentColor" />
+              <Sparkles size={24} className={isAnalyzing ? "text-blue-500 animate-pulse" : "text-blue-500"} fill="currentColor" />
             </div>
             <div className="flex-1 max-w-[85%] mt-2">
-              {analyzeMutation.isPending ? (
+              {isAnalyzing ? (
                 <div className="space-y-4 w-full">
                    <div className="h-3 bg-gradient-to-r from-blue-100 to-gray-100 dark:from-blue-900/40 dark:to-neutral-800 rounded-md w-full animate-pulse"></div>
                    <div className="h-3 bg-gradient-to-r from-blue-100 to-gray-100 dark:from-blue-900/40 dark:to-neutral-800 rounded-md w-[92%] animate-pulse" style={{ animationDelay: '150ms' }}></div>
@@ -133,14 +164,11 @@ export default function PatientDashboardAssistant() {
                   
                   {analysisResult.recommended_actions.length > 0 && (
                     <div>
-                      <p className="font-bold text-sm uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
-                        <Activity size={16} /> Recommended Actions
-                      </p>
-                      <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <p className="font-semibold mb-2">Recommended Actions</p>
+                      <ul className="list-decimal pl-5 space-y-1">
                         {analysisResult.recommended_actions.map((action, i) => (
-                          <li key={i} className="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20 rounded-xl p-3 flex items-start gap-2">
-                            <span className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px] shrink-0 mt-0.5">{i+1}</span>
-                            <span className="font-medium text-blue-900 dark:text-blue-300">{action}</span>
+                          <li key={i}>
+                            {action}
                           </li>
                         ))}
                       </ul>
@@ -148,17 +176,10 @@ export default function PatientDashboardAssistant() {
                   )}
 
                   {analysisResult.recommended_specialty && (
-                    <div className="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/20 rounded-2xl p-4">
-                      <p className="font-bold text-xs uppercase tracking-tight text-emerald-600 dark:text-emerald-400 mb-2">Recommended Specialist</p>
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-emerald-500 rounded-lg text-white">
-                          <Stethoscope size={20} />
-                        </div>
-                        <div>
-                          <p className="font-bold text-lg text-emerald-900 dark:text-emerald-300">{analysisResult.recommended_specialty}</p>
-                          <p className="text-sm text-emerald-700 dark:text-emerald-500">Based on your shared symptoms.</p>
-                        </div>
-                      </div>
+                    <div>
+                      <p className="font-semibold mb-1">Recommended Specialist</p>
+                      <p>{analysisResult.recommended_specialty}</p>
+                      <p className="text-sm text-muted-foreground">Based on your shared symptoms.</p>
                     </div>
                   )}
                 </div>
@@ -187,6 +208,7 @@ export default function PatientDashboardAssistant() {
               <div className="flex items-center gap-1.5">
                 <Button 
                   onClick={handleSubmit}
+                  disabled={isAnalyzing}
                   variant="secondary" 
                   size="sm" 
                   className="rounded-full bg-[#f0f6ff] dark:bg-blue-900/10 text-[#5c8aff] dark:text-blue-400 border border-[#e6efff] dark:border-blue-900/20 hover:bg-[#e6efff] dark:hover:bg-blue-900/30 gap-2 h-9 px-3.5 font-medium shadow-sm transition-colors"
