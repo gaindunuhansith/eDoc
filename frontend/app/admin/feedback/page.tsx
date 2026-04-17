@@ -44,54 +44,6 @@ import { useGetAllFeedback, useUpdateFeedbackStatus, type Feedback, type Feedbac
 import { toast } from "sonner";
 
 export default function AdminFeedbackPage() {
-    patientName: "Charlie Wilson",
-    doctorId: 105,
-    doctorName: "Dr. Johnson",
-    appointmentId: 205,
-    rating: 2,
-    comment: "Not satisfied with the service.",
-    timestamp: "2024-04-05T16:30:00Z",
-    status: "REJECTED",
-  },
-  {
-    id: 6,
-    patientId: 6,
-    patientName: "Diana Davis",
-    doctorId: 106,
-    doctorName: "Dr. Aris",
-    appointmentId: 206,
-    rating: 4,
-    comment: "Very knowledgeable doctor. Explained everything clearly.",
-    timestamp: "2024-04-03T13:20:00Z",
-    status: "APPROVED",
-  },
-  {
-    id: 7,
-    patientId: 7,
-    patientName: "Edward Evans",
-    doctorId: 107,
-    doctorName: "Dr. Smith",
-    appointmentId: 207,
-    rating: 1,
-    comment: "Poor experience. Doctor was rude and unprofessional.",
-    timestamp: "2024-04-01T10:00:00Z",
-    status: "REJECTED",
-  },
-  {
-    id: 8,
-    patientId: 8,
-    patientName: "Fiona Fisher",
-    doctorId: 108,
-    doctorName: "Dr. Johnson",
-    appointmentId: 208,
-    rating: 5,
-    comment: "Amazing doctor! Very attentive and thorough.",
-    timestamp: "2024-03-28T15:45:00Z",
-    status: "APPROVED",
-  },
-];
-
-export default function AdminFeedbackPage() {
   const { data: feedbacks = [], isLoading } = useGetAllFeedback();
   const updateStatus = useUpdateFeedbackStatus();
   const [searchTerm, setSearchTerm] = useState("");
