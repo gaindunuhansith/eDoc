@@ -50,6 +50,7 @@ import {
   type MedicalReport,
 } from "@/api/patientApi";
 import apiClient from "@/api/utils/axiosInstance";
+import { mockReportsList } from "@/lib/fallback";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -203,6 +204,8 @@ export default function ReportsPage() {
   const { data: reports = [], isLoading } = useGetMyReports();
   const deleteMutation = useDeleteReport();
 
+  const displayReports = reports.length > 0 ? reports : mockReportsList;
+
   const handleDelete = () => {
     if (!deleteTarget) return;
     deleteMutation.mutate(deleteTarget.id, {
@@ -253,13 +256,13 @@ export default function ReportsPage() {
       <Card className="bg-white border border-gray-200 shadow-none">
         <CardHeader className="pb-3 border-b border-gray-100">
           <CardTitle className="text-base font-medium text-gray-700">
-            {isLoading ? "Loading…" : `${reports.length} report${reports.length !== 1 ? "s" : ""}`}
+            {isLoading ? "Loading…" : `${displayReports.length} report${displayReports.length !== 1 ? "s" : ""}`}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {isLoading ? (
             <TableSkeleton />
-          ) : reports.length === 0 ? (
+          ) : displayReports.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-gray-400">
               <FilePlus className="h-10 w-10 mb-3 opacity-40" />
               <p className="font-medium">No reports uploaded yet</p>
@@ -289,7 +292,7 @@ export default function ReportsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {reports.map((report) => (
+                {displayReports.map((report) => (
                   <TableRow key={report.id} className="hover:bg-gray-50/50">
                     <TableCell>
                       <div className="flex items-center gap-2">

@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { useGetMyPrescriptions, type Prescription } from "@/api/patientApi";
+import { mockPrescriptionsList } from "@/lib/fallback";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -171,8 +172,9 @@ function LoadingSkeleton() {
 export default function PrescriptionsPage() {
   const { data: prescriptions = [], isLoading } = useGetMyPrescriptions();
 
-  const active = prescriptions.filter((rx) => !isExpired(rx.validUntil));
-  const expired = prescriptions.filter((rx) => isExpired(rx.validUntil));
+  const displayPrescriptions = prescriptions.length > 0 ? prescriptions : mockPrescriptionsList;
+  const active = displayPrescriptions.filter((rx) => !isExpired(rx.validUntil));
+  const expired = displayPrescriptions.filter((rx) => isExpired(rx.validUntil));
 
   return (
     <div className="space-y-6 p-6">
@@ -185,7 +187,7 @@ export default function PrescriptionsPage() {
       </div>
 
       {/* Stats row */}
-      {!isLoading && prescriptions.length > 0 && (
+      {!isLoading && displayPrescriptions.length > 0 && (
         <div className="flex gap-4 flex-wrap">
           <div className="flex items-center gap-2 bg-green-50 border border-green-100 rounded-lg px-4 py-2">
             <span className="text-sm font-medium text-green-800">
@@ -203,7 +205,7 @@ export default function PrescriptionsPage() {
       {/* Content */}
       {isLoading ? (
         <LoadingSkeleton />
-      ) : prescriptions.length === 0 ? (
+      ) : displayPrescriptions.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-gray-400">
           <Pill className="h-10 w-10 mb-3 opacity-40" />
           <p className="font-medium">No prescriptions found</p>
@@ -213,7 +215,7 @@ export default function PrescriptionsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {prescriptions.map((rx) => (
+          {displayPrescriptions.map((rx) => (
             <PrescriptionCard key={rx.id} rx={rx} />
           ))}
         </div>

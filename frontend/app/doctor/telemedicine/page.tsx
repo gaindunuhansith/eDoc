@@ -10,6 +10,7 @@ import { Video, Calendar, Clock, CheckCircle, AlertCircle, Play, Square } from "
 import { useGetSessions, useStartSession, useEndSession } from "@/api/telemedicineApi";
 import { telemedicineWebSocket, WebSocketMessage } from "@/api/utils/telemedicineWebSocket";
 import { toast } from "sonner";
+import { mockTelemedicineSessions } from "@/lib/fallback";
 
 export default function DoctorTelemedicinePage() {
   const { data: sessions = [], isLoading, error, refetch } = useGetSessions();
@@ -73,10 +74,12 @@ export default function DoctorTelemedicinePage() {
     notes: session.notes,
   }));
 
-  const upcomingSessions = transformedSessions.filter(session => session.status === "scheduled");
-  const completedSessions = transformedSessions.filter(session => session.status === "ended");
-  const cancelledSessions = transformedSessions.filter(session => session.status === "cancelled");
-  const ongoingSessions = transformedSessions.filter(session => session.status === "active");
+  const displayTransformed = sessions.length > 0 ? transformedSessions : mockTelemedicineSessions;
+
+  const upcomingSessions = displayTransformed.filter(session => session.status === "scheduled");
+  const completedSessions = displayTransformed.filter(session => session.status === "ended");
+  const cancelledSessions = displayTransformed.filter(session => session.status === "cancelled");
+  const ongoingSessions = displayTransformed.filter(session => session.status === "active");
 
   const getStatusColor = (status: string) => {
     switch (status) {

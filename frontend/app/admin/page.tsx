@@ -8,6 +8,9 @@ import {
   ChevronDown,
   ArrowUpRight,
   ArrowDownRight,
+  Users,
+  Stethoscope,
+  Clock,
 } from "lucide-react";
 import {
   BarChart,
@@ -20,15 +23,15 @@ import {
 } from "recharts";
 
 const revenueData = [
-  { name: "Jan", sales1: 12000, sales2: 0, sales3: 6000 },
-  { name: "Feb", sales1: 9000, sales2: 0, sales3: 7000 },
-  { name: "March", sales1: 15000, sales2: 0, sales3: 8000 },
-  { name: "April", sales1: 13000, sales2: 0, sales3: 8000 },
-  { name: "May", sales1: 14995.2, sales2: 18824.32, sales3: 23480.5 },
-  { name: "Jun", sales1: 10000, sales2: 0, sales3: 5000 },
-  { name: "July", sales1: 11000, sales2: 0, sales3: 5000 },
-  { name: "Aug", sales1: 13000, sales2: 0, sales3: 5000 },
-  { name: "Sep", sales1: 15000, sales2: 0, sales3: 6000 },
+  { name: "Jan", sales1: 185000, sales2: 0, sales3: 62000 },
+  { name: "Feb", sales1: 142000, sales2: 0, sales3: 74000 },
+  { name: "Mar", sales1: 238000, sales2: 0, sales3: 88000 },
+  { name: "Apr", sales1: 196000, sales2: 258000, sales3: 95000 },
+  { name: "May", sales1: 215000, sales2: 0, sales3: 71000 },
+  { name: "Jun", sales1: 178000, sales2: 0, sales3: 58000 },
+  { name: "Jul", sales1: 192000, sales2: 0, sales3: 66000 },
+  { name: "Aug", sales1: 224000, sales2: 0, sales3: 82000 },
+  { name: "Sep", sales1: 251000, sales2: 0, sales3: 91000 },
 ];
 
 interface TooltipProps {
@@ -44,7 +47,7 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-white p-4 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100">
-        <p className="font-semibold text-gray-900 mb-3">{label}, 2025</p>
+        <p className="font-semibold text-gray-900 mb-3">{label}, 2026</p>
         <div className="space-y-2">
           {payload.map((entry, index: number) => (
             <div key={index} className="flex items-center justify-between gap-6 text-sm">
@@ -54,10 +57,7 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
                   style={{ backgroundColor: entry.fill }}
                 />
                 <span className="font-medium text-gray-700">
-                  ${entry.value.toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
+                  LKR {entry.value.toLocaleString("en-LK")}
                 </span>
               </div>
               <span className="text-blue-600 font-medium text-xs">
@@ -139,27 +139,70 @@ export default function AdminDashboard() {
           </div>
         </div>
 
+        {/* Healthcare Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            {
+              label: "Total Patients",
+              value: "1,247",
+              icon: <Users className="w-5 h-5 text-blue-500" />,
+              bg: "bg-blue-50",
+              trend: "+8.3% this month",
+            },
+            {
+              label: "Total Doctors",
+              value: "38",
+              icon: <Stethoscope className="w-5 h-5 text-green-500" />,
+              bg: "bg-green-50",
+              trend: "+2 new this month",
+            },
+            {
+              label: "Pending Verifications",
+              value: "5",
+              icon: <Clock className="w-5 h-5 text-amber-500" />,
+              bg: "bg-amber-50",
+              trend: "Awaiting approval",
+            },
+            {
+              label: "Active Appointments",
+              value: "142",
+              icon: <Calendar className="w-5 h-5 text-indigo-500" />,
+              bg: "bg-indigo-50",
+              trend: "+14.2% vs last week",
+            },
+          ].map((stat, i) => (
+            <div key={i} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-gray-600">{stat.label}</span>
+                <div className={`p-2 rounded-xl ${stat.bg}`}>{stat.icon}</div>
+              </div>
+              <div className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</div>
+              <p className="text-xs text-gray-500">{stat.trend}</p>
+            </div>
+          ))}
+        </div>
+
         {/* 3 KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
             {
-              title: "Total sales",
-              value: "$18.200",
-              percent: "10.2%",
+              title: "Total Revenue",
+              value: "LKR 3.24M",
+              percent: "12.4%",
               up: true,
               dots: <DotGroup activeIndex={4} />,
             },
             {
-              title: "Operating expenses",
-              value: "$18.200",
-              percent: "5.75%",
+              title: "Operating Expenses",
+              value: "LKR 1.18M",
+              percent: "3.2%",
               up: false,
               dots: <DotGroupRed activeIndex={4} />,
             },
             {
-              title: "Gross profit",
-              value: "$18.200",
-              percent: "8.55%",
+              title: "Gross Profit",
+              value: "LKR 2.06M",
+              percent: "18.7%",
               up: true,
               dots: <DotGroup activeIndex={5} />,
             },
@@ -249,7 +292,7 @@ export default function AdminDashboard() {
                     axisLine={false}
                     tickLine={false}
                     tick={{ fill: "#6B7280", fontSize: 13, fontWeight: 500 }}
-                    tickFormatter={(value) => `$${value / 1000}k`}
+                    tickFormatter={(value) => `LKR ${(value / 1000).toFixed(0)}k`}
                     dx={-10}
                   />
                   <Tooltip
@@ -286,9 +329,9 @@ export default function AdminDashboard() {
 
             <div className="flex justify-center gap-6 mt-6">
               {[
-                { color: "bg-gray-500", label: "Sales revenue" },
-                { color: "bg-gray-900", label: "Sales revenue" },
-                { color: "bg-blue-600", label: "Sales revenue" },
+                { color: "bg-gray-500", label: "Telemedicine" },
+                { color: "bg-gray-900", label: "Inpatient" },
+                { color: "bg-blue-600", label: "Outpatient" },
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-2">
                   <div className={`w-3.5 h-3.5 rounded-md ${item.color}`} />

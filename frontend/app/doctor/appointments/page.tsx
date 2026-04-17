@@ -48,6 +48,7 @@ import {
   type AppointmentStatus,
 } from "@/api/appointmentApi";
 import { useCreateSession } from "@/api/telemedicineApi";
+import { mockDoctorAppointmentsList } from "@/lib/fallback";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -321,17 +322,19 @@ export default function DoctorAppointmentsPage() {
     setCompleteId(null);
   };
 
-  const sorted = [...appointments].sort(
+  const displayAppointments = appointments.length > 0 ? appointments : mockDoctorAppointmentsList;
+
+  const sorted = [...displayAppointments].sort(
     (a, b) => new Date(b.appointmentDate).getTime() - new Date(a.appointmentDate).getTime()
   );
   const filtered = filterList(sorted, tab);
 
   const counts = {
-    ALL:       appointments.length,
-    PENDING:   appointments.filter((a) => a.status === "PENDING").length,
-    CONFIRMED: appointments.filter((a) => a.status === "CONFIRMED").length,
-    COMPLETED: appointments.filter((a) => a.status === "COMPLETED").length,
-    CANCELLED: appointments.filter((a) => ["CANCELLED", "REJECTED", "NO_SHOW"].includes(a.status)).length,
+    ALL:       displayAppointments.length,
+    PENDING:   displayAppointments.filter((a) => a.status === "PENDING").length,
+    CONFIRMED: displayAppointments.filter((a) => a.status === "CONFIRMED").length,
+    COMPLETED: displayAppointments.filter((a) => a.status === "COMPLETED").length,
+    CANCELLED: displayAppointments.filter((a) => ["CANCELLED", "REJECTED", "NO_SHOW"].includes(a.status)).length,
   };
 
   return (

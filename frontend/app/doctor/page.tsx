@@ -11,6 +11,7 @@ import { Copy, AlertCircle, Calendar, Users, FileText, Settings, HeartPulse, Ste
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DoctorAvailability from "@/components/doctor/doctor-availability";
+import { mockTodaysAppointments, mockRecentPatients } from "@/lib/fallback";
 
 export default function DoctorDashboard() {
   const { data: user, isLoading: userLoading } = useGetCurrentUser();
@@ -207,7 +208,7 @@ export default function DoctorDashboard() {
                       <Users className="w-4 h-4 text-blue-500" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-3xl font-bold">124</div>
+                      <div className="text-3xl font-bold">247</div>
                       <p className="text-xs text-green-500 font-medium flex items-center mt-1">
                         +12% from last month
                       </p>
@@ -236,6 +237,94 @@ export default function DoctorDashboard() {
                         Requires your attention
                       </p>
                     </CardContent>
+                 </Card>
+               </div>
+
+               {/* Today's Appointments */}
+               <div className="mt-6">
+                 <Card className="hover:shadow-md transition-shadow">
+                   <CardHeader className="flex flex-row items-center justify-between pb-3">
+                     <CardTitle className="text-base font-semibold flex items-center gap-2">
+                       <Calendar className="w-4 h-4 text-indigo-500" />
+                       Today&apos;s Appointments
+                     </CardTitle>
+                     <span className="text-xs text-muted-foreground">Apr 17, 2026</span>
+                   </CardHeader>
+                   <CardContent className="space-y-2">
+                     {mockTodaysAppointments.map((appt) => (
+                       <div
+                         key={appt.id}
+                         className="flex items-center justify-between p-3 rounded-xl border bg-slate-50/50 hover:bg-slate-50 transition-colors"
+                       >
+                         <div className="flex items-center gap-3">
+                           <div className="text-center min-w-[64px]">
+                             <p className="text-xs font-bold text-blue-700 font-mono">{appt.time}</p>
+                           </div>
+                           <div>
+                             <p className="text-sm font-semibold text-gray-800">{appt.patient}</p>
+                             <p className="text-xs text-muted-foreground">{appt.reason}</p>
+                           </div>
+                         </div>
+                         <span
+                           className={`text-xs px-2.5 py-1 rounded-full font-medium ${
+                             appt.status === "completed"
+                               ? "bg-green-100 text-green-700"
+                               : "bg-blue-100 text-blue-700"
+                           }`}
+                         >
+                           {appt.status === "completed" ? "Done" : "Upcoming"}
+                         </span>
+                       </div>
+                     ))}
+                   </CardContent>
+                 </Card>
+               </div>
+
+               {/* Recent Patients */}
+               <div className="mt-6">
+                 <Card className="hover:shadow-md transition-shadow">
+                   <CardHeader className="pb-3">
+                     <CardTitle className="text-base font-semibold flex items-center gap-2">
+                       <Users className="w-4 h-4 text-blue-500" />
+                       Recent Patients
+                     </CardTitle>
+                   </CardHeader>
+                   <CardContent>
+                     <div className="overflow-x-auto">
+                       <table className="w-full text-sm">
+                         <thead>
+                           <tr className="border-b">
+                             <th className="text-left pb-3 font-medium text-muted-foreground">Patient</th>
+                             <th className="text-left pb-3 font-medium text-muted-foreground">Age</th>
+                             <th className="text-left pb-3 font-medium text-muted-foreground">Last Visit</th>
+                             <th className="text-left pb-3 font-medium text-muted-foreground">Diagnosis</th>
+                             <th className="text-left pb-3 font-medium text-muted-foreground">Status</th>
+                           </tr>
+                         </thead>
+                         <tbody className="divide-y divide-border/40">
+                           {mockRecentPatients.map((p) => (
+                             <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
+                               <td className="py-2.5 font-medium text-gray-800">{p.name}</td>
+                               <td className="py-2.5 text-muted-foreground">{p.age}</td>
+                               <td className="py-2.5 text-muted-foreground">{p.lastVisit}</td>
+                               <td className="py-2.5 text-gray-700">{p.diagnosis}</td>
+                               <td className="py-2.5">
+                                 <span
+                                   className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                     p.status === "Active"
+                                       ? "bg-green-100 text-green-700"
+                                       : "bg-gray-100 text-gray-600"
+                                   }`}
+                                 >
+                                   {p.status}
+                                 </span>
+                               </td>
+                             </tr>
+                           ))}
+                         </tbody>
+                       </table>
+                     </div>
+                   </CardContent>
                  </Card>
                </div>
             </TabsContent>

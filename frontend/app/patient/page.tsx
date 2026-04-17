@@ -18,6 +18,7 @@ import {
   MessageSquare,
   Star,
   Pencil,
+  FileText,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,7 @@ import { useStore } from "@/store/store";
 import { useRegisterPatient, useGetMyPatientProfile, useUpdateMyPatientProfile, type PatientPayload, type Patient } from "@/api/patientApi";
 import { useGetFeedbackByPatient } from "@/api/feedbackApi";
 import { markProfileCreated } from "@/api/userApi";
+import { mockUpcomingAppointments, mockRecentPrescriptions } from "@/lib/fallback";
 
 // ─── Edit Profile Dialog ─────────────────────────────────────────────────────
 
@@ -579,6 +581,92 @@ function PatientDashboardContent() {
       {profile && (
         <EditProfileDialog open={editOpen} onClose={() => setEditOpen(false)} current={profile} />
       )}
+
+      {/* Upcoming Appointments */}
+      <Card className="border-border/60">
+        <CardHeader className="pb-3 flex flex-row items-center justify-between">
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-muted-foreground" />
+            Upcoming Appointments
+          </CardTitle>
+          <a
+            href="/patient/appointments"
+            className="text-xs text-blue-600 hover:underline font-medium"
+          >
+            View All →
+          </a>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {mockUpcomingAppointments.map((appt) => (
+            <div
+              key={appt.id}
+              className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/30"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-500/10">
+                  <Calendar className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">{appt.doctorName}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {appt.specialty} · {appt.date} at {appt.time}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{appt.hospital}</p>
+                </div>
+              </div>
+              <span
+                className={`text-xs px-2.5 py-1 rounded-full font-medium border ${
+                  appt.status === "Confirmed"
+                    ? "bg-blue-50 text-blue-700 border-blue-200"
+                    : "bg-amber-50 text-amber-700 border-amber-200"
+                }`}
+              >
+                {appt.status}
+              </span>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* Recent Prescriptions */}
+      <Card className="border-border/60">
+        <CardHeader className="pb-3 flex flex-row items-center justify-between">
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <FileText className="w-4 h-4 text-muted-foreground" />
+            Recent Prescriptions
+          </CardTitle>
+          <a
+            href="/patient/prescriptions"
+            className="text-xs text-blue-600 hover:underline font-medium"
+          >
+            View All →
+          </a>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {mockRecentPrescriptions.map((rx) => (
+            <div
+              key={rx.id}
+              className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/30"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-500/10">
+                  <FileText className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">{rx.medication}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {rx.doctorName} · {rx.date}
+                  </p>
+                  <p className="text-xs text-muted-foreground italic">{rx.instructions}</p>
+                </div>
+              </div>
+              <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-md whitespace-nowrap">
+                {rx.diagnosis}
+              </span>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
 
       {/* Profile detail table */}
       <Card className="border-border/60">

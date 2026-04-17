@@ -39,6 +39,7 @@ import {
 import { useGetFeedbackByAppointment, useGetFeedbackByPatient } from "@/api/feedbackApi";
 import { MessageSquare, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { mockAppointmentsList, mockFeedbacks } from "@/lib/fallback";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -104,7 +105,10 @@ export default function AppointmentsPage() {
   const cancelMutation = useCancelAppointment();
 
   const isLoading = patientLoading || apptLoading;
-  const filtered = filterAppointments(appointments, tab);
+
+  const displayAppointments = appointments.length > 0 ? appointments : mockAppointmentsList;
+  const displayFeedbackData = feedbackData && feedbackData.length > 0 ? feedbackData : mockFeedbacks;
+  const filtered = filterAppointments(displayAppointments, tab);
 
   const handleCancel = () => {
     if (!cancelTarget) return;
@@ -128,9 +132,8 @@ export default function AppointmentsPage() {
 
   // Check if feedback exists for an appointment
   const checkFeedbackExists = (appointmentId: string) => {
-    if (feedbackLoading || feedbackError) return false; // Show button while loading or on error
-    if (!feedbackData) return false;
-    return feedbackData.some(feedback => feedback.appointmentId === Number(appointmentId));
+    if (feedbackLoading || feedbackError) return false;
+    return displayFeedbackData.some(feedback => feedback.appointmentId === Number(appointmentId));
   };
 
   const handleLeaveFeedback = (appointment: Appointment) => {

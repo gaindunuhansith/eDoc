@@ -34,14 +34,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import {
-  useGetMyDoctorProfile,
-  useGetPrescriptionsByDoctor,
-  useCreatePrescription,
-  type Medicine,
-  type Prescription,
-} from "@/api/doctorApi";
+import { useGetMyDoctorProfile, useGetPrescriptionsByDoctor, useCreatePrescription, type Medicine, type Prescription } from "@/api/doctorApi";
 import { useGetAppointmentsByDoctor, type Appointment } from "@/api/appointmentApi";
+import { mockDoctorPrescriptionsList } from "@/lib/fallback";
 
 // â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -381,6 +376,8 @@ export default function PrescriptionsPage() {
 
   const isLoading = doctorLoading || (!!doctor?.id && rxLoading);
 
+  const displayPrescriptions = prescriptions.length > 0 ? prescriptions : mockDoctorPrescriptionsList;
+
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
@@ -414,7 +411,7 @@ export default function PrescriptionsPage() {
             </Card>
           ))}
         </div>
-      ) : prescriptions.length === 0 ? (
+      ) : displayPrescriptions.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
           <ClipboardList className="w-10 h-10 text-muted-foreground/40" />
           <p className="text-sm text-muted-foreground">
@@ -432,10 +429,10 @@ export default function PrescriptionsPage() {
       ) : (
         <div className="space-y-4">
           <p className="text-xs text-muted-foreground">
-            {prescriptions.length} prescription
-            {prescriptions.length !== 1 ? "s" : ""}
+            {displayPrescriptions.length} prescription
+            {displayPrescriptions.length !== 1 ? "s" : ""}
           </p>
-          {[...prescriptions]
+          {[...displayPrescriptions]
             .sort(
               (a, b) =>
                 new Date(b.issuedAt).getTime() - new Date(a.issuedAt).getTime()

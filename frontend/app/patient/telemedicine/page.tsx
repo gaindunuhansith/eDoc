@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SessionCard } from "@/components/telemedicine";
 import { Video, Calendar, Clock, CheckCircle, AlertCircle } from "lucide-react";
 import { useGetSessions } from "@/api/telemedicineApi";
+import { mockTelemedicineSessions } from "@/lib/fallback";
 
 export default function PatientTelemedicinePage() {
   const { data: sessions = [], isLoading, error } = useGetSessions();
@@ -27,9 +28,11 @@ export default function PatientTelemedicinePage() {
     notes: session.notes,
   }));
 
-  const upcomingSessions = transformedSessions.filter(session => session.status === "scheduled");
-  const completedSessions = transformedSessions.filter(session => session.status === "ended");
-  const cancelledSessions = transformedSessions.filter(session => session.status === "cancelled");
+  const displaySessions = sessions.length > 0 ? transformedSessions : mockTelemedicineSessions;
+
+  const upcomingSessions = displaySessions.filter(session => session.status === "scheduled");
+  const completedSessions = displaySessions.filter(session => session.status === "ended");
+  const cancelledSessions = displaySessions.filter(session => session.status === "cancelled");
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -103,7 +106,7 @@ export default function PatientTelemedicinePage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Sessions</p>
-                <p className="text-2xl font-bold text-gray-900">{sessions.length}</p>
+                <p className="text-2xl font-bold text-gray-900">{displaySessions.length}</p>
               </div>
               <Video className="h-8 w-8 text-gray-600" />
             </div>

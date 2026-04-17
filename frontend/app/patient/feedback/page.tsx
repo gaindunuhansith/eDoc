@@ -60,6 +60,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { mockFeedbacks } from "@/lib/fallback";
 
 interface FeedbackFormData {
   appointmentId?: number;
@@ -95,8 +96,10 @@ function PatientFeedbackContent() {
   const updateFeedbackMutation = useUpdateFeedback();
   const deleteFeedbackMutation = useDeleteFeedback();
 
+  const displayFeedbacks = feedbacks.length > 0 ? feedbacks : mockFeedbacks;
+
   const filteredFeedbacks = useMemo(() => {
-    return feedbacks.filter((feedback) => {
+    return displayFeedbacks.filter((feedback) => {
       const matchesSearch = feedback.comment?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            feedback.doctorName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            feedback.rating.toString().includes(searchTerm);
@@ -104,7 +107,7 @@ function PatientFeedbackContent() {
       const matchesRating = ratingFilter === "all" || feedback.rating.toString() === ratingFilter;
       return matchesSearch && matchesStatus && matchesRating;
     });
-  }, [feedbacks, searchTerm, statusFilter, ratingFilter]);
+  }, [displayFeedbacks, searchTerm, statusFilter, ratingFilter]);
 
   const handleCreate = () => {
     if (!formData.appointmentId || !formData.doctorId) {
@@ -235,8 +238,8 @@ function PatientFeedbackContent() {
     );
   }
 
-  // Error state
-  if (error) {
+  // Error state — still render page with mock data, show non-blocking banner
+  if (error && displayFeedbacks.length === 0) {
     return (
       <div className="w-full h-full p-6 lg:p-10 space-y-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
