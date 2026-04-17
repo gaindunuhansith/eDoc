@@ -26,7 +26,7 @@ public class PatientServiceClient {
         try {
             return webClientBuilder.build()
                     .get()
-                    .uri(patientServiceUrl + "/internal/patients/" + patientId + "/reports")
+                    .uri(patientServiceUrl + "/api/v1/internal/patients/" + patientId + "/reports")
                     .retrieve()
                     .bodyToMono(new ParameterizedTypeReference<List<Map>>() {})
                     .block();
@@ -43,7 +43,7 @@ public class PatientServiceClient {
         try {
             return webClientBuilder.build()
                     .get()
-                    .uri(patientServiceUrl + "/internal/patients/" + patientId)
+                    .uri(patientServiceUrl + "/api/v1/internal/patients/" + patientId)
                     .retrieve()
                     .bodyToMono(Map.class)
                     .block();

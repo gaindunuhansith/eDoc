@@ -23,7 +23,7 @@ public class NotificationServiceClient {
         NotificationRequest request = new NotificationRequest(type, null, null, userId, data);
         try {
             restClient.post()
-                    .uri(notificationServiceBaseUrl + "/notifications/send")
+                    .uri(notificationServiceBaseUrl + "/api/v1/notifications/send")
                     .body(request)
                     .retrieve()
                     .toBodilessEntity();
