@@ -317,6 +317,17 @@ export default function AppointmentsPage() {
                         )}
                       </TableCell>
                       <TableCell className="text-right">
+                        {appt.type === "VIDEO" && appt.status === "CONFIRMED" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-violet-600 hover:text-violet-800 hover:bg-violet-50 h-8 px-3"
+                            onClick={() => router.push(`/patient/telemedicine/session/${appt.id}`)}
+                          >
+                            <Video className="h-3.5 w-3.5 mr-1" />
+                            Join Call
+                          </Button>
+                        )}
                         {canCancel(appt.status) && (
                           <Button
                             variant="ghost"

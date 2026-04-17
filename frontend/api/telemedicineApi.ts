@@ -200,7 +200,8 @@ export interface SessionToken {
 
 export interface CreateSessionPayload {
   appointmentId: string;
-  scheduledAt: string;
+  doctorId: string;
+  patientId: string;
 }
 
 export const fetchAllSessions = async () => {

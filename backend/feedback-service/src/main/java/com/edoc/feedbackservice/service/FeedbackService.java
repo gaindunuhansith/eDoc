@@ -5,7 +5,6 @@ import com.edoc.feedbackservice.client.NotificationServiceClient;
 import com.edoc.feedbackservice.dto.FeedbackRequestDTO;
 import com.edoc.feedbackservice.dto.FeedbackResponseDTO;
 import com.edoc.feedbackservice.entity.Feedback;
-import com.edoc.feedbackservice.entity.FeedbackStatus;
 import com.edoc.feedbackservice.exception.FeedbackNotFoundException;
 import com.edoc.feedbackservice.mapper.FeedbackMapper;
 import com.edoc.feedbackservice.repository.FeedbackRepository;
@@ -82,7 +81,7 @@ public class FeedbackService {
     public FeedbackResponseDTO updateFeedbackStatus(Long id, String status) {
         Feedback feedback = feedbackRepository.findById(id)
                 .orElseThrow(() -> new FeedbackNotFoundException("Feedback not found"));
-        feedback.setStatus(FeedbackStatus.valueOf(status.toUpperCase()));
+        feedback.setStatus(Feedback.FeedbackStatus.valueOf(status.toUpperCase()));
         Feedback updated = feedbackRepository.save(feedback);
         return feedbackMapper.toResponseDTO(updated);
     }

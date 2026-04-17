@@ -83,7 +83,7 @@ public class TelemedicineService {
 
         VideoSession session = findByAppointmentIdOrThrow(appointmentId);
 
-        if (session.getStatus() == SessionStatus.CANCELLED || session.getStatus() == SessionStatus.COMPLETED) {
+        if (session.getStatus() == SessionStatus.CANCELLED || session.getStatus() == SessionStatus.ENDED) {
             throw new ResponseStatusException(BAD_REQUEST, "Session is not active.");
         }
 
@@ -93,7 +93,7 @@ public class TelemedicineService {
 
     public VideoSession startSession(String appointmentId, String authorizationHeader) {
         VideoSession session = findByAppointmentIdOrThrow(appointmentId);
-        session.setStatus(SessionStatus.ONGOING);
+        session.setStatus(SessionStatus.ACTIVE);
         session.setStartTime(LocalDateTime.now());
 
         VideoSession savedSession = sessionRepository.save(session);
@@ -125,7 +125,7 @@ public class TelemedicineService {
 
     public VideoSession endSession(String appointmentId, String authorizationHeader) {
         VideoSession session = findByAppointmentIdOrThrow(appointmentId);
-        session.setStatus(SessionStatus.COMPLETED);
+        session.setStatus(SessionStatus.ENDED);
         session.setEndTime(LocalDateTime.now());
 
         VideoSession savedSession = sessionRepository.save(session);
