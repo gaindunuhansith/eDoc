@@ -35,7 +35,8 @@ export interface UserProfile {
   name: string;
   role: string;
   phoneNumber?: string;
-  isProfileCreated: boolean;
+  isProfileCreated?: boolean;
+  profileCreated?: boolean;
   createdAt: string;
 }
 
@@ -148,6 +149,7 @@ export const useMarkProfileCreated = () => {
     mutationFn: markProfileCreated,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.user.me() });
+      qc.invalidateQueries({ queryKey: queryKeys.user.lists() });
     },
   });
 };

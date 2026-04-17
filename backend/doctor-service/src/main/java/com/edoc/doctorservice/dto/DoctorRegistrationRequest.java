@@ -2,11 +2,12 @@ package com.edoc.doctorservice.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
 public class DoctorRegistrationRequest {
+
+    private String id;
 
     @NotBlank(message = "First name is required")
     private String firstName;
@@ -21,16 +22,12 @@ public class DoctorRegistrationRequest {
     @NotBlank(message = "Phone number is required")
     private String phoneNumber;
 
-    @NotBlank(message = "Specialty is required")
     private String specialty;
 
-    @NotBlank(message = "Qualification is required")
     private String qualification;
 
-    @NotBlank(message = "License number is required")
     private String licenseNumber;
 
-    @NotNull(message = "Experience years is required")
     private int experienceYears;
 
     private String hospital;
