@@ -13,11 +13,23 @@ import {
 } from "@/components/ui/popover";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { getNavForPathname } from "@/lib/sidebar-nav";
+import { useStore } from "@/store/store";
+import { useGetUnreadCount } from "@/api/notificationApi";
+import { NotificationPanel } from "@/components/notifications/notification-panel";
 
 export function TopHeader() {
   const pathname = usePathname() || "";
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const togglePanel = useStore((s) => s.togglePanel);
+  const unreadCount = useStore((s) => s.unreadCount);
+  const setUnreadCount = useStore((s) => s.setUnreadCount);
+
+  // Keep store unread count in sync from the polling query
+  const { data: unreadData } = useGetUnreadCount();
+  useMemo(() => {
+    if (unreadData !== undefined) setUnreadCount(unreadData.count);
+  }, [unreadData, setUnreadCount]);
   const navItems = useMemo(() => getNavForPathname(pathname), [pathname]);
   const searchResults = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -117,27 +129,23 @@ export function TopHeader() {
           </PopoverContent>
         </Popover>
 
-        <Popover>
-          <PopoverTrigger asChild>
-            <div className="relative">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-full border border-gray-200"
-                aria-label="View notifications"
-              >
-                <Bell className="h-4 w-4 text-gray-600" />
-              </Button>
-              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500 border-2 border-white"></span>
-            </div>
-          </PopoverTrigger>
-          <PopoverContent align="end" className="w-80 p-4">
-            <div className="space-y-1">
-              <h2 className="text-sm font-semibold text-gray-900">Notifications</h2>
-              <p className="text-sm text-gray-500">No notifications yet.</p>
-            </div>
-          </PopoverContent>
-        </Popover>
+        <div className="relative">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full border border-gray-200"
+            aria-label="View notifications"
+            onClick={togglePanel}
+          >
+            <Bell className="h-4 w-4 text-gray-600" />
+          </Button>
+          {unreadCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-blue-500 text-white text-[10px] font-bold border-2 border-white">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
+        </div>
+        <NotificationPanel />
       </div>
     </header>
   );
