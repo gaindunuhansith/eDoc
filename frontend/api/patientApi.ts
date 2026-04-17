@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import apiClient from "./utils/axiosInstance";
-import { PATIENT_ENDPOINTS } from "./utils/endpoints";
+import { PATIENT_ENDPOINTS, REPORT_ENDPOINTS } from "./utils/endpoints";
 import { queryKeys } from "./utils/queryKeys";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -75,6 +75,60 @@ export const useUpdateMyPatientProfile = () => {
     mutationFn: updateMyPatientProfile,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.patient.me() });
+    },
+  });
+};
+
+// ─── Medical Reports ──────────────────────────────────────────────────────────
+
+export interface MedicalReport {
+  id: number;
+  patientId: number;
+  reportName: string;
+  reportType: string;
+  doctorId?: string;
+  appointmentId?: string;
+  notes?: string;
+  createdAt: string;
+}
+
+export const fetchMyReports = () =>
+  apiClient.get<MedicalReport[]>(REPORT_ENDPOINTS.MY_REPORTS);
+
+export const uploadReport = (formData: FormData) =>
+  apiClient.post<MedicalReport>(REPORT_ENDPOINTS.UPLOAD, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+
+export const deleteReport = (id: number) =>
+  apiClient.delete(REPORT_ENDPOINTS.MY_REPORT(id));
+
+export const getReportDownloadUrl = (id: number) =>
+  REPORT_ENDPOINTS.DOWNLOAD(id);
+
+export const useGetMyReports = () =>
+  useQuery({
+    queryKey: queryKeys.patient.reports(),
+    queryFn: () => fetchMyReports().then((r) => r.data),
+    retry: false,
+  });
+
+export const useUploadReport = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: uploadReport,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.patient.reports() });
+    },
+  });
+};
+
+export const useDeleteReport = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: deleteReport,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.patient.reports() });
     },
   });
 };
