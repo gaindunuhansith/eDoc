@@ -58,29 +58,29 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        .requestMatchers(HttpMethod.GET, "/api/doctors/admin/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/doctors/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/doctors/admin/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/doctors/**").hasRole("ADMIN")
 
-                        .requestMatchers(HttpMethod.POST, "/api/doctors/register").hasAnyRole("DOCTOR", "ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/doctors/**").hasAnyRole("DOCTOR", "ADMIN")
-                        .requestMatchers(HttpMethod.PATCH, "/api/doctors/*/toggle-availability").hasAnyRole("DOCTOR", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/doctors/register").hasAnyRole("DOCTOR", "ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/doctors/**").hasAnyRole("DOCTOR", "ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/doctors/*/toggle-availability").hasAnyRole("DOCTOR", "ADMIN")
 
-                        .requestMatchers(HttpMethod.GET, "/api/doctors/*/patients/**").hasAnyRole("DOCTOR", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/doctors/*/patients/**").hasAnyRole("DOCTOR", "ADMIN")
 
-                        .requestMatchers(HttpMethod.POST, "/api/prescriptions/**").hasAnyRole("DOCTOR", "ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/prescriptions/patient/**").hasAnyRole("PATIENT", "DOCTOR", "ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/prescriptions/**").hasAnyRole("PATIENT", "DOCTOR", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/prescriptions/**").hasAnyRole("DOCTOR", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/prescriptions/patient/**").hasAnyRole("PATIENT", "DOCTOR", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/prescriptions/**").hasAnyRole("PATIENT", "DOCTOR", "ADMIN")
 
-                        .requestMatchers(HttpMethod.GET, "/api/doctors/*/availability/**")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/doctors/*/availability/**")
                         .hasAnyRole("PATIENT", "DOCTOR", "ADMIN", "APPOINTMENT_SERVICE")
-                        .requestMatchers(HttpMethod.POST, "/api/doctors/*/availability/**")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/doctors/*/availability/**")
                         .hasAnyRole("DOCTOR", "ADMIN", "APPOINTMENT_SERVICE")
-                        .requestMatchers(HttpMethod.PATCH, "/api/doctors/*/availability/**")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/doctors/*/availability/**")
                         .hasAnyRole("DOCTOR", "ADMIN", "APPOINTMENT_SERVICE")
-                        .requestMatchers(HttpMethod.DELETE, "/api/doctors/*/availability/**")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/doctors/*/availability/**")
                         .hasAnyRole("DOCTOR", "ADMIN", "APPOINTMENT_SERVICE")
 
-                        .requestMatchers(HttpMethod.GET, "/api/doctors/**")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/doctors/**")
                         .hasAnyRole("PATIENT", "DOCTOR", "ADMIN", "APPOINTMENT_SERVICE")
 
                         .anyRequest().authenticated()
