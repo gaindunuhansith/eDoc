@@ -1,12 +1,12 @@
 package com.edoc.telemedicineservice.service;
 
-import com.edoc.telemedicineservice.controller.WebSocketController;
 import com.edoc.telemedicineservice.client.AppointmentServiceClient;
 import com.edoc.telemedicineservice.client.NotificationServiceClient;
 import com.edoc.telemedicineservice.model.SessionStatus;
 import com.edoc.telemedicineservice.model.VideoSession;
 import com.edoc.telemedicineservice.repository.VideoSessionRepository;
 import com.edoc.telemedicineservice.service.TwilioService;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -23,18 +23,18 @@ public class TelemedicineService {
     private final TwilioService twilioService;
     private final AppointmentServiceClient appointmentClient;
     private final NotificationServiceClient notificationClient;
-    private final WebSocketController webSocketController;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public TelemedicineService(VideoSessionRepository sessionRepository,
                              TwilioService twilioService,
                              AppointmentServiceClient appointmentClient,
                              NotificationServiceClient notificationClient,
-                             WebSocketController webSocketController) {
+                             SimpMessagingTemplate messagingTemplate) {
         this.sessionRepository = sessionRepository;
         this.twilioService = twilioService;
         this.appointmentClient = appointmentClient;
         this.notificationClient = notificationClient;
-        this.webSocketController = webSocketController;
+        this.messagingTemplate = messagingTemplate;
     }
 
     public VideoSession createSession(String appointmentId, String doctorId, String patientId, String authorizationHeader) {
@@ -99,7 +99,8 @@ public class TelemedicineService {
         VideoSession savedSession = sessionRepository.save(session);
 
         // Send WebSocket notification
-        webSocketController.sendSessionStartedNotification(appointmentId);
+        messagingTemplate.convertAndSend("/topic/telemedicine/session/" + appointmentId,
+            "{\"type\": \"SESSION_STARTED\", \"appointmentId\": \"" + appointmentId + "\", \"roomName\": \"appointment-" + appointmentId + "\"}");
 
         try {
             AppointmentServiceClient.AppointmentDTO appointment = appointmentClient.getAppointment(appointmentId, authorizationHeader);
@@ -130,7 +131,8 @@ public class TelemedicineService {
         VideoSession savedSession = sessionRepository.save(session);
 
         // Send WebSocket notification
-        webSocketController.sendSessionEndedNotification(appointmentId);
+        messagingTemplate.convertAndSend("/topic/telemedicine/session/" + appointmentId,
+            "{\"type\": \"SESSION_ENDED\", \"appointmentId\": \"" + appointmentId + "\"}");
 
         try {
             appointmentClient.updateAppointmentStatus(appointmentId,

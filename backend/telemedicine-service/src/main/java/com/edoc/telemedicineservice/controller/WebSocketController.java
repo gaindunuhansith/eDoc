@@ -1,7 +1,6 @@
 package com.edoc.telemedicineservice.controller;
 
 import com.edoc.telemedicineservice.model.VideoSession;
-import com.edoc.telemedicineservice.service.TelemedicineService;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -13,11 +12,9 @@ import org.springframework.stereotype.Controller;
 public class WebSocketController {
 
     private final SimpMessagingTemplate messagingTemplate;
-    private final TelemedicineService telemedicineService;
 
-    public WebSocketController(SimpMessagingTemplate messagingTemplate, TelemedicineService telemedicineService) {
+    public WebSocketController(SimpMessagingTemplate messagingTemplate) {
         this.messagingTemplate = messagingTemplate;
-        this.telemedicineService = telemedicineService;
     }
 
     @MessageMapping("/telemedicine/session/{appointmentId}/join")
