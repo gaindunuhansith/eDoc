@@ -1,6 +1,6 @@
 export default function PaymentsPage() {
   return (
-    <div className="bg-white p-6 rounded-xl border border-gray-100 min-h-125">
+    <div className="p-8">
       {" "}
       <h2 className="text-2xl font-semibold mb-4 capitalize">Payments</h2>{" "}
       <p className="text-gray-500">This is the patient/payments page.</p>{" "}

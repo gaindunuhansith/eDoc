@@ -123,7 +123,7 @@ export default function DoctorTelemedicineSessionPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-8">
       {/* Header */}
       <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
         <div className="flex items-center justify-between">

@@ -8,6 +8,7 @@ import {
   Pill,
   Users,
   Video,
+  Bot,
   type LucideIcon,
 } from "lucide-react";
 
@@ -40,6 +41,7 @@ const doctorNav: SidebarNavItem[] = [
 
 const patientNav: SidebarNavItem[] = [
   { title: "Dashboard", url: "/patient", icon: LayoutDashboard },
+  { title: "eDoc AI", url: "/patient/edoc-ai", icon: Bot },
   { title: "Doctors", url: "/patient/doctors", icon: Building2 },
   { title: "Appointments", url: "/patient/appointments", icon: Calendar },
   { title: "Reports", url: "/patient/reports", icon: FileText },

@@ -42,6 +42,7 @@ export function TopHeader() {
     if (pathname.includes("/prescriptions")) return "Prescriptions";
     if (pathname.includes("/payments")) return "Payments";
     if (pathname.includes("/users")) return "Users";
+    if (pathname.includes("/edoc-ai")) return "eDoc AI";
     return "Dashboard";
   };
 

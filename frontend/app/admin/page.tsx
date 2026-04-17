@@ -108,7 +108,7 @@ const DotGroupRed = ({ activeIndex }: { activeIndex: number }) => (
 
 export default function AdminDashboard() {
   return (
-    <div className="min-h-screen bg-[#fcfcfd] font-sans">
+    <div className="min-h-screen bg-background font-sans p-8">
       <div className="w-full space-y-6">
         {/* Top Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
