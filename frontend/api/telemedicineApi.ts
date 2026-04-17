@@ -3,6 +3,19 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import apiClient from "./utils/axiosInstance";
 import { TELEMEDICINE_ENDPOINTS } from "./utils/endpoints";
 import { queryKeys } from "./utils/queryKeys";
+import { useStore } from "../store/store";
+
+// ─── Utility Functions ────────────────────────────────────────────────────────
+export const checkTelemedicineAccess = () => {
+  const user = useStore.getState().user;
+  if (!user) {
+    throw new Error("Authentication required for telemedicine access");
+  }
+  if (!["PATIENT", "DOCTOR"].includes(user.role)) {
+    throw new Error("Only patients and doctors can access telemedicine features");
+  }
+  return user;
+};
 
 export type SessionStatus =
   | "SCHEDULED"
@@ -34,35 +47,49 @@ export interface CreateSessionPayload {
   scheduledAt: string;
 }
 
-export const fetchAllSessions = () =>
-  apiClient.get<TelemedicineSession[]>(TELEMEDICINE_ENDPOINTS.SESSIONS);
+export const fetchAllSessions = () => {
+  checkTelemedicineAccess();
+  return apiClient.get<TelemedicineSession[]>(TELEMEDICINE_ENDPOINTS.SESSIONS);
+};
 
-export const fetchSessionByAppointmentId = (appointmentId: string) =>
-  apiClient.get<TelemedicineSession>(
+export const fetchSessionByAppointmentId = (appointmentId: string) => {
+  checkTelemedicineAccess();
+  return apiClient.get<TelemedicineSession>(
     TELEMEDICINE_ENDPOINTS.SESSION_BY_APPOINTMENT_ID(appointmentId)
   );
+};
 
-export const createSession = (payload: CreateSessionPayload) =>
-  apiClient.post<TelemedicineSession>(
+export const createSession = (payload: CreateSessionPayload) => {
+  checkTelemedicineAccess();
+  return apiClient.post<TelemedicineSession>(
     TELEMEDICINE_ENDPOINTS.CREATE_SESSION,
     payload
   );
+};
 
-export const startSession = (appointmentId: string) =>
-  apiClient.put<TelemedicineSession>(
+export const startSession = (appointmentId: string) => {
+  checkTelemedicineAccess();
+  return apiClient.put<TelemedicineSession>(
     TELEMEDICINE_ENDPOINTS.START_SESSION(appointmentId)
   );
+};
 
-export const endSession = (appointmentId: string) =>
-  apiClient.put<TelemedicineSession>(TELEMEDICINE_ENDPOINTS.END_SESSION(appointmentId));
+export const endSession = (appointmentId: string) => {
+  checkTelemedicineAccess();
+  return apiClient.put<TelemedicineSession>(TELEMEDICINE_ENDPOINTS.END_SESSION(appointmentId));
+};
 
-export const fetchSessionToken = (appointmentId: string, userId: string) =>
-  apiClient.get<SessionToken>(
-    `${TELEMEDICINE_ENDPOINTS.SESSION_TOKEN(appointmentId)}?userId=${userId}`
+export const fetchSessionToken = (appointmentId: string) => {
+  const user = checkTelemedicineAccess();
+  return apiClient.get<SessionToken>(
+    `${TELEMEDICINE_ENDPOINTS.SESSION_TOKEN(appointmentId)}?userId=${user.userId}`
   );
+};
 
-export const deleteSession = (appointmentId: string) =>
-  apiClient.delete(TELEMEDICINE_ENDPOINTS.DELETE_SESSION(appointmentId));
+export const deleteSession = (appointmentId: string) => {
+  checkTelemedicineAccess();
+  return apiClient.delete(TELEMEDICINE_ENDPOINTS.DELETE_SESSION(appointmentId));
+};
 
 export const useGetAllSessions = () =>
   useQuery({
@@ -77,14 +104,16 @@ export const useGetSessionByAppointmentId = (appointmentId: string) =>
     enabled: !!appointmentId,
   });
 
-export const useGetSessionToken = (appointmentId: string, userId: string) =>
-  useQuery({
+export const useGetSessionToken = (appointmentId: string) => {
+  const userId = useStore((state) => state.user?.userId);
+  return useQuery({
     queryKey: queryKeys.telemedicine.token(appointmentId),
-    queryFn: () => fetchSessionToken(appointmentId, userId).then((r) => r.data),
+    queryFn: () => fetchSessionToken(appointmentId).then((r) => r.data),
     enabled: !!appointmentId && !!userId,
     staleTime: 1 * 60 * 1000,
     gcTime: 2 * 60 * 1000,
   });
+};
 
 export const useCreateSession = () => {
   const qc = useQueryClient();
