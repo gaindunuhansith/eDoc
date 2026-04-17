@@ -38,6 +38,8 @@ export const queryKeys = {
       ["appointment", "patient", patientId] as const,
     byDoctor: (doctorId: string) =>
       ["appointment", "doctor", doctorId] as const,
+    pendingByDoctor: (doctorId: string) =>
+      ["appointment", "doctor", doctorId, "pending"] as const,
   },
 
   notification: {

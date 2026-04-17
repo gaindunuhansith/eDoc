@@ -79,6 +79,24 @@ export const cancelAppointment = ({
   return apiClient.delete<Appointment>(url);
 };
 
+export interface AppointmentStatusUpdate {
+  status: AppointmentStatus;
+  doctorNotes?: string;
+  cancellationReason?: string;
+  videoSessionLink?: string;
+}
+
+export const updateAppointmentStatus = ({
+  id,
+  update,
+}: {
+  id: string;
+  update: AppointmentStatusUpdate;
+}) => apiClient.patch<Appointment>(APPOINTMENT_ENDPOINTS.UPDATE_STATUS(id), update);
+
+export const fetchPendingAppointmentsByDoctor = (doctorId: string) =>
+  apiClient.get<Appointment[]>(APPOINTMENT_ENDPOINTS.PENDING_BY_DOCTOR(doctorId));
+
 export const useGetAppointmentsByPatient = (patientId: string) =>
   useQuery({
     queryKey: queryKeys.appointment.byPatient(patientId),
@@ -119,3 +137,20 @@ export const useCancelAppointment = () => {
     },
   });
 };
+
+export const useUpdateAppointmentStatus = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: updateAppointmentStatus,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.appointment.all });
+    },
+  });
+};
+
+export const useGetPendingAppointmentsByDoctor = (doctorId: string) =>
+  useQuery({
+    queryKey: queryKeys.appointment.pendingByDoctor(doctorId),
+    queryFn: () => fetchPendingAppointmentsByDoctor(doctorId).then((r) => r.data),
+    enabled: !!doctorId,
+  });
