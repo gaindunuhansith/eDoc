@@ -49,6 +49,7 @@ export const queryKeys = {
     lists: () => ["feedback", "list"] as const,
     detail: (id: string) => ["feedback", "detail", id] as const,
     byDoctor: (doctorId: string) => ["feedback", "doctor", doctorId] as const,
+    byPatient: (patientId: string) => ["feedback", "patient", patientId] as const,
   },
 
   telemedicine: {

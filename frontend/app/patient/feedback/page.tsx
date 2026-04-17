@@ -1,90 +1,81 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { FeedbackCard } from "@/components/feedback";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-
-interface Feedback {
-  id: number;
-  rating: number;
-  comment?: string;
-  timestamp: string;
-  doctorName: string;
-  status: "PENDING" | "APPROVED" | "REJECTED";
-}
+import { useGetMyPatientProfile } from "@/api/patientApi";
+import { useGetFeedbackByPatient } from "@/api/feedbackApi";
+import { MessageSquarePlus, Star } from "lucide-react";
+import Link from "next/link";
 
 export default function PatientFeedbackPage() {
-  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: patient, isLoading: profileLoading } = useGetMyPatientProfile();
+  const patientId = patient?.id ? String(patient.id) : "";
 
-  useEffect(() => {
-    fetchFeedbacks();
-  }, []);
+  const {
+    data: feedbacks,
+    isLoading: feedbackLoading,
+    isError,
+  } = useGetFeedbackByPatient(patientId);
 
-  const fetchFeedbacks = async () => {
-    try {
-      // Mock data for now - replace with actual API call
-      const mockFeedbacks: Feedback[] = [
-        {
-          id: 1,
-          rating: 5,
-          comment: "Excellent service!",
-          timestamp: "2024-04-15T10:00:00Z",
-          doctorName: "Dr. Smith",
-          status: "APPROVED",
-        },
-        {
-          id: 2,
-          rating: 4,
-          comment: "Good experience overall.",
-          timestamp: "2024-04-10T14:30:00Z",
-          doctorName: "Dr. Johnson",
-          status: "PENDING",
-        },
-      ];
-      setFeedbacks(mockFeedbacks);
-    } catch (err) {
-      setError("Failed to load feedback");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const isLoading = profileLoading || (!!patientId && feedbackLoading);
 
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-4 p-6">
         <Skeleton className="h-8 w-48" />
-        <div className="grid gap-4">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-32" />
-          ))}
-        </div>
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-32 rounded-xl" />
+        ))}
       </div>
     );
   }
 
-  if (error) {
+  if (isError) {
     return (
-      <Card className="bg-white border border-gray-200">
-        <CardContent className="pt-6">
-          <p className="text-red-600">{error}</p>
-        </CardContent>
-      </Card>
+      <div className="p-6">
+        <Card className="bg-white border border-gray-200">
+          <CardContent className="pt-6">
+            <p className="text-red-600">Failed to load feedback. Please try again.</p>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
+
+  const totalRating = feedbacks?.length
+    ? feedbacks.reduce((sum, f) => sum + f.rating, 0) / feedbacks.length
+    : 0;
 
   return (
     <div className="space-y-6 p-6">
-      <div>
-        <p className="text-gray-600 mt-1">View feedback you've submitted for appointments</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-gray-600 mt-1">Feedback you've submitted for appointments</p>
+        </div>
+        {feedbacks && feedbacks.length > 0 && (
+          <div className="flex items-center gap-1 text-sm text-gray-600 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-1.5">
+            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+            <span className="font-medium">{totalRating.toFixed(1)}</span>
+            <span className="text-gray-400">avg · {feedbacks.length} review{feedbacks.length !== 1 ? "s" : ""}</span>
+          </div>
+        )}
       </div>
 
-      {feedbacks.length === 0 ? (
+      {!feedbacks || feedbacks.length === 0 ? (
         <Card className="bg-white border border-gray-200">
-          <CardContent className="pt-6">
-            <p className="text-gray-600">No feedback submitted yet.</p>
+          <CardContent className="pt-10 pb-10 flex flex-col items-center gap-3 text-center">
+            <MessageSquarePlus className="h-10 w-10 text-gray-300" />
+            <p className="text-gray-500 font-medium">No feedback submitted yet</p>
+            <p className="text-sm text-gray-400">
+              After completing an appointment, you can leave feedback from your appointments page.
+            </p>
+            <Link href="/patient/appointments">
+              <Button variant="outline" className="mt-2">
+                View Appointments
+              </Button>
+            </Link>
           </CardContent>
         </Card>
       ) : (
@@ -96,7 +87,6 @@ export default function PatientFeedbackPage() {
               rating={feedback.rating}
               comment={feedback.comment}
               timestamp={feedback.timestamp}
-              doctorName={feedback.doctorName}
               status={feedback.status}
             />
           ))}

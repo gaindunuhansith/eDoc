@@ -1,47 +1,63 @@
 "use client";
 
-import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { FeedbackForm } from "@/components/feedback";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useGetAppointmentById } from "@/api/appointmentApi";
+import { useGetMyPatientProfile } from "@/api/patientApi";
+import { useSubmitFeedback } from "@/api/feedbackApi";
+import { ArrowLeft, CheckCircle2 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
 export default function SubmitFeedbackPage() {
   const params = useParams();
   const router = useRouter();
-  const appointmentId = parseInt(params.appointmentId as string);
-  const [isLoading, setIsLoading] = useState(false);
+  const appointmentIdStr = params.appointmentId as string;
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = async (rating: number, comment: string) => {
-    setIsLoading(true);
-    try {
-      // Mock API call - replace with actual submission
-      console.log("Submitting feedback:", { appointmentId, rating, comment });
+  const { data: appointment, isLoading: apptLoading } =
+    useGetAppointmentById(appointmentIdStr);
+  const { data: patient, isLoading: profileLoading } = useGetMyPatientProfile();
+  const { mutate: submitFeedback, isPending } = useSubmitFeedback();
 
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+  const isLoading = apptLoading || profileLoading;
 
-      setSubmitted(true);
-    } catch (error) {
-      console.error("Failed to submit feedback:", error);
-      alert("Failed to submit feedback. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
+  const handleSubmit = (rating: number, comment: string) => {
+    if (!patient?.id || !appointment) return;
+
+    submitFeedback(
+      {
+        patientId: patient.id,
+        payload: {
+          appointmentId: Number(appointmentIdStr),
+          doctorId: Number(appointment.doctorId),
+          rating,
+          comment: comment || undefined,
+        },
+      },
+      {
+        onSuccess: () => setSubmitted(true),
+        onError: () => toast.error("Failed to submit feedback. Please try again."),
+      }
+    );
   };
 
   if (submitted) {
     return (
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-2xl mx-auto p-6">
         <Card className="bg-white border border-gray-200 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-gray-900">Feedback Submitted!</CardTitle>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-6 w-6 text-green-600" />
+              <CardTitle className="text-gray-900">Feedback Submitted!</CardTitle>
+            </div>
           </CardHeader>
           <CardContent>
             <p className="text-gray-700 mb-4">
-              Thank you for your feedback. It has been submitted successfully.
+              Thank you for your feedback. It helps us improve our services.
             </p>
             <Button
               onClick={() => router.push("/patient/feedback")}
@@ -49,6 +65,27 @@ export default function SubmitFeedbackPage() {
             >
               View My Feedback
             </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4 p-6 max-w-2xl mx-auto">
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-64 rounded-xl" />
+      </div>
+    );
+  }
+
+  if (!appointment) {
+    return (
+      <div className="p-6">
+        <Card className="bg-white border border-gray-200">
+          <CardContent className="pt-6">
+            <p className="text-red-600">Appointment not found.</p>
           </CardContent>
         </Card>
       </div>
@@ -67,15 +104,17 @@ export default function SubmitFeedbackPage() {
           Back
         </Button>
         <div>
-          <p className="text-gray-600 mt-1">Share your experience for Appointment #{appointmentId}</p>
+          <p className="text-gray-600 mt-1">
+            Share your experience with {appointment.doctorName}
+          </p>
         </div>
       </div>
 
       <FeedbackForm
-        appointmentId={appointmentId}
-        doctorId={1} // This would come from appointment data
+        appointmentId={Number(appointmentIdStr)}
+        doctorId={Number(appointment.doctorId)}
         onSubmit={handleSubmit}
-        isLoading={isLoading}
+        isLoading={isPending}
       />
     </div>
   );

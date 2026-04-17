@@ -53,12 +53,13 @@ export const NOTIFICATION_ENDPOINTS = {
 
 
 export const FEEDBACK_ENDPOINTS = {
-  GET_ALL: "/api/v1/feedback",
+  SUBMIT: "/api/v1/feedback/submit",
   GET_BY_ID: (id: string) => `/api/v1/feedback/${id}`,
-  CREATE: "/api/v1/feedback",
-  UPDATE: (id: string) => `/api/v1/feedback/${id}`,
-  DELETE: (id: string) => `/api/v1/feedback/${id}`,
-  BY_DOCTOR: (doctorId: string) => `/api/v1/feedback?doctorId=${doctorId}`,
+  BY_PATIENT: (patientId: string) => `/api/v1/feedback/patient/${patientId}`,
+  BY_DOCTOR: (doctorId: string) => `/api/v1/feedback/doctor/${doctorId}`,
+  BY_APPOINTMENT: (appointmentId: string) => `/api/v1/feedback/appointment/${appointmentId}`,
+  UPDATE: (id: string) => `/api/v1/feedback/update/${id}`,
+  DELETE: (id: string) => `/api/v1/feedback/delete/${id}`,
 } as const;
 
 
