@@ -65,12 +65,12 @@ export const FEEDBACK_ENDPOINTS = {
 
 export const TELEMEDICINE_ENDPOINTS = {
   SESSIONS: "/api/v1/telemedicine/sessions",
-  SESSION_BY_ID: (id: string) => `/api/v1/telemedicine/sessions/${id}`,
+  SESSION_BY_APPOINTMENT_ID: (appointmentId: string) => `/api/v1/telemedicine/sessions/${appointmentId}`,
   CREATE_SESSION: "/api/v1/telemedicine/sessions",
-  START_SESSION: (id: string) => `/api/v1/telemedicine/sessions/${id}/start`,
-  END_SESSION: (id: string) => `/api/v1/telemedicine/sessions/${id}/end`,
-  JOIN_SESSION: (id: string) => `/api/v1/telemedicine/sessions/${id}/join`,
-  SESSION_TOKEN: (id: string) => `/api/v1/telemedicine/sessions/${id}/token`,
+  START_SESSION: (appointmentId: string) => `/api/v1/telemedicine/sessions/${appointmentId}/start`,
+  END_SESSION: (appointmentId: string) => `/api/v1/telemedicine/sessions/${appointmentId}/complete`,
+  SESSION_TOKEN: (appointmentId: string) => `/api/v1/telemedicine/sessions/${appointmentId}/token`,
+  DELETE_SESSION: (appointmentId: string) => `/api/v1/telemedicine/sessions/${appointmentId}`,
 } as const;
 
 

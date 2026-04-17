@@ -8,7 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/telemedicine")
+@RequestMapping("/api/v1/telemedicine")
 public class TelemedicineController {
 
     private final TelemedicineService telemedicineService;

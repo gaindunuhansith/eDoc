@@ -7,63 +7,33 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SessionCard } from "@/components/telemedicine";
 import { Video, Calendar, Clock, CheckCircle, AlertCircle, Play, Square } from "lucide-react";
-
-// Mock data - replace with actual API calls
-const mockSessions = [
-  {
-    id: "1",
-    appointmentId: "APT-001",
-    doctorName: "Dr. Sarah Johnson",
-    patientName: "John Doe",
-    scheduledDate: "2024-01-15",
-    scheduledTime: "10:00 AM",
-    status: "scheduled",
-    duration: 30,
-    notes: "Follow-up consultation"
-  },
-  {
-    id: "2",
-    appointmentId: "APT-002",
-    doctorName: "Dr. Sarah Johnson",
-    patientName: "Jane Smith",
-    scheduledDate: "2024-01-10",
-    scheduledTime: "2:30 PM",
-    status: "completed",
-    duration: 25,
-    notes: "Skin condition check"
-  },
-  {
-    id: "3",
-    appointmentId: "APT-003",
-    doctorName: "Dr. Sarah Johnson",
-    patientName: "Mike Johnson",
-    scheduledDate: "2024-01-08",
-    scheduledTime: "11:15 AM",
-    status: "cancelled",
-    duration: 30,
-    notes: "Regular checkup"
-  },
-  {
-    id: "4",
-    appointmentId: "APT-004",
-    doctorName: "Dr. Sarah Johnson",
-    patientName: "Alice Brown",
-    scheduledDate: "2024-01-16",
-    scheduledTime: "9:00 AM",
-    status: "ongoing",
-    duration: 30,
-    notes: "Emergency consultation"
-  }
-];
+import { useGetSessions, useStartSession, useEndSession } from "@/api/telemedicineApi";
+import { toast } from "sonner";
 
 export default function DoctorTelemedicinePage() {
-  const [sessions, setSessions] = useState(mockSessions);
+  const { data: sessions = [], isLoading, error, refetch } = useGetSessions();
+  const startSessionMutation = useStartSession();
+  const endSessionMutation = useEndSession();
   const [activeTab, setActiveTab] = useState("upcoming");
 
-  const upcomingSessions = sessions.filter(session => session.status === "scheduled");
-  const completedSessions = sessions.filter(session => session.status === "completed");
-  const cancelledSessions = sessions.filter(session => session.status === "cancelled");
-  const ongoingSessions = sessions.filter(session => session.status === "ongoing");
+  // Transform API data to match SessionCard interface
+  const transformedSessions = sessions.map(session => ({
+    id: session.id,
+    appointmentId: session.appointmentId,
+    doctorName: session.doctorName,
+    doctorSpecialty: undefined, // Not provided by API
+    patientName: session.patientName,
+    scheduledDate: new Date(session.scheduledAt).toLocaleDateString(),
+    scheduledTime: new Date(session.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    status: session.status.toLowerCase(),
+    duration: session.duration,
+    notes: session.notes,
+  }));
+
+  const upcomingSessions = transformedSessions.filter(session => session.status === "scheduled");
+  const completedSessions = transformedSessions.filter(session => session.status === "ended");
+  const cancelledSessions = transformedSessions.filter(session => session.status === "cancelled");
+  const ongoingSessions = transformedSessions.filter(session => session.status === "active");
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -85,22 +55,26 @@ export default function DoctorTelemedicinePage() {
     }
   };
 
-  const handleStartSession = (sessionId: string) => {
-    // In a real app, call API to start session
-    setSessions(prev => prev.map(session =>
-      session.id === sessionId
-        ? { ...session, status: "ongoing" }
-        : session
-    ));
+  const handleStartSession = async (appointmentId: string) => {
+    try {
+      await startSessionMutation.mutateAsync(appointmentId);
+      toast.success("Session started successfully");
+      refetch(); // Refresh the sessions list
+    } catch (error) {
+      toast.error("Failed to start session");
+      console.error("Error starting session:", error);
+    }
   };
 
-  const handleEndSession = (sessionId: string) => {
-    // In a real app, call API to end session
-    setSessions(prev => prev.map(session =>
-      session.id === sessionId
-        ? { ...session, status: "completed" }
-        : session
-    ));
+  const handleEndSession = async (appointmentId: string) => {
+    try {
+      await endSessionMutation.mutateAsync(appointmentId);
+      toast.success("Session ended successfully");
+      refetch(); // Refresh the sessions list
+    } catch (error) {
+      toast.error("Failed to end session");
+      console.error("Error ending session:", error);
+    }
   };
 
   return (
@@ -211,7 +185,7 @@ export default function DoctorTelemedicinePage() {
                       key={session.id}
                       session={session}
                       userRole="doctor"
-                      onStart={() => handleStartSession(session.id)}
+                      onStart={() => handleStartSession(session.appointmentId)}
                       onViewDetails={() => {
                         console.log("View details for session:", session.id);
                       }}
@@ -242,9 +216,9 @@ export default function DoctorTelemedicinePage() {
                       userRole="doctor"
                       onJoinCall={() => {
                         // Navigate to video call page
-                        window.location.href = `/doctor/telemedicine/session/${session.id}`;
+                        window.location.href = `/doctor/telemedicine/session/${session.appointmentId}`;
                       }}
-                      onEnd={() => handleEndSession(session.id)}
+                      onEnd={() => handleEndSession(session.appointmentId)}
                       onViewDetails={() => {
                         console.log("View details for session:", session.id);
                       }}

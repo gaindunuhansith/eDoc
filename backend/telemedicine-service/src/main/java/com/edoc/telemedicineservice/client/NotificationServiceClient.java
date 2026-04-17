@@ -29,7 +29,7 @@ public class NotificationServiceClient {
             
             webClient
                     .post()
-                    .uri(notificationServiceUrl + "/notifications/email")
+                    .uri(notificationServiceUrl + "/api/v1/notifications/email")
                     .bodyValue(new EmailNotificationRequest(to, subject, body))
                     .retrieve()
                     .bodyToMono(Void.class)
@@ -53,7 +53,7 @@ public class NotificationServiceClient {
             
             webClient
                     .post()
-                    .uri(notificationServiceUrl + "/notifications/sms")
+                    .uri(notificationServiceUrl + "/api/v1/notifications/sms")
                     .bodyValue(new SmsNotificationRequest(to, text))
                     .retrieve()
                     .bodyToMono(Void.class)
