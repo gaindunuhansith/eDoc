@@ -180,6 +180,9 @@ public class AppointmentService {
         if (update.getStatus() == Appointment.AppointmentStatus.CONFIRMED) {
             notifyAppointmentConfirmed(savedAppointment);
         }
+        if (update.getStatus() == Appointment.AppointmentStatus.REJECTED) {
+            notifyAppointmentRejected(savedAppointment);
+        }
         if (update.getStatus() == Appointment.AppointmentStatus.CANCELLED) {
             notifyAppointmentCancelled(savedAppointment);
         }
@@ -364,6 +367,14 @@ public class AppointmentService {
             notificationServiceClient.sendToPatient("APPOINTMENT_CONFIRMED", appointment.getPatientId(), buildAppointmentData(appointment));
         } catch (Exception ex) {
             log.warn("Notification send failed for confirmation {}", appointment.getId(), ex);
+        }
+    }
+
+    private void notifyAppointmentRejected(Appointment appointment) {
+        try {
+            notificationServiceClient.sendToPatient("APPOINTMENT_REJECTED", appointment.getPatientId(), buildAppointmentData(appointment));
+        } catch (Exception ex) {
+            log.warn("Notification send failed for rejection {}", appointment.getId(), ex);
         }
     }
 
