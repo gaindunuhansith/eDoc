@@ -10,7 +10,8 @@ import {
   Edit,
   Trash2,
   Star,
-  Filter
+  Filter,
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -44,81 +45,45 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-
-// Mock data for feedback
-const mockFeedbacks = [
-  {
-    id: 1,
-    patientId: 1,
-    doctorId: 101,
-    appointmentId: 201,
-    rating: 5,
-    comment: "Excellent service! The doctor was very professional and caring.",
-    timestamp: "2024-04-15T10:30:00Z",
-    status: "APPROVED",
-  },
-  {
-    id: 2,
-    patientId: 1,
-    doctorId: 102,
-    appointmentId: 202,
-    rating: 4,
-    comment: "Good consultation, but waiting time was a bit long.",
-    timestamp: "2024-04-12T14:15:00Z",
-    status: "APPROVED",
-  },
-  {
-    id: 3,
-    patientId: 1,
-    doctorId: 103,
-    appointmentId: 203,
-    rating: 3,
-    comment: "Average experience. Could be better.",
-    timestamp: "2024-04-10T09:00:00Z",
-    status: "PENDING",
-  },
-  {
-    id: 4,
-    patientId: 1,
-    doctorId: 104,
-    appointmentId: 204,
-    rating: 5,
-    comment: "Outstanding care! Highly recommend.",
-    timestamp: "2024-04-08T11:45:00Z",
-    status: "APPROVED",
-  },
-  {
-    id: 5,
-    patientId: 1,
-    doctorId: 105,
-    appointmentId: 205,
-    rating: 2,
-    comment: "Not satisfied with the service.",
-    timestamp: "2024-04-05T16:30:00Z",
-    status: "REJECTED",
-  },
-];
+import { useUser } from "@/store/store";
+import {
+  useGetFeedbackByPatient,
+  useSubmitFeedback,
+  useUpdateFeedback,
+  useDeleteFeedback,
+  type Feedback
+} from "@/api/feedbackApi";
+import { toast } from "sonner";
 
 interface FeedbackFormData {
+  appointmentId?: number;
+  doctorId?: number;
   rating: number;
   comment: string;
 }
 
 export default function PatientFeedbackPage() {
-  const [feedbacks, setFeedbacks] = useState(mockFeedbacks);
+  const user = useUser();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [ratingFilter, setRatingFilter] = useState("all");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [editingFeedback, setEditingFeedback] = useState<typeof mockFeedbacks[0] | null>(null);
+  const [editingFeedback, setEditingFeedback] = useState<Feedback | null>(null);
   const [formData, setFormData] = useState<FeedbackFormData>({
     rating: 5,
     comment: "",
   });
 
+  // API hooks
+  const { data: feedbacks = [], isLoading, error } = useGetFeedbackByPatient(user?.userId || "");
+  const submitFeedbackMutation = useSubmitFeedback();
+  const updateFeedbackMutation = useUpdateFeedback();
+  const deleteFeedbackMutation = useDeleteFeedback();
+
   const filteredFeedbacks = useMemo(() => {
     return feedbacks.filter((feedback) => {
       const matchesSearch = feedback.comment?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           feedback.doctorName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            feedback.rating.toString().includes(searchTerm);
       const matchesStatus = statusFilter === "all" || feedback.status === statusFilter;
       const matchesRating = ratingFilter === "all" || feedback.rating.toString() === ratingFilter;
@@ -127,39 +92,77 @@ export default function PatientFeedbackPage() {
   }, [feedbacks, searchTerm, statusFilter, ratingFilter]);
 
   const handleCreate = () => {
-    const newFeedback = {
-      id: Math.max(...feedbacks.map(f => f.id)) + 1,
-      patientId: 1,
-      doctorId: 106,
-      appointmentId: 206,
-      rating: formData.rating,
-      comment: formData.comment,
-      timestamp: new Date().toISOString(),
-      status: "PENDING" as const,
-    };
-    setFeedbacks([...feedbacks, newFeedback]);
-    setFormData({ rating: 5, comment: "" });
-    setIsCreateDialogOpen(false);
+    if (!formData.appointmentId || !formData.doctorId) {
+      toast.error("Please select an appointment to provide feedback for.");
+      return;
+    }
+
+    submitFeedbackMutation.mutate(
+      {
+        appointmentId: formData.appointmentId,
+        doctorId: formData.doctorId,
+        rating: formData.rating,
+        comment: formData.comment || undefined,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Feedback submitted successfully!");
+          setFormData({ rating: 5, comment: "" });
+          setIsCreateDialogOpen(false);
+        },
+        onError: (error) => {
+          toast.error("Failed to submit feedback. Please try again.");
+          console.error("Submit feedback error:", error);
+        },
+      }
+    );
   };
 
   const handleUpdate = () => {
     if (!editingFeedback) return;
-    setFeedbacks(feedbacks.map(f =>
-      f.id === editingFeedback.id
-        ? { ...f, rating: formData.rating, comment: formData.comment }
-        : f
-    ));
-    setEditingFeedback(null);
-    setFormData({ rating: 5, comment: "" });
+
+    updateFeedbackMutation.mutate(
+      {
+        id: editingFeedback.id.toString(),
+        payload: {
+          rating: formData.rating,
+          comment: formData.comment || undefined,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success("Feedback updated successfully!");
+          setEditingFeedback(null);
+          setFormData({ rating: 5, comment: "" });
+        },
+        onError: (error) => {
+          toast.error("Failed to update feedback. Please try again.");
+          console.error("Update feedback error:", error);
+        },
+      }
+    );
   };
 
   const handleDelete = (id: number) => {
-    setFeedbacks(feedbacks.filter(f => f.id !== id));
+    if (!confirm("Are you sure you want to delete this feedback?")) return;
+
+    deleteFeedbackMutation.mutate(id.toString(), {
+      onSuccess: () => {
+        toast.success("Feedback deleted successfully!");
+      },
+      onError: (error) => {
+        toast.error("Failed to delete feedback. Please try again.");
+        console.error("Delete feedback error:", error);
+      },
+    });
   };
 
-  const openEditDialog = (feedback: typeof mockFeedbacks[0]) => {
+  const openEditDialog = (feedback: Feedback) => {
     setEditingFeedback(feedback);
-    setFormData({ rating: feedback.rating, comment: feedback.comment || "" });
+    setFormData({
+      rating: feedback.rating,
+      comment: feedback.comment || "",
+    });
   };
 
   const renderStars = (rating: number, interactive = false, onChange?: (rating: number) => void) => {
@@ -187,6 +190,52 @@ export default function PatientFeedbackPage() {
     }
   };
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="w-full h-full p-6 lg:p-10 space-y-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <div className="h-8 w-48 bg-gray-200 rounded animate-pulse" />
+            <div className="h-4 w-64 bg-gray-200 rounded animate-pulse mt-2" />
+          </div>
+          <div className="h-10 w-32 bg-gray-200 rounded animate-pulse" />
+        </div>
+        <div className="space-y-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="h-16 bg-gray-200 rounded animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="w-full h-full p-6 lg:p-10 space-y-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground tracking-tight">My Feedback</h1>
+            <p className="text-muted-foreground mt-1">Manage your feedback history</p>
+          </div>
+        </div>
+        <Card className="bg-white border border-gray-200">
+          <CardContent className="pt-6">
+            <p className="text-red-600">Failed to load feedback. Please try again later.</p>
+            <Button
+              onClick={() => window.location.reload()}
+              className="mt-4"
+              variant="outline"
+            >
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full h-full p-6 lg:p-10 space-y-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -210,6 +259,32 @@ export default function PatientFeedbackPage() {
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="appointmentId" className="text-right">
+                  Appointment ID
+                </Label>
+                <Input
+                  id="appointmentId"
+                  type="number"
+                  value={formData.appointmentId || ""}
+                  onChange={(e) => setFormData({ ...formData, appointmentId: Number(e.target.value) })}
+                  className="col-span-3"
+                  placeholder="Enter appointment ID"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="doctorId" className="text-right">
+                  Doctor ID
+                </Label>
+                <Input
+                  id="doctorId"
+                  type="number"
+                  value={formData.doctorId || ""}
+                  onChange={(e) => setFormData({ ...formData, doctorId: Number(e.target.value) })}
+                  className="col-span-3"
+                  placeholder="Enter doctor ID"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="rating" className="text-right">
                   Rating
                 </Label>
@@ -231,7 +306,20 @@ export default function PatientFeedbackPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button type="submit" onClick={handleCreate}>Submit Feedback</Button>
+              <Button
+                type="submit"
+                onClick={handleCreate}
+                disabled={submitFeedbackMutation.isPending}
+              >
+                {submitFeedbackMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  "Submit Feedback"
+                )}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -306,9 +394,14 @@ export default function PatientFeedbackPage() {
                     <p className="text-sm text-foreground truncate" title={feedback.comment}>
                       {feedback.comment || "No comment"}
                     </p>
+                    {feedback.doctorName && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Dr. {feedback.doctorName}
+                      </p>
+                    )}
                   </TableCell>
                   <TableCell className="py-4 text-sm text-muted-foreground">
-                    {new Date(feedback.timestamp).toLocaleDateString()}
+                    {new Date(feedback.createdAt || feedback.timestamp).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="py-4">
                     <Badge
@@ -394,7 +487,20 @@ export default function PatientFeedbackPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button type="submit" onClick={handleUpdate}>Update Feedback</Button>
+            <Button
+              type="submit"
+              onClick={handleUpdate}
+              disabled={updateFeedbackMutation.isPending}
+            >
+              {updateFeedbackMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                "Update Feedback"
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
