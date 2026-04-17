@@ -108,7 +108,7 @@ const DotGroupRed = ({ activeIndex }: { activeIndex: number }) => (
 
 export default function AdminDashboard() {
   return (
-    <div className="min-h-screen bg-[#fcfcfd] font-sans">
+    <div className="min-h-screen bg-background font-sans p-6">
       <div className="w-full space-y-6">
         {/* Top Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -284,7 +284,7 @@ export default function AdminDashboard() {
               </ResponsiveContainer>
             </div>
 
-            <div className="flex justify-center gap-8 mt-6">
+            <div className="flex justify-center gap-6 mt-6">
               {[
                 { color: "bg-gray-500", label: "Sales revenue" },
                 { color: "bg-gray-900", label: "Sales revenue" },

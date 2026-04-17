@@ -12,9 +12,9 @@ export function DashboardLayoutWrapper({
     <TooltipProvider delayDuration={100}>
       <SidebarProvider>
         <AppSidebar />
-        <main className="flex-1 overflow-auto bg-[#f8fbff] flex flex-col">
+        <main className="flex-1 overflow-auto bg-background flex flex-col">
           <TopHeader />
-          <div className="flex-1 p-8">{children}</div>
+          <div className="flex-1">{children}</div>
         </main>
       </SidebarProvider>
     </TooltipProvider>

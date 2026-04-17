@@ -85,9 +85,8 @@ export default function AppointmentsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">All Appointments</h1>
         <p className="text-gray-600 mt-1">Manage all appointments in the system</p>
       </div>
 

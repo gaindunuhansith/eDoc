@@ -12,6 +12,8 @@ import {
   Package,
   Settings,
   User as UserIcon,
+  Sparkles,
+  Bot
 } from "lucide-react";
 
 import { useUser, useStore } from "@/store/store";
@@ -40,7 +42,7 @@ import {
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { getNavForPathname } from "@/lib/sidebar-nav";
+import { getNavForPathname, getRoleFromPathname } from "@/lib/sidebar-nav";
 
 const marketingItems = [
   { title: "Products", icon: Package },
@@ -67,6 +69,8 @@ export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
   const clearAuth = useStore((s) => s.clearAuth);
 
   const mainNav = getNavForPathname(pathname);
+  const role = getRoleFromPathname(pathname);
+  const aiLink = role === "admin" ? "/patient/edoc-ai" : `/${role}/edoc-ai`;
 
   const handleLogout = () => {
     clearAuth();
@@ -194,13 +198,13 @@ export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
       <SidebarFooter
         className={`p-4 pb-6 space-y-4 ${isCollapsed ? "items-center px-2" : ""}`}
       >
-        {!isCollapsed && showTrialCard && (
+        {role !== "admin" && !isCollapsed && showTrialCard && (
           <div className="rounded-xl border bg-gray-50 p-4 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-2">
               <button
                 type="button"
                 onClick={() => setShowTrialCard(false)}
-                aria-label="Dismiss trial card"
+                aria-label="Dismiss AI card"
                 className="text-gray-400 text-lg leading-none cursor-pointer hover:text-gray-700"
               >
                 &times;
@@ -211,17 +215,18 @@ export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
                 <Hexagon className="h-4 w-4 text-white" />
               </div>
               <span className="text-xs font-bold text-white bg-gray-900 rounded-full px-2 py-1">
-                20 days left
+                NEW FEATURE
               </span>
             </div>
             <p className="text-xs text-gray-600 mb-4 font-medium leading-relaxed">
-              Upgrade to premium and enjoy the benefits for a long time
+              Try our new flashy AI diagnostic feature to analyze symptoms instantly.
             </p>
             <Button
               variant="outline"
+              asChild
               className="w-full bg-white text-gray-900 hover:bg-gray-100 font-semibold border-gray-200"
             >
-              View plan
+              <Link href={aiLink}>Open eDoc AI</Link>
             </Button>
           </div>
         )}

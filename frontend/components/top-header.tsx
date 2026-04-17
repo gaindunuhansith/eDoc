@@ -42,7 +42,12 @@ export function TopHeader() {
     if (pathname.includes("/prescriptions")) return "Prescriptions";
     if (pathname.includes("/payments")) return "Payments";
     if (pathname.includes("/users")) return "Users";
-    return "Dashboard";
+    if (pathname.includes("/edoc-ai") || pathname.includes("/ai-assistant")) return "eDoc AI";
+    if (pathname.includes("/telemedicine")) return "Telemedicine";
+    if (pathname.includes("/feedback")) return "Feedback";
+    if (pathname.includes("/confirm-order")) return "Confirm Order";
+    if (pathname === "/admin" || pathname === "/doctor" || pathname === "/patient") return "Dashboard";
+    return "";
   };
 
   return (
