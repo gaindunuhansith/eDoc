@@ -12,7 +12,7 @@ import com.edoc.notificationservice.dto.NotificationResponse;
 import com.edoc.notificationservice.service.NotificationService;
 
 @RestController
-@RequestMapping("/notifications")
+@RequestMapping("/api/v1/notifications")
 public class NotificationController {
 
     private final NotificationService notificationService;
