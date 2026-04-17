@@ -17,10 +17,14 @@ import {
   Settings,
   Users
 } from "lucide-react";
+import { telemedicineWebSocket, WebSocketMessage } from "@/api/utils/telemedicineWebSocket";
+import { useStore } from "@/store/store";
+import { toast } from "sonner";
 
 interface VideoCallProps {
   token: string;
   roomName: string;
+  appointmentId: string;
   onLeaveCall: () => void;
   userName?: string;
 }
@@ -32,7 +36,14 @@ interface ParticipantInfo {
   isLocal: boolean;
 }
 
-export function VideoCall({ token, roomName, onLeaveCall, userName }: VideoCallProps) {
+interface ParticipantInfo {
+  identity: string;
+  videoTrack?: any;
+  audioTrack?: any;
+  isLocal: boolean;
+}
+
+export function VideoCall({ token, roomName, appointmentId, onLeaveCall, userName }: VideoCallProps) {
   const [room, setRoom] = useState<Room | null>(null);
   const [participants, setParticipants] = useState<ParticipantInfo[]>([]);
   const [isConnected, setIsConnected] = useState(false);
@@ -40,18 +51,71 @@ export function VideoCall({ token, roomName, onLeaveCall, userName }: VideoCallP
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [webSocketConnected, setWebSocketConnected] = useState(false);
 
   const localVideoRef = useRef<HTMLDivElement>(null);
   const remoteVideosRef = useRef<HTMLDivElement>(null);
+  const user = useStore.getState().user;
 
   useEffect(() => {
     connectToRoom();
+    connectWebSocket();
+
     return () => {
       if (room) {
         room.disconnect();
       }
+      telemedicineWebSocket.disconnect();
     };
-  }, [token, roomName]);
+  }, [token, roomName, appointmentId]);
+
+  const connectWebSocket = async () => {
+    try {
+      const authToken = localStorage.getItem('token');
+      await telemedicineWebSocket.connect(authToken || undefined);
+      setWebSocketConnected(true);
+
+      // Subscribe to session messages
+      telemedicineWebSocket.subscribeToSession(appointmentId, handleWebSocketMessage);
+
+      // Join the session
+      if (user?.userId) {
+        telemedicineWebSocket.joinSession(appointmentId, user.userId);
+      }
+
+      // Start health checks for connection monitoring
+      telemedicineWebSocket.startHealthChecks();
+
+    } catch (error) {
+      console.error('Failed to connect to WebSocket:', error);
+      toast.error('Failed to connect to real-time updates');
+    }
+  };
+
+  const handleWebSocketMessage = (message: WebSocketMessage) => {
+    console.log('Received WebSocket message:', message);
+
+    switch (message.type) {
+      case 'PARTICIPANT_JOINED':
+        toast.success(`${message.userId} joined the session`);
+        break;
+      case 'PARTICIPANT_LEFT':
+        toast.info(`${message.userId} left the session`);
+        break;
+      case 'SESSION_STARTED':
+        toast.success('Session has started');
+        break;
+      case 'SESSION_ENDED':
+        toast.info('Session has ended');
+        onLeaveCall();
+        break;
+      case 'SESSION_STATUS_UPDATE':
+        // Handle session status updates if needed
+        break;
+      default:
+        console.log('Unknown message type:', message.type);
+    }
+  };
 
   const connectToRoom = async () => {
     try {
@@ -232,6 +296,13 @@ export function VideoCall({ token, roomName, onLeaveCall, userName }: VideoCallP
     if (room) {
       room.disconnect();
     }
+
+    // Leave WebSocket session
+    if (user?.userId) {
+      telemedicineWebSocket.leaveSession(appointmentId, user.userId);
+    }
+
+    telemedicineWebSocket.disconnect();
     onLeaveCall();
   };
 
@@ -263,7 +334,10 @@ export function VideoCall({ token, roomName, onLeaveCall, userName }: VideoCallP
         </div>
         <div className="flex items-center gap-2">
           <Badge className={isConnected ? "bg-green-600" : "bg-red-600"}>
-            {isConnected ? "Connected" : "Connecting..."}
+            {isConnected ? "Video Connected" : "Video Connecting..."}
+          </Badge>
+          <Badge className={webSocketConnected ? "bg-blue-600" : "bg-gray-600"}>
+            {webSocketConnected ? "Real-time Connected" : "Real-time Connecting..."}
           </Badge>
           <div className="flex items-center gap-1 text-sm text-gray-300">
             <Users className="h-4 w-4" />

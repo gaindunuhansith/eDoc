@@ -244,6 +244,7 @@ export const startSession = async (appointmentId: string) => {
     const response = await apiClient.put<TelemedicineSession>(
       TELEMEDICINE_ENDPOINTS.START_SESSION(appointmentId)
     );
+    showTelemedicineSuccessToast("Session started successfully", "The telemedicine session has begun");
     return response;
   } catch (error) {
     throw handleTelemedicineError(error, "startSession");
@@ -254,6 +255,7 @@ export const endSession = async (appointmentId: string) => {
   try {
     checkTelemedicineAccess();
     const response = await apiClient.put<TelemedicineSession>(TELEMEDICINE_ENDPOINTS.END_SESSION(appointmentId));
+    showTelemedicineSuccessToast("Session ended successfully", "The telemedicine session has been completed");
     return response;
   } catch (error) {
     throw handleTelemedicineError(error, "endSession");

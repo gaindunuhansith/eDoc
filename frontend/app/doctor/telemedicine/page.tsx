@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SessionCard } from "@/components/telemedicine";
 import { Video, Calendar, Clock, CheckCircle, AlertCircle, Play, Square } from "lucide-react";
 import { useGetSessions, useStartSession, useEndSession } from "@/api/telemedicineApi";
+import { telemedicineWebSocket, WebSocketMessage } from "@/api/utils/telemedicineWebSocket";
 import { toast } from "sonner";
 
 export default function DoctorTelemedicinePage() {
@@ -15,8 +16,50 @@ export default function DoctorTelemedicinePage() {
   const startSessionMutation = useStartSession();
   const endSessionMutation = useEndSession();
   const [activeTab, setActiveTab] = useState("upcoming");
+  const [webSocketConnected, setWebSocketConnected] = useState(false);
 
-  // Transform API data to match SessionCard interface
+  useEffect(() => {
+    connectWebSocket();
+
+    return () => {
+      telemedicineWebSocket.disconnect();
+    };
+  }, []);
+
+  const connectWebSocket = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      await telemedicineWebSocket.connect(token || undefined);
+      setWebSocketConnected(true);
+
+      // Subscribe to all sessions for real-time updates
+      sessions.forEach(session => {
+        telemedicineWebSocket.subscribeToSession(session.appointmentId, handleWebSocketMessage);
+      });
+    } catch (error) {
+      console.error('Failed to connect to WebSocket:', error);
+    }
+  };
+
+  const handleWebSocketMessage = (message: WebSocketMessage) => {
+    console.log('Doctor page received WebSocket message:', message);
+
+    switch (message.type) {
+      case 'SESSION_STARTED':
+        toast.success(`Session ${message.appointmentId} has started`);
+        refetch(); // Refresh the sessions list
+        break;
+      case 'SESSION_ENDED':
+        toast.info(`Session ${message.appointmentId} has ended`);
+        refetch(); // Refresh the sessions list
+        break;
+      case 'SESSION_STATUS_UPDATE':
+        refetch(); // Refresh the sessions list for status updates
+        break;
+      default:
+        console.log('Unknown message type:', message.type);
+    }
+  };
   const transformedSessions = sessions.map(session => ({
     id: session.id,
     appointmentId: session.appointmentId,
@@ -92,6 +135,9 @@ export default function DoctorTelemedicinePage() {
             </p>
           </div>
           <div className="flex gap-3">
+            <Badge className={webSocketConnected ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+              {webSocketConnected ? "Real-time Connected" : "Real-time Disconnected"}
+            </Badge>
             <Button variant="outline" className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               Schedule New
