@@ -15,6 +15,8 @@ import {
   Calendar,
   Activity,
   CheckCircle2,
+  MessageSquare,
+  Star,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -33,6 +35,7 @@ import { Badge } from "@/components/ui/badge";
 
 import { useStore } from "@/store/store";
 import { useRegisterPatient, useGetMyPatientProfile, type PatientPayload } from "@/api/patientApi";
+import { useGetFeedbackByPatient } from "@/api/feedbackApi";
 import { markProfileCreated } from "@/api/userApi";
 
 // ─── Profile Creation Form ────────────────────────────────────────────────────
@@ -285,9 +288,25 @@ function ProfileCreationForm() {
 
 function PatientDashboardContent() {
   const user = useStore((s) => s.user);
-  const { data: profile, isLoading } = useGetMyPatientProfile();
+  const { data: profile, isLoading: profileLoading } = useGetMyPatientProfile();
+  const { data: feedbacks = [] } = useGetFeedbackByPatient(user?.userId || "");
 
-  if (isLoading) {
+  // Calculate feedback statistics
+  const feedbackStats = React.useMemo(() => {
+    const totalFeedbacks = feedbacks.length;
+    const averageRating = totalFeedbacks > 0
+      ? feedbacks.reduce((sum, f) => sum + f.rating, 0) / totalFeedbacks
+      : 0;
+    const approvedFeedbacks = feedbacks.filter(f => f.status === 'APPROVED').length;
+
+    return {
+      totalFeedbacks,
+      averageRating: Math.round(averageRating * 10) / 10, // Round to 1 decimal
+      approvedFeedbacks,
+    };
+  }, [feedbacks]);
+
+  if (profileLoading) {
     return (
       <div className="w-full h-full p-6 lg:p-10 space-y-6 animate-pulse">
         <div className="h-8 w-48 bg-muted rounded" />
@@ -376,13 +395,45 @@ function PatientDashboardContent() {
         <Card className="border-border/60">
           <CardContent className="pt-5 pb-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-500/10">
-                <Calendar className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              <div className="p-2 rounded-lg bg-green-50 dark:bg-green-500/10">
+                <MessageSquare className="w-4 h-4 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground font-medium">Date of Birth</p>
+                <p className="text-xs text-muted-foreground font-medium">Feedback Given</p>
                 <p className="text-sm font-semibold text-foreground">
-                  {profile?.dateOfBirth ?? "—"}
+                  {feedbackStats.totalFeedbacks} reviews
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/60">
+          <CardContent className="pt-5 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-yellow-50 dark:bg-yellow-500/10">
+                <Star className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">Average Rating</p>
+                <p className="text-sm font-semibold text-foreground">
+                  {feedbackStats.averageRating > 0 ? `${feedbackStats.averageRating} ⭐` : "No ratings yet"}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/60">
+          <CardContent className="pt-5 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-500/10">
+                <CheckCircle2 className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">Approved Reviews</p>
+                <p className="text-sm font-semibold text-foreground">
+                  {feedbackStats.approvedFeedbacks} approved
                 </p>
               </div>
             </div>

@@ -4,28 +4,45 @@ import apiClient from "./utils/axiosInstance";
 import { FEEDBACK_ENDPOINTS } from "./utils/endpoints";
 import { queryKeys } from "./utils/queryKeys";
 
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+export type FeedbackStatus = "PENDING" | "APPROVED" | "REJECTED";
+
 export interface Feedback {
   id: number;
   patientId: number;
+  patientName?: string;
   doctorId: number;
+  doctorName?: string;
   appointmentId: number;
   rating: number;
   comment?: string;
   timestamp: string;
-  status: "PENDING" | "APPROVED" | "REJECTED";
+  status: FeedbackStatus;
+  createdAt: string;
+  updatedAt?: string;
 }
 
-export interface CreateFeedbackPayload {
+export interface FeedbackPayload {
   appointmentId: number;
   doctorId: number;
   rating: number;
   comment?: string;
 }
 
-export interface SubmitFeedbackArgs {
-  patientId: number;
-  payload: CreateFeedbackPayload;
+export interface UpdateFeedbackPayload {
+  rating?: number;
+  comment?: string;
+  status?: FeedbackStatus;
 }
+
+// ─── API Functions ────────────────────────────────────────────────────────────
+
+export const submitFeedback = (payload: FeedbackPayload) =>
+  apiClient.post<Feedback>(FEEDBACK_ENDPOINTS.SUBMIT, payload);
+
+export const fetchFeedbackById = (id: string) =>
+  apiClient.get<Feedback>(FEEDBACK_ENDPOINTS.GET_BY_ID(id));
 
 export const fetchFeedbackByPatient = (patientId: string) =>
   apiClient.get<Feedback[]>(FEEDBACK_ENDPOINTS.BY_PATIENT(patientId));
@@ -33,31 +50,65 @@ export const fetchFeedbackByPatient = (patientId: string) =>
 export const fetchFeedbackByDoctor = (doctorId: string) =>
   apiClient.get<Feedback[]>(FEEDBACK_ENDPOINTS.BY_DOCTOR(doctorId));
 
-export const fetchFeedbackById = (id: string) =>
-  apiClient.get<Feedback>(FEEDBACK_ENDPOINTS.GET_BY_ID(id));
+export const fetchFeedbackByAppointment = (appointmentId: string) =>
+  apiClient.get<Feedback>(FEEDBACK_ENDPOINTS.BY_APPOINTMENT(appointmentId));
 
-export const submitFeedback = ({ patientId, payload }: SubmitFeedbackArgs) =>
-  apiClient.post<Feedback>(
-    `${FEEDBACK_ENDPOINTS.SUBMIT}?patientId=${patientId}`,
-    payload
-  );
-
-export const updateFeedback = ({
-  id,
-  payload,
-}: {
-  id: string;
-  payload: Partial<CreateFeedbackPayload>;
-}) => apiClient.put<Feedback>(FEEDBACK_ENDPOINTS.UPDATE(id), payload);
+export const updateFeedback = (id: string, payload: UpdateFeedbackPayload) =>
+  apiClient.put<Feedback>(FEEDBACK_ENDPOINTS.UPDATE(id), payload);
 
 export const deleteFeedback = (id: string) =>
   apiClient.delete(FEEDBACK_ENDPOINTS.DELETE(id));
+
+// ─── Hooks ────────────────────────────────────────────────────────────────────
+
+// ─── Hooks ────────────────────────────────────────────────────────────────────
+
+export const useSubmitFeedback = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: submitFeedback,
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: queryKeys.feedback.byPatient(String(data.data.patientId)) });
+      qc.invalidateQueries({ queryKey: queryKeys.feedback.byDoctor(String(data.data.doctorId)) });
+    },
+    onError: (error: any) => {
+      // Enhanced error handling
+      if (error?.response?.status === 409) {
+        throw new Error("Feedback already exists for this appointment");
+      } else if (error?.response?.status === 400) {
+        throw new Error("Invalid feedback data. Please check your input.");
+      } else if (error?.response?.status === 404) {
+        throw new Error("Appointment or doctor not found.");
+      } else if (!error?.response) {
+        throw new Error("Network error. Please check your connection and try again.");
+      } else {
+        throw new Error("Failed to submit feedback. Please try again.");
+      }
+    },
+  });
+};
+
+export const useGetFeedbackById = (id: string) =>
+  useQuery({
+    queryKey: queryKeys.feedback.detail(id),
+    queryFn: () => fetchFeedbackById(id).then((r) => r.data),
+    enabled: !!id,
+  });
 
 export const useGetFeedbackByPatient = (patientId: string) =>
   useQuery({
     queryKey: queryKeys.feedback.byPatient(patientId),
     queryFn: () => fetchFeedbackByPatient(patientId).then((r) => r.data),
     enabled: !!patientId,
+    retry: (failureCount, error: any) => {
+      // Don't retry on 4xx errors (client errors)
+      if (error?.response?.status >= 400 && error?.response?.status < 500) {
+        return false;
+      }
+      // Retry up to 3 times for other errors
+      return failureCount < 3;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
 export const useGetFeedbackByDoctor = (doctorId: string) =>
@@ -67,31 +118,33 @@ export const useGetFeedbackByDoctor = (doctorId: string) =>
     enabled: !!doctorId,
   });
 
-export const useGetFeedbackById = (id: string) =>
+export const useGetFeedbackByAppointment = (appointmentId: string) =>
   useQuery({
-    queryKey: queryKeys.feedback.detail(id),
-    queryFn: () => fetchFeedbackById(id).then((r) => r.data),
-    enabled: !!id,
+    queryKey: queryKeys.feedback.detail(appointmentId),
+    queryFn: () => fetchFeedbackByAppointment(appointmentId).then((r) => r.data),
+    enabled: !!appointmentId,
   });
-
-export const useSubmitFeedback = () => {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: submitFeedback,
-    onSuccess: (_, { patientId }) => {
-      qc.invalidateQueries({
-        queryKey: queryKeys.feedback.byPatient(String(patientId)),
-      });
-    },
-  });
-};
 
 export const useUpdateFeedback = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: updateFeedback,
-    onSuccess: (_, { id }) => {
-      qc.invalidateQueries({ queryKey: queryKeys.feedback.detail(id) });
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateFeedbackPayload }) =>
+      updateFeedback(id, payload),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: queryKeys.feedback.detail(data.data.id.toString()) });
+      qc.invalidateQueries({ queryKey: queryKeys.feedback.byPatient(String(data.data.patientId)) });
+      qc.invalidateQueries({ queryKey: queryKeys.feedback.byDoctor(String(data.data.doctorId)) });
+    },
+    onError: (error: any) => {
+      if (error?.response?.status === 404) {
+        throw new Error("Feedback not found.");
+      } else if (error?.response?.status === 400) {
+        throw new Error("Invalid feedback data. Please check your input.");
+      } else if (!error?.response) {
+        throw new Error("Network error. Please check your connection and try again.");
+      } else {
+        throw new Error("Failed to update feedback. Please try again.");
+      }
     },
   });
 };
@@ -102,6 +155,17 @@ export const useDeleteFeedback = () => {
     mutationFn: deleteFeedback,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.feedback.all });
+    },
+    onError: (error: any) => {
+      if (error?.response?.status === 404) {
+        throw new Error("Feedback not found.");
+      } else if (error?.response?.status === 403) {
+        throw new Error("You don't have permission to delete this feedback.");
+      } else if (!error?.response) {
+        throw new Error("Network error. Please check your connection and try again.");
+      } else {
+        throw new Error("Failed to delete feedback. Please try again.");
+      }
     },
   });
 };

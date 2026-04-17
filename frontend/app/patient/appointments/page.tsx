@@ -35,6 +35,9 @@ import {
   type Appointment,
   type AppointmentStatus,
 } from "@/api/appointmentApi";
+import { useGetFeedbackByAppointment, useGetFeedbackByPatient } from "@/api/feedbackApi";
+import { MessageSquare, Star } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -86,12 +89,15 @@ function TableSkeleton() {
 export default function AppointmentsPage() {
   const [tab, setTab] = useState<TabFilter>("ALL");
   const [cancelTarget, setCancelTarget] = useState<Appointment | null>(null);
+  const router = useRouter();
 
   const { data: patient, isLoading: patientLoading } = useGetMyPatientProfile();
   const patientId = patient?.id ? String(patient.id) : "";
 
   const { data: appointments = [], isLoading: apptLoading } =
     useGetAppointmentsByPatient(patientId);
+
+  const { data: feedbackData, isLoading: feedbackLoading, error: feedbackError } = useGetFeedbackByPatient(patient?.id ? String(patient.id) : "");
 
   const cancelMutation = useCancelAppointment();
 
@@ -118,6 +124,30 @@ export default function AppointmentsPage() {
   const canCancel = (status: AppointmentStatus) =>
     status === "PENDING" || status === "CONFIRMED";
 
+  // Check if feedback exists for an appointment
+  const checkFeedbackExists = (appointmentId: string) => {
+    if (feedbackLoading || feedbackError) return false; // Show button while loading or on error
+    if (!feedbackData) return false;
+    return feedbackData.some(feedback => feedback.appointmentId === Number(appointmentId));
+  };
+
+  const handleLeaveFeedback = (appointment: Appointment) => {
+    // Validate appointment data
+    if (!appointment.id || !appointment.doctorId) {
+      toast.error("Invalid appointment data. Please refresh and try again.");
+      return;
+    }
+
+    // Check if feedback already exists (double-check)
+    if (checkFeedbackExists(appointment.id.toString())) {
+      toast.error("Feedback already exists for this appointment.");
+      return;
+    }
+
+    // Navigate to feedback creation with appointment data
+    router.push(`/patient/feedback/submit/${appointment.id}?doctorId=${appointment.doctorId}&doctorName=${appointment.doctorName || 'Doctor'}`);
+  };
+
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
@@ -135,6 +165,36 @@ export default function AppointmentsPage() {
           <TabsTrigger value="CANCELLED">Cancelled</TabsTrigger>
         </TabsList>
       </Tabs>
+
+      {/* Feedback Summary */}
+      {filtered.some(appt => appt.status === "COMPLETED") && (
+        <Card className="bg-blue-50 border-blue-200">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-medium text-blue-900">Feedback Summary</span>
+              </div>
+              <div className="flex items-center gap-4 text-sm">
+                <span className="text-blue-700">
+                  {filtered.filter(appt => appt.status === "COMPLETED" && checkFeedbackExists(appt.id)).length} of{" "}
+                  {filtered.filter(appt => appt.status === "COMPLETED").length} completed appointments have feedback
+                </span>
+                {(() => {
+                  const completedCount = filtered.filter(appt => appt.status === "COMPLETED").length;
+                  const feedbackCount = filtered.filter(appt => appt.status === "COMPLETED" && checkFeedbackExists(appt.id)).length;
+                  const percentage = completedCount > 0 ? Math.round((feedbackCount / completedCount) * 100) : 0;
+                  return (
+                    <span className={`font-medium ${percentage === 100 ? 'text-green-600' : percentage >= 50 ? 'text-blue-600' : 'text-orange-600'}`}>
+                      {percentage}% completion rate
+                    </span>
+                  );
+                })()}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Table */}
       <Card className="bg-white border border-gray-200 shadow-none">
@@ -168,6 +228,7 @@ export default function AppointmentsPage() {
                   <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Type</TableHead>
                   <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Fee</TableHead>
                   <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</TableHead>
+                  <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Feedback</TableHead>
                   <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wide text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -227,6 +288,23 @@ export default function AppointmentsPage() {
                           {badge.label}
                         </Badge>
                       </TableCell>
+                      <TableCell>
+                        {appt.status === "COMPLETED" ? (
+                          checkFeedbackExists(appt.id) ? (
+                            <div className="flex items-center gap-1 text-green-600">
+                              <MessageSquare className="h-3.5 w-3.5" />
+                              <span className="text-xs font-medium">Submitted</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1 text-orange-600">
+                              <Star className="h-3.5 w-3.5" />
+                              <span className="text-xs font-medium">Pending</span>
+                            </div>
+                          )
+                        ) : (
+                          <span className="text-xs text-gray-400">—</span>
+                        )}
+                      </TableCell>
                       <TableCell className="text-right">
                         {canCancel(appt.status) && (
                           <Button
@@ -239,8 +317,22 @@ export default function AppointmentsPage() {
                             Cancel
                           </Button>
                         )}
-                        {appt.status === "COMPLETED" && (
-                          <span className="text-xs text-gray-400">Completed</span>
+                        {appt.status === "COMPLETED" && !checkFeedbackExists(appt.id) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 h-8 px-3"
+                            onClick={() => handleLeaveFeedback(appt)}
+                          >
+                            <Star className="h-3.5 w-3.5 mr-1" />
+                            Leave Feedback
+                          </Button>
+                        )}
+                        {appt.status === "COMPLETED" && checkFeedbackExists(appt.id) && (
+                          <div className="flex items-center gap-1 text-green-600 text-sm">
+                            <MessageSquare className="h-3.5 w-3.5" />
+                            Feedback Submitted
+                          </div>
                         )}
                       </TableCell>
                     </TableRow>

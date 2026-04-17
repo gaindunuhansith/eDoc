@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { FeedbackForm } from "@/components/feedback";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,8 +15,13 @@ import { toast } from "sonner";
 export default function SubmitFeedbackPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const appointmentIdStr = params.appointmentId as string;
   const [submitted, setSubmitted] = useState(false);
+
+  // Get data from URL params or search params
+  const doctorId = searchParams.get('doctorId');
+  const doctorName = searchParams.get('doctorName');
 
   const { data: appointment, isLoading: apptLoading } =
     useGetAppointmentById(appointmentIdStr);
@@ -26,21 +31,35 @@ export default function SubmitFeedbackPage() {
   const isLoading = apptLoading || profileLoading;
 
   const handleSubmit = (rating: number, comment: string) => {
-    if (!patient?.id || !appointment) return;
+    if (!patient?.id) {
+      toast.error("Patient profile not loaded. Please refresh and try again.");
+      return;
+    }
+
+    if (rating < 1 || rating > 5) {
+      toast.error("Please provide a rating between 1 and 5 stars.");
+      return;
+    }
+
+    const finalDoctorId = doctorId ? Number(doctorId) : (appointment ? Number(appointment.doctorId) : null);
+    if (!finalDoctorId) {
+      toast.error("Doctor information not available. Please try again.");
+      return;
+    }
 
     submitFeedback(
       {
-        patientId: patient.id,
-        payload: {
-          appointmentId: Number(appointmentIdStr),
-          doctorId: Number(appointment.doctorId),
-          rating,
-          comment: comment || undefined,
-        },
+        appointmentId: Number(appointmentIdStr),
+        doctorId: finalDoctorId,
+        rating,
+        comment: comment || undefined,
       },
       {
         onSuccess: () => setSubmitted(true),
-        onError: () => toast.error("Failed to submit feedback. Please try again."),
+        onError: (error: any) => {
+          toast.error(error?.message || "Failed to submit feedback. Please try again.");
+          console.error("Submit feedback error:", error);
+        },
       }
     );
   };
@@ -85,7 +104,28 @@ export default function SubmitFeedbackPage() {
       <div className="p-6">
         <Card className="bg-white border border-gray-200">
           <CardContent className="pt-6">
-            <p className="text-red-600">Appointment not found.</p>
+            <div className="text-center space-y-4">
+              <div className="text-red-600">
+                <p className="font-medium">Appointment not found</p>
+                <p className="text-sm mt-1">
+                  The appointment you're trying to provide feedback for doesn't exist or has been removed.
+                </p>
+              </div>
+              <div className="flex gap-2 justify-center">
+                <Button
+                  onClick={() => router.push("/patient/appointments")}
+                  variant="outline"
+                >
+                  View My Appointments
+                </Button>
+                <Button
+                  onClick={() => router.back()}
+                  variant="ghost"
+                >
+                  Go Back
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -112,7 +152,8 @@ export default function SubmitFeedbackPage() {
 
       <FeedbackForm
         appointmentId={Number(appointmentIdStr)}
-        doctorId={Number(appointment.doctorId)}
+        doctorId={doctorId ? Number(doctorId) : Number(appointment.doctorId)}
+        doctorName={doctorName || appointment.doctorName}
         onSubmit={handleSubmit}
         isLoading={isPending}
       />
