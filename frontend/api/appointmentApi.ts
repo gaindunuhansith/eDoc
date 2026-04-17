@@ -23,6 +23,7 @@ export type PaymentStatus =
 export interface Appointment {
   id: string;
   patientId: string;
+  patientName?: string;
   doctorId: string;
   doctorName?: string;
   doctorSpecialty?: string;
@@ -46,6 +47,7 @@ export interface Appointment {
 
 export interface CreateAppointmentPayload {
   patientId: string;
+  patientName?: string;
   doctorId: string;
   appointmentDate: string;   // "YYYY-MM-DD"
   timeSlot: string;          // "09:00-09:30"

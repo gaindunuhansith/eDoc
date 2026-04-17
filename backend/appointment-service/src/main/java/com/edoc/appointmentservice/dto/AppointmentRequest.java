@@ -29,4 +29,6 @@ public class AppointmentRequest {
     private Appointment.AppointmentType type;
 
     private String reasonForVisit;
+
+    private String patientName;   // passed by frontend for display in doctor dashboard
 }

@@ -41,9 +41,10 @@ export const DOCTOR_ENDPOINTS = {
   AVAILABILITY: (id: string) => `/api/v1/doctors/${id}/availability`,
   DELETE_AVAILABILITY: (id: string, day: string) => `/api/v1/doctors/${id}/availability/${day}`,
   
-  PRESCRIPTIONS: "/api/v1/prescriptions",
+  PRESCRIPTIONS_BY_DOCTOR: (doctorId: string) => `/api/v1/prescriptions/doctor/${doctorId}`,
+  PRESCRIPTIONS_BY_APPOINTMENT: (appointmentId: string) => `/api/v1/prescriptions/appointment/${appointmentId}`,
   PRESCRIPTION_BY_ID: (id: string) => `/api/v1/prescriptions/${id}`,
-  CREATE_PRESCRIPTION: "/api/v1/prescriptions",
+  CREATE_PRESCRIPTION: (doctorId: string) => `/api/v1/prescriptions/${doctorId}`,
   UPDATE_PRESCRIPTION: (id: string) => `/api/v1/prescriptions/${id}`,
 } as const;
 

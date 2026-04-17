@@ -37,14 +37,24 @@ export interface DoctorAvailability {
   isActive: boolean;
 }
 
+export interface Medicine {
+  name: string;
+  dosage: string;
+  frequency: string;
+  duration: string;
+  instructions?: string;
+}
+
 export interface Prescription {
   id: string;
   doctorId: string;
   patientId: string;
   appointmentId?: string;
-  medications: { name: string; dosage: string; frequency: string }[];
+  diagnosis?: string;
   notes?: string;
+  medicines: Medicine[];
   issuedAt: string;
+  validUntil?: string;
 }
 
 export interface CreateDoctorPayload {
@@ -67,8 +77,9 @@ export type UpdateDoctorPayload = Partial<CreateDoctorPayload>;
 export interface CreatePrescriptionPayload {
   patientId: string;
   appointmentId?: string;
-  medications: { name: string; dosage: string; frequency: string }[];
+  diagnosis?: string;
   notes?: string;
+  medicines: Medicine[];
 }
 
 export const fetchMyDoctorProfile = () =>
@@ -104,14 +115,14 @@ export const setDoctorAvailability = (id: string, payload: { dayOfWeek: string; 
 
 export const deleteDoctorAvailability = (id: string, day: string) =>
   apiClient.delete(DOCTOR_ENDPOINTS.DELETE_AVAILABILITY(id, day));
-export const fetchPrescriptions = () =>
-  apiClient.get<Prescription[]>(DOCTOR_ENDPOINTS.PRESCRIPTIONS);
+export const fetchPrescriptionsByDoctor = (doctorId: string) =>
+  apiClient.get<Prescription[]>(DOCTOR_ENDPOINTS.PRESCRIPTIONS_BY_DOCTOR(doctorId));
 
 export const fetchPrescriptionById = (id: string) =>
   apiClient.get<Prescription>(DOCTOR_ENDPOINTS.PRESCRIPTION_BY_ID(id));
 
-export const createPrescription = (payload: CreatePrescriptionPayload) =>
-  apiClient.post<Prescription>(DOCTOR_ENDPOINTS.CREATE_PRESCRIPTION, payload);
+export const createPrescription = ({ doctorId, payload }: { doctorId: string; payload: CreatePrescriptionPayload }) =>
+  apiClient.post<Prescription>(DOCTOR_ENDPOINTS.CREATE_PRESCRIPTION(doctorId), payload);
 
 export const updatePrescription = ({
   id,
@@ -184,7 +195,14 @@ export const useDeleteDoctorAvailability = () => {
 export const useGetAllPrescriptions = () =>
   useQuery({
     queryKey: queryKeys.doctor.prescriptions.all,
-    queryFn: () => fetchPrescriptions().then((r) => r.data),
+    queryFn: () => fetchPrescriptionsByDoctor("").then((r) => r.data),
+  });
+
+export const useGetPrescriptionsByDoctor = (doctorId: string) =>
+  useQuery({
+    queryKey: [...queryKeys.doctor.prescriptions.all, doctorId],
+    queryFn: () => fetchPrescriptionsByDoctor(doctorId).then((r) => r.data),
+    enabled: !!doctorId,
   });
 
 export const useGetPrescriptionById = (id: string) =>

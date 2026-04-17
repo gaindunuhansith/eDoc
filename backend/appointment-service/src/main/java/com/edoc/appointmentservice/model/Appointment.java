@@ -19,6 +19,7 @@ public class Appointment {
     private String id;
 
     private String patientId;
+    private String patientName;    // snapshot from user-service at booking time
     private String doctorId;
 
     // Doctor details snapshot - we store these so if doctor

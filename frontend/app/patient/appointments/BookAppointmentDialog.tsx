@@ -42,6 +42,7 @@ import {
   type Doctor,
 } from "@/api/doctorApi";
 import { useCreateAppointment, type AppointmentType } from "@/api/appointmentApi";
+import { useStore } from "@/store/store";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -430,6 +431,7 @@ export function BookAppointmentDialog({
   const [reason, setReason] = useState<string>("");
 
   const createAppointment = useCreateAppointment();
+  const user = useStore((s) => s.user);
 
   function reset() {
     setStep(1);
@@ -457,6 +459,7 @@ export function BookAppointmentDialog({
     createAppointment.mutate(
       {
         patientId,
+        patientName: user?.name,
         doctorId: selectedDoctor.id,
         appointmentDate: format(selectedDate, "yyyy-MM-dd"),
         timeSlot: selectedSlot,

@@ -158,7 +158,9 @@ function AppointmentCard({ appt, onAccept, onReject, onComplete, onGoToSession }
       <CardHeader className="pb-2 flex flex-row items-start justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
           <User className="w-4 h-4 text-muted-foreground shrink-0" />
-          <span className="font-medium text-sm truncate">Patient ID: {appt.patientId}</span>
+          <span className="font-medium text-sm truncate">
+            {appt.patientName ?? `Patient #${appt.patientId}`}
+          </span>
         </div>
         <Badge className={`shrink-0 text-xs border ${badge.className}`}>{badge.label}</Badge>
       </CardHeader>
