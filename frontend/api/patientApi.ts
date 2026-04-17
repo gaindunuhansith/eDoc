@@ -10,7 +10,7 @@ export type PatientStatus = "ACTIVE" | "INACTIVE" | "SUSPENDED";
 
 export interface Patient {
   id: number;
-  userId: number;
+  userId: string;
   phone?: string;
   dateOfBirth?: string;
   address?: string;

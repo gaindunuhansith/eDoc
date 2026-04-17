@@ -48,7 +48,7 @@ public class MedicalReportService {
         this.reportsRoot = Paths.get(reportsDir).toAbsolutePath().normalize();
     }
 
-    public MedicalReportResponseDTO uploadReport(Long patientId,
+    public MedicalReportResponseDTO uploadReport(String userId,
                                                  MultipartFile file,
                                                  MedicalReportRequestDTO request) {
         // Validate input before touching the filesystem.
@@ -56,7 +56,7 @@ public class MedicalReportService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Report file is required.");
         }
 
-        Patient patient = findPatientOrThrow(patientId);
+        Patient patient = findPatientByUserIdOrThrow(userId);
         assertPatientActiveForWrite(patient);
         String storedPath = storeReportFile(file);
 
@@ -76,29 +76,31 @@ public class MedicalReportService {
     }
 
     @Transactional(readOnly = true)
-    public List<MedicalReportResponseDTO> getReportsForPatient(Long patientId) {
+    public List<MedicalReportResponseDTO> getReportsForPatient(String userId) {
         // Ensure the patient exists before returning their reports.
-        findPatientOrThrow(patientId);
-        return medicalReportRepository.findByPatientId(patientId).stream()
+        Patient patient = findPatientByUserIdOrThrow(userId);
+        return medicalReportRepository.findByPatientId(patient.getId()).stream()
                 .map(medicalReportMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public MedicalReportResponseDTO getReportForPatient(Long patientId, Long reportId) {
+    public MedicalReportResponseDTO getReportForPatient(String userId, Long reportId) {
         // Ensure the report belongs to the requested patient.
+        Patient patient = findPatientByUserIdOrThrow(userId);
         MedicalReport report = findReportOrThrow(reportId);
-        if (!report.getPatient().getId().equals(patientId)) {
+        if (!report.getPatient().getId().equals(patient.getId())) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Report not found");
         }
         return medicalReportMapper.toResponse(report);
     }
 
     @Transactional(readOnly = true)
-    public ResponseEntity<Resource> getReportFileForPatient(Long patientId, Long reportId) {
+    public ResponseEntity<Resource> getReportFileForPatient(String userId, Long reportId) {
         // Verify access and return the stored report file.
+        Patient patient = findPatientByUserIdOrThrow(userId);
         MedicalReport report = findReportOrThrow(reportId);
-        if (!report.getPatient().getId().equals(patientId)) {
+        if (!report.getPatient().getId().equals(patient.getId())) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Report not found");
         }
         return buildFileResponse(report);
@@ -144,11 +146,19 @@ public class MedicalReportService {
     @Transactional(readOnly = true)
     public List<MedicalReportResponseDTO> getReportsForPatientInternal(Long patientId) {
         // Internal endpoint for staff services to list reports.
-        return getReportsForPatient(patientId);
+        findPatientOrThrow(patientId);
+        return medicalReportRepository.findByPatientId(patientId).stream()
+                .map(medicalReportMapper::toResponse)
+                .collect(Collectors.toList());
     }
 
     private Patient findPatientOrThrow(Long patientId) {
         return patientRepository.findById(patientId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient not found"));
+    }
+
+    private Patient findPatientByUserIdOrThrow(String userId) {
+        return patientRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient not found"));
     }
 

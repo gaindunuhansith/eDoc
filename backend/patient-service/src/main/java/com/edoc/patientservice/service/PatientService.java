@@ -26,7 +26,7 @@ public class PatientService {
         this.patientMapper = patientMapper;
     }
 
-    public PatientResponseDTO registerPatient(PatientRequestDTO request, Long userId) {
+    public PatientResponseDTO registerPatient(PatientRequestDTO request, String userId) {
         // Prevent duplicate profiles for the same user-service account.
         if (patientRepository.existsByUserId(userId)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Patient profile already exists for this user");
@@ -38,7 +38,7 @@ public class PatientService {
     }
 
     @Transactional(readOnly = true)
-    public PatientResponseDTO getPatientByUserId(Long userId) {
+    public PatientResponseDTO getPatientByUserId(String userId) {
         // Return a patient profile by user-service userId.
         return patientMapper.toResponse(findByUserIdOrThrow(userId));
     }
@@ -58,7 +58,7 @@ public class PatientService {
         return response;
     }
 
-    public PatientResponseDTO updatePatientByUserId(Long userId, PatientRequestDTO request) {
+    public PatientResponseDTO updatePatientByUserId(String userId, PatientRequestDTO request) {
         // Replace profile fields for the authenticated user's patient record.
         Patient existing = findByUserIdOrThrow(userId);
         assertActiveForWrite(existing);
@@ -66,9 +66,9 @@ public class PatientService {
         return patientMapper.toResponse(patientRepository.save(existing));
     }
 
-    public PatientResponseDTO changePatientStatusByUserId(Long userId, PatientStatusUpdateRequestDTO request) {
+    public PatientResponseDTO changePatientStatusByUserId(String userId, PatientStatusUpdateRequestDTO request) {
         Patient patient = findByUserIdOrThrow(userId);
-        Long actorId = request.getActedBy() != null ? request.getActedBy() : userId;
+        Long actorId = request.getActedBy();
         return applyStatusChange(patient, request, actorId);
     }
 
@@ -106,7 +106,7 @@ public class PatientService {
         }
     }
 
-    private Patient findByUserIdOrThrow(Long userId) {
+    private Patient findByUserIdOrThrow(String userId) {
         return patientRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient profile not found"));
     }
