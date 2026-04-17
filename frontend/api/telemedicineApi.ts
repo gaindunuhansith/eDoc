@@ -117,12 +117,12 @@ export const handleTelemedicineError = (error: unknown, context: string): Teleme
       case 403:
         return new AuthorizationError();
       case 404:
-        return new SessionNotFoundError(data?.appointmentId || "unknown");
+        return new SessionNotFoundError((data as any)?.appointmentId || "unknown");
       case 409:
-        if (data?.message?.includes("already active")) {
-          return new SessionAlreadyActiveError(data?.appointmentId || "unknown");
+        if ((data as any)?.message?.includes("already active")) {
+          return new SessionAlreadyActiveError((data as any)?.appointmentId || "unknown");
         }
-        return new TelemedicineError(data?.message || "Conflict error", "CONFLICT", status);
+        return new TelemedicineError((data as any)?.message || "Conflict error", "CONFLICT", status);
       case 500:
         return new TelemedicineError(
           "Server error occurred. Please try again later.",
@@ -131,7 +131,7 @@ export const handleTelemedicineError = (error: unknown, context: string): Teleme
         );
       default:
         return new TelemedicineError(
-          data?.message || `Request failed with status ${status}`,
+          (data as any)?.message || `Request failed with status ${status}`,
           "API_ERROR",
           status,
           error

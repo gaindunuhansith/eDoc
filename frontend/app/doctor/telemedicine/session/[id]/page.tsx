@@ -108,8 +108,7 @@ export default function DoctorTelemedicineSessionPage() {
         token={token?.token || ""}
         roomName={token?.roomName || session.roomName || `room-${appointmentId}`}
         onLeaveCall={handleLeaveCall}
-        userName={session.doctorName}
-      />
+        userName={session.doctorName}        appointmentId={appointmentId as string}      />
     );
   }
 
