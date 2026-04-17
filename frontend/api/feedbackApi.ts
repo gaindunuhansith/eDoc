@@ -59,6 +59,9 @@ export interface UpdateFeedbackPayload {
 export const submitFeedback = (payload: FeedbackPayload) =>
   apiClient.post<Feedback>(FEEDBACK_ENDPOINTS.SUBMIT, payload);
 
+export const fetchAllFeedback = () =>
+  apiClient.get<Feedback[]>(FEEDBACK_ENDPOINTS.ALL);
+
 export const fetchFeedbackById = (id: string) =>
   apiClient.get<Feedback>(FEEDBACK_ENDPOINTS.GET_BY_ID(id));
 
@@ -73,6 +76,9 @@ export const fetchFeedbackByAppointment = (appointmentId: string) =>
 
 export const updateFeedback = (id: string, payload: UpdateFeedbackPayload) =>
   apiClient.put<Feedback>(FEEDBACK_ENDPOINTS.UPDATE(id), payload);
+
+export const updateFeedbackStatus = (id: string, status: FeedbackStatus) =>
+  apiClient.patch<Feedback>(FEEDBACK_ENDPOINTS.UPDATE_STATUS(id), null, { params: { status } });
 
 export const deleteFeedback = (id: string) =>
   apiClient.delete(FEEDBACK_ENDPOINTS.DELETE(id));
@@ -105,6 +111,12 @@ export const useSubmitFeedback = () => {
     },
   });
 };
+
+export const useGetAllFeedback = () =>
+  useQuery({
+    queryKey: queryKeys.feedback.lists(),
+    queryFn: () => fetchAllFeedback().then((r) => r.data),
+  });
 
 export const useGetFeedbackById = (id: string) =>
   useQuery({
@@ -142,6 +154,17 @@ export const useGetFeedbackByAppointment = (appointmentId: string) =>
     queryFn: () => fetchFeedbackByAppointment(appointmentId).then((r) => r.data),
     enabled: !!appointmentId,
   });
+
+export const useUpdateFeedbackStatus = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: FeedbackStatus }) =>
+      updateFeedbackStatus(id, status),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.feedback.lists() });
+    },
+  });
+};
 
 export const useUpdateFeedback = () => {
   const qc = useQueryClient();
