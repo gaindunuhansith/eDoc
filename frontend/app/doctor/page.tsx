@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Copy, AlertCircle, Calendar, Users, FileText, Settings, HeartPulse, Stethoscope, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import DoctorAvailability from "@/components/doctor/doctor-availability";
 
 export default function DoctorDashboard() {
   const { data: user, isLoading: userLoading } = useGetCurrentUser();
@@ -194,9 +195,9 @@ export default function DoctorDashboard() {
               <TabsTrigger value="overview" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Overview</TabsTrigger>
               <TabsTrigger value="patients" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">My Patients</TabsTrigger>
               <TabsTrigger value="appointments" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Appointments</TabsTrigger>
-              <TabsTrigger value="settings" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Settings</TabsTrigger>
-            </TabsList>
-            
+                <TabsTrigger value="availability" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Availability</TabsTrigger>
+                <TabsTrigger value="settings" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Settings</TabsTrigger>
+              </TabsList>
             <TabsContent value="overview" className="mt-6 animate-in slide-in-from-bottom-2">
                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                  {/* Dashboard Stat Cards */}
@@ -275,7 +276,9 @@ export default function DoctorDashboard() {
                  </CardContent>
                </Card>
             </TabsContent>
-
+              <TabsContent value="availability" className="mt-6">
+                 <DoctorAvailability doctorId={user?.userId || ""} />
+              </TabsContent>
             <TabsContent value="settings" className="mt-6">
                <Card>
                  <CardHeader>

@@ -99,7 +99,11 @@ export const fetchDoctorsBySpecialty = (specialty: string) =>
 
 export const fetchDoctorAvailability = (id: string) =>
   apiClient.get<DoctorAvailability[]>(DOCTOR_ENDPOINTS.AVAILABILITY(id));
+export const setDoctorAvailability = (id: string, payload: { dayOfWeek: string; timeSlots: Omit<AvailabilityTimeSlot, 'isBooked'>[] }) =>
+  apiClient.post<DoctorAvailability>(DOCTOR_ENDPOINTS.AVAILABILITY(id), payload);
 
+export const deleteDoctorAvailability = (id: string, day: string) =>
+  apiClient.delete(DOCTOR_ENDPOINTS.DELETE_AVAILABILITY(id, day));
 export const fetchPrescriptions = () =>
   apiClient.get<Prescription[]>(DOCTOR_ENDPOINTS.PRESCRIPTIONS);
 
@@ -154,6 +158,28 @@ export const useGetDoctorAvailability = (id: string) =>
     queryFn: () => fetchDoctorAvailability(id).then((r) => r.data),
     enabled: !!id,
   });
+
+export const useSetDoctorAvailability = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: { dayOfWeek: string; timeSlots: Omit<AvailabilityTimeSlot, 'isBooked'>[] } }) =>
+      setDoctorAvailability(id, payload),
+    onSuccess: (_, variables) => {
+      qc.invalidateQueries({ queryKey: queryKeys.doctor.availability(variables.id) });
+    },
+  });
+};
+
+export const useDeleteDoctorAvailability = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, day }: { id: string; day: string }) =>
+      deleteDoctorAvailability(id, day),
+    onSuccess: (_, variables) => {
+      qc.invalidateQueries({ queryKey: queryKeys.doctor.availability(variables.id) });
+    },
+  });
+};
 
 export const useGetAllPrescriptions = () =>
   useQuery({

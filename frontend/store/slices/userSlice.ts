@@ -7,7 +7,7 @@ export interface UserProfile {
   name: string;
   role: "PATIENT" | "DOCTOR" | "ADMIN";
   phoneNumber?: string;
-  isProfileCreated: boolean;
+  isProfileCreated?: boolean;
 }
 
 export interface UserSlice {
