@@ -2,6 +2,7 @@ package com.edoc.patientservice.service;
 
 import com.edoc.patientservice.client.DoctorPrescriptionClient;
 import com.edoc.patientservice.dto.prescription.PrescriptionResponseDTO;
+import com.edoc.patientservice.entity.Patient;
 import com.edoc.patientservice.repository.PatientRepository;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -22,18 +23,24 @@ public class PrescriptionService {
         this.patientRepository = patientRepository;
     }
 
-    public List<PrescriptionResponseDTO> getPrescriptionsForPatient(Long patientId) {
-        assertPatientExists(patientId);
-        return doctorPrescriptionClient.getPrescriptionsByPatient(patientId.toString());
+    public List<PrescriptionResponseDTO> getPrescriptionsForPatient(String userId) {
+        Patient patient = findPatientByUserIdOrThrow(userId);
+        return doctorPrescriptionClient.getPrescriptionsByPatient(patient.getId().toString());
     }
 
     public List<PrescriptionResponseDTO> getPrescriptionsInternal(Long patientId) {
-        return getPrescriptionsForPatient(patientId);
+        assertPatientExists(patientId);
+        return doctorPrescriptionClient.getPrescriptionsByPatient(patientId.toString());
     }
 
     private void assertPatientExists(Long patientId) {
         if (!patientRepository.existsById(patientId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient not found");
         }
+    }
+
+    private Patient findPatientByUserIdOrThrow(String userId) {
+        return patientRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient not found"));
     }
 }

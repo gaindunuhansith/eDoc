@@ -33,19 +33,22 @@ public class NotificationService {
     private final PatientServiceClient patientServiceClient;
     private final UserServiceClient userServiceClient;
     private final DoctorServiceClient doctorServiceClient;
+    private final UserNotificationService userNotificationService;
 
     public NotificationService(ResendEmailClient resendEmailClient,
                                VonageSmsClient vonageSmsClient,
                                NotificationLogRepository notificationLogRepository,
                                PatientServiceClient patientServiceClient,
                                UserServiceClient userServiceClient,
-                               DoctorServiceClient doctorServiceClient) {
+                               DoctorServiceClient doctorServiceClient,
+                               UserNotificationService userNotificationService) {
         this.resendEmailClient = resendEmailClient;
         this.vonageSmsClient = vonageSmsClient;
         this.notificationLogRepository = notificationLogRepository;
         this.patientServiceClient = patientServiceClient;
         this.userServiceClient = userServiceClient;
         this.doctorServiceClient = doctorServiceClient;
+        this.userNotificationService = userNotificationService;
     }
 
     public NotificationResponse send(NotificationRequestDTO request) {
@@ -56,6 +59,7 @@ public class NotificationService {
         // Resolve email and phone from the provided ID
         String email = null;
         String phone = null;
+        String inboxUserId = null; // JWT uid (UUID) for the patient inbox
 
         if (request.patientId() != null) {
             Map<?, ?> patientData = patientServiceClient.getPatientById(request.patientId());
@@ -63,7 +67,8 @@ public class NotificationService {
                 phone = patientData.get("phone") instanceof String s ? s : null;
                 Object userIdObj = patientData.get("userId");
                 if (userIdObj != null) {
-                    UserServiceClient.UserContact user = userServiceClient.getUserById(userIdObj.toString());
+                    inboxUserId = userIdObj.toString();
+                    UserServiceClient.UserContact user = userServiceClient.getUserById(inboxUserId);
                     if (user != null) email = user.email();
                 }
             }
@@ -78,7 +83,7 @@ public class NotificationService {
             if (user != null) email = user.email();
         }
 
-        if ((email == null || email.isBlank()) && (phone == null || phone.isBlank())) {
+        if ((email == null || email.isBlank()) && (phone == null || phone.isBlank()) && inboxUserId == null) {
             logger.warn("No contact info resolved for notification type={}, patientId={}, doctorId={}, userId={}",
                     request.type(), request.patientId(), request.doctorId(), request.userId());
             return new NotificationResponse("FAILED", null, "No contact information could be resolved.");
@@ -86,6 +91,20 @@ public class NotificationService {
 
         String subject = buildSubject(request.type());
         String message = buildMessage(request.type(), request.data());
+
+        // Persist a user-facing inbox notification for patients regardless of email/SMS outcome.
+        if (inboxUserId != null) {
+            try {
+                userNotificationService.create(inboxUserId, request.type().name(), subject, message);
+            } catch (Exception ex) {
+                logger.warn("Failed to create inbox notification for userId={}: {}", inboxUserId, ex.getMessage());
+            }
+        }
+
+        if ((email == null || email.isBlank()) && (phone == null || phone.isBlank())) {
+            // Inbox record was created but no email/SMS channel is available.
+            return new NotificationResponse("PARTIAL_SUCCESS", null, "Inbox notification created; no email/SMS contact found.");
+        }
 
         boolean emailRequested = email != null && !email.isBlank();
         boolean smsRequested = phone != null && !phone.isBlank();

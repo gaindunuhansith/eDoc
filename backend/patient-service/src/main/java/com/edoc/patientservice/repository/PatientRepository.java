@@ -7,9 +7,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 // Patient persistence and lookup queries.
 public interface PatientRepository extends JpaRepository<Patient, Long> {
-    Optional<Patient> findByUserId(Long userId);
+    Optional<Patient> findByUserId(String userId);
 
-    boolean existsByUserId(Long userId);
+    boolean existsByUserId(String userId);
 
     Optional<Patient> findByIdAndStatus(Long id, PatientStatus status);
 

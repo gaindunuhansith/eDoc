@@ -17,6 +17,17 @@ export const PATIENT_ENDPOINTS = {
   UPDATE_STATUS: "/api/v1/patients/me/status",
 } as const;
 
+export const REPORT_ENDPOINTS = {
+  MY_REPORTS: "/api/v1/patients/me/reports",
+  MY_REPORT: (id: number) => `/api/v1/patients/me/reports/${id}`,
+  UPLOAD: "/api/v1/patients/me/reports",
+  DOWNLOAD: (id: number) => `/api/v1/patients/me/reports/${id}/download`,
+} as const;
+
+export const PRESCRIPTION_PATIENT_ENDPOINTS = {
+  MY_PRESCRIPTIONS: "/api/v1/patients/me/prescriptions",
+} as const;
+
 
 export const DOCTOR_ENDPOINTS = {
   GET_ALL: "/api/v1/doctors",

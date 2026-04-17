@@ -152,4 +152,8 @@ log/
 .sonar/
 .scannerwork/
 
-mock-frontend 
+mock-frontend
+
+# UPLOADS
+uploads/
+**/uploads/
