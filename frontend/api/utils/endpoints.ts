@@ -33,14 +33,11 @@ export const DOCTOR_ENDPOINTS = {
 
 
 export const APPOINTMENT_ENDPOINTS = {
-  GET_ALL: "/api/v1/appointments",
   GET_BY_ID: (id: string) => `/api/v1/appointments/${id}`,
   CREATE: "/api/v1/appointments",
-  UPDATE: (id: string) => `/api/v1/appointments/${id}`,
   CANCEL: (id: string) => `/api/v1/appointments/${id}/cancel`,
-  CONFIRM: (id: string) => `/api/v1/appointments/${id}/confirm`,
-  BY_PATIENT: (patientId: string) => `/api/v1/appointments?patientId=${patientId}`,
-  BY_DOCTOR: (doctorId: string) => `/api/v1/appointments?doctorId=${doctorId}`,
+  BY_PATIENT: (patientId: string) => `/api/v1/appointments/patient/${patientId}`,
+  BY_DOCTOR: (doctorId: string) => `/api/v1/appointments/doctor/${doctorId}`,
 } as const;
 
 
