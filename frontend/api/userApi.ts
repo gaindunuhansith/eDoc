@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import apiClient from "./utils/axiosInstance";
 import { USER_ENDPOINTS } from "./utils/endpoints";
 import { queryKeys } from "./utils/queryKeys";
+import { useStore } from "../store/store";
 
 
 export interface LoginCredentials {
@@ -11,18 +12,16 @@ export interface LoginCredentials {
 }
 
 export interface RegisterPayload {
-  firstName: string;
-  lastName: string;
+  name: string;
   email: string;
   password: string;
-  role: "PATIENT" | "DOCTOR" | "ADMIN";
+  phoneNumber: string;
+  role: "PATIENT" | "DOCTOR";
 }
 
 export interface UpdateProfilePayload {
-  firstName?: string;
-  lastName?: string;
+  name?: string;
   phoneNumber?: string;
-  profilePicture?: string;
 }
 
 export interface ChangePasswordPayload {
@@ -31,13 +30,12 @@ export interface ChangePasswordPayload {
 }
 
 export interface UserProfile {
-  id: string;
+  userId: string;
   email: string;
-  firstName: string;
-  lastName: string;
+  name: string;
   role: string;
   phoneNumber?: string;
-  profilePicture?: string;
+  isProfileCreated: boolean;
   createdAt: string;
 }
 
@@ -74,6 +72,8 @@ export const fetchUserById = (id: string) =>
 export const deleteUser = (id: string) =>
   apiClient.delete(USER_ENDPOINTS.DELETE_USER(id));
 
+export const markProfileCreated = (userId: string) =>
+  apiClient.patch(USER_ENDPOINTS.PROFILE_CREATED(userId));
 
 export const useGetCurrentUser = () =>
   useQuery({
@@ -98,7 +98,9 @@ export const useLogin = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: loginUser,
-    onSuccess: () => {
+    onSuccess: (response) => {
+      const { token, user } = response.data;
+      useStore.getState().setAuth(token, user);
       qc.invalidateQueries({ queryKey: queryKeys.user.all });
     },
   });
@@ -136,6 +138,16 @@ export const useDeleteUser = () => {
     mutationFn: deleteUser,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.user.lists() });
+    },
+  });
+};
+
+export const useMarkProfileCreated = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: markProfileCreated,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.user.me() });
     },
   });
 };

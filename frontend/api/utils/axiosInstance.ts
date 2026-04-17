@@ -32,17 +32,23 @@ apiClient.interceptors.response.use(
   (response: AxiosResponse) => response,
   (error: AxiosError<{ message?: string }>) => {
     if (error.response?.status === 401) {
-      // Clear persisted auth state and redirect to home/login
-      if (typeof window !== "undefined") {
-        // Remove persisted Zustand store
-        localStorage.removeItem("edoc-store");
-        window.location.href = "/";
+      // Check if this is a login request; if so, do not redirect
+      const isLoginRequest = error.config?.url?.includes("/login");
+      
+      if (!isLoginRequest) {
+        // Clear persisted auth state and redirect to home/login
+        if (typeof window !== "undefined") {
+          // Remove persisted Zustand store
+          localStorage.removeItem("edoc-store");
+          window.location.href = "/";
+        }
       }
     }
 
-
+    const data = error.response?.data as any;
     const message =
-      error.response?.data?.message ??
+      data?.error ??
+      data?.message ??
       error.message ??
       "An unexpected error occurred";
 
