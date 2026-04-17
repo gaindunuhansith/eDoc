@@ -1,98 +1,74 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-
+import { useMutation } from "@tanstack/react-query";
 import apiClient from "./utils/axiosInstance";
 import { AI_ENDPOINTS } from "./utils/endpoints";
-import { queryKeys } from "./utils/queryKeys";
 
+// --- Types ---
 
-export interface ChatMessage {
-  role: "user" | "assistant";
-  content: string;
-  timestamp: string;
+export interface PatientAnalysisRequest {
+  patient_id: string;
+  symptoms: string;
+  description?: string;
 }
 
-export interface ChatPayload {
-  message: string;
-  sessionId?: string;
+export interface PatientAnalysisResponse {
+  patient_summary?: Record<string, any>;
+  analysis: string;
+  recommended_actions: string[];
+  recommended_specialty: string;
+  available_doctors: any[];
+  service_errors: string[];
 }
 
-export interface ChatResponse {
-  reply: string;
-  sessionId: string;
-  timestamp: string;
+export interface DoctorAnalysisRequest {
+  patient_id: string;
+  professional_notes: string;
 }
 
-export interface SymptomCheckPayload {
-  symptoms: string[];
-  patientAge?: number;
-  patientGender?: string;
+export interface DoctorAnalysisResponse {
+  patient_summary?: Record<string, any>;
+  clinical_analysis: string;
+  differential_diagnosis: string[];
+  investigation_recommendations: string[];
+  service_errors: string[];
 }
 
-export interface SymptomCheckResponse {
-  possibleConditions: { name: string; probability: number }[];
-  recommendation: string;
-  urgencyLevel: "LOW" | "MEDIUM" | "HIGH" | "EMERGENCY";
+export interface AdminAnalysisRequest {
+  query: string;
 }
 
-export interface DiagnosisPayload {
-  symptoms: string[];
-  medicalHistory?: string[];
-  currentMedications?: string[];
-  patientAge?: number;
+export interface AdminAnalysisResponse {
+  operational_insight: string;
+  actionable_metrics: string[];
+  service_errors: string[];
 }
 
-export interface DiagnosisResponse {
-  suggestions: { condition: string; confidence: number; notes: string }[];
-  disclaimer: string;
-}
+// --- API Functions ---
 
-export const sendChatMessage = (payload: ChatPayload) =>
-  apiClient.post<ChatResponse>(AI_ENDPOINTS.CHAT, payload);
+export const analyzePatient = (payload: PatientAnalysisRequest) =>
+  apiClient.post<PatientAnalysisResponse>(AI_ENDPOINTS.PATIENT_ANALYZE, payload);
 
-export const checkSymptoms = (payload: SymptomCheckPayload) =>
-  apiClient.post<SymptomCheckResponse>(AI_ENDPOINTS.SYMPTOM_CHECK, payload);
+export const analyzeDoctor = (payload: DoctorAnalysisRequest) =>
+  apiClient.post<DoctorAnalysisResponse>(AI_ENDPOINTS.DOCTOR_ANALYZE, payload);
 
-export const getDiagnosisSuggestion = (payload: DiagnosisPayload) =>
-  apiClient.post<DiagnosisResponse>(
-    AI_ENDPOINTS.DIAGNOSIS_SUGGESTION,
-    payload
-  );
+export const analyzeAdmin = (payload: AdminAnalysisRequest) =>
+  apiClient.post<AdminAnalysisResponse>(AI_ENDPOINTS.ADMIN_ANALYZE, payload);
 
-export const fetchChatHistory = () =>
-  apiClient.get<ChatMessage[]>(AI_ENDPOINTS.CHAT_HISTORY);
+// --- Hooks ---
 
-export const clearChatHistory = () =>
-  apiClient.delete(AI_ENDPOINTS.CLEAR_HISTORY);
-
-
-export const useGetChatHistory = () =>
-  useQuery({
-    queryKey: queryKeys.ai.chatHistory(),
-    queryFn: () => fetchChatHistory().then((r) => r.data),
-  });
-
-export const useSendChatMessage = () => {
-  const qc = useQueryClient();
+export const useAnalyzePatient = () => {
   return useMutation({
-    mutationFn: sendChatMessage,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.ai.chatHistory() });
-    },
+    mutationFn: (payload: PatientAnalysisRequest) => analyzePatient(payload).then((r) => r.data),
   });
 };
 
-export const useCheckSymptoms = () =>
-  useMutation({ mutationFn: checkSymptoms });
-
-export const useGetDiagnosisSuggestion = () =>
-  useMutation({ mutationFn: getDiagnosisSuggestion });
-
-export const useClearChatHistory = () => {
-  const qc = useQueryClient();
+export const useAnalyzeDoctor = () => {
   return useMutation({
-    mutationFn: clearChatHistory,
-    onSuccess: () => {
-      qc.removeQueries({ queryKey: queryKeys.ai.chatHistory() });
-    },
+    mutationFn: (payload: DoctorAnalysisRequest) => analyzeDoctor(payload).then((r) => r.data),
+  });
+};
+
+export const useAnalyzeAdmin = () => {
+  return useMutation({
+    mutationFn: (payload: AdminAnalysisRequest) => analyzeAdmin(payload).then((r) => r.data),
   });
 };

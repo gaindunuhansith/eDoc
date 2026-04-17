@@ -1,6 +1,6 @@
 from app.core.config import settings
 from app.utils.http_client import HTTPClient
-from typing import Tuple, Dict, List, Optional, Any
+from typing import Tuple, Dict, List, Optional
 
 class IntegrationService:
     @staticmethod
@@ -20,21 +20,20 @@ class IntegrationService:
         
     @staticmethod
     def get_patient_prescriptions(patient_id: str) -> Optional[List[Dict]]:
-        url = f"{settings.DOCTOR_SERVICE_URL}/api/prescriptions/patient/{patient_id}"
+        url = f"{settings.DOCTOR_SERVICE_URL}/api/v1/prescriptions/patient/{patient_id}"
         return HTTPClient.get(url)
 
     @staticmethod
-    def get_doctors_by_specialty(specialty: str) -> List[Dict]:
-        url = f"{settings.DOCTOR_SERVICE_URL}/api/doctors/specialty/{specialty}"
-        doctors = HTTPClient.get(url)
-        return doctors if doctors else []
+    def get_doctors_by_specialty(specialty: str) -> Optional[List[Dict]]:
+        url = f"{settings.DOCTOR_SERVICE_URL}/api/v1/doctors/specialty/{specialty}"
+        return HTTPClient.get(url)
 
     @staticmethod
     def get_all_appointments() -> Optional[List[Dict]]:
-        url = f"{settings.APPOINTMENT_SERVICE_URL}/api/appointments"
+        url = f"{settings.APPOINTMENT_SERVICE_URL}/api/v1/appointments"
         return HTTPClient.get(url)
         
     @staticmethod
     def get_all_payments() -> Optional[List[Dict]]:
-        url = f"{settings.PAYMENT_SERVICE_URL}/payments"
+        url = f"{settings.PAYMENT_SERVICE_URL}/api/v1/payments"
         return HTTPClient.get(url)

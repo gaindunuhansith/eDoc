@@ -12,7 +12,7 @@ RUN uv sync --no-dev
 
 COPY . .
 
-EXPOSE 8090
+EXPOSE 8087
 
 # Run using uv only
-CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8090"]
+CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8087"]

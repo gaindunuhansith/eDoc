@@ -98,11 +98,9 @@ export const DASHBOARD_ENDPOINTS = {
 } as const;
 
 export const AI_ENDPOINTS = {
-  CHAT: "/api/v1/ai/chat",
-  SYMPTOM_CHECK: "/api/v1/ai/symptom-check",
-  DIAGNOSIS_SUGGESTION: "/api/v1/ai/diagnosis",
-  CHAT_HISTORY: "/api/v1/ai/chat/history",
-  CLEAR_HISTORY: "/api/v1/ai/chat/history",
+  PATIENT_ANALYZE: "/api/v1/ai/patient/analyze",
+  DOCTOR_ANALYZE: "/api/v1/ai/doctor/analyze",
+  ADMIN_ANALYZE: "/api/v1/ai/admin/analyze",
 } as const;
 
 

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { format } from "date-fns";
+import { useRouter } from "next/navigation";
 import {
   CalendarDays,
   CheckCircle2,
@@ -420,6 +421,7 @@ export function BookAppointmentDialog({
   open,
   onOpenChange,
 }: BookAppointmentDialogProps) {
+  const router = useRouter();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
@@ -463,9 +465,18 @@ export function BookAppointmentDialog({
         reasonForVisit: reason.trim() || undefined,
       },
       {
-        onSuccess: () => {
+        onSuccess: (createdAppointment) => {
           toast.success("Appointment booked! Awaiting doctor confirmation.");
           handleClose();
+
+          const query = new URLSearchParams({
+            appointmentId: createdAppointment.id,
+            amount: String(selectedDoctor.consultationFee),
+            currency: "LKR",
+            doctorId: selectedDoctor.id,
+            doctorName: `Dr. ${selectedDoctor.firstName} ${selectedDoctor.lastName}`,
+          });
+          router.push(`/patient/confirm-order?${query.toString()}`);
         },
         onError: () => {
           toast.error("Failed to book appointment. Please try again.");

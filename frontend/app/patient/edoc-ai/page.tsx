@@ -19,20 +19,39 @@ import {
   Stethoscope,
   Plus
 } from "lucide-react";
-import { useUser } from "@/store/store";
+import { useUser, useStore } from "@/store/store";
 import { Button } from "@/components/ui/button";
+import { useAnalyzePatient, type PatientAnalysisResponse } from "@/api/aiApi";
+import { useGetMyPatientProfile } from "@/api/patientApi";
 
 export default function PatientDashboardAssistant() {
   const user = useUser();
-  const [query, setQuery] = useState("I've been experiencing mild chest pain and shortness of breath for the last two days...");
+  const { data: patientProfile } = useGetMyPatientProfile();
+  const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
   const [chatActive, setChatActive] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<PatientAnalysisResponse | null>(null);
 
-  const handleSubmit = () => {
-    if (!query.trim()) return;
-    setSubmittedQuery(query);
+  const analyzeMutation = useAnalyzePatient();
+
+  const handleSubmit = async () => {
+    if (!query.trim() || analyzeMutation.isPending) return;
+    
+    const currentQuery = query;
+    setSubmittedQuery(currentQuery);
     setQuery("");
     setChatActive(true);
+    setAnalysisResult(null);
+
+    try {
+      const result = await analyzeMutation.mutateAsync({
+        patient_id: patientProfile?.id || "",
+        symptoms: currentQuery,
+      });
+      setAnalysisResult(result);
+    } catch (err) {
+      console.error("AI Analysis failed:", err);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -93,17 +112,59 @@ export default function PatientDashboardAssistant() {
             </div>
           </div>
           
-          {/* Active Chat Conversation - AI Generating Response Skeleton */}
+          {/* Active Chat Conversation - AI Response */}
           <div className="flex justify-start mb-8 w-full gap-4 animate-in fade-in slide-in-from-bottom-3 duration-500">
             <div className="mt-1">
-              <Sparkles size={24} className="text-blue-500" fill="currentColor" />
+              <Sparkles size={24} className={analyzeMutation.isPending ? "text-blue-500 animate-pulse" : "text-blue-500"} fill="currentColor" />
             </div>
             <div className="flex-1 max-w-[85%] mt-2">
-              <div className="space-y-4 w-full">
-                 <div className="h-3 bg-gradient-to-r from-blue-100 to-gray-100 dark:from-blue-900/40 dark:to-neutral-800 rounded-md w-full animate-pulse"></div>
-                 <div className="h-3 bg-gradient-to-r from-blue-100 to-gray-100 dark:from-blue-900/40 dark:to-neutral-800 rounded-md w-[92%] animate-pulse" style={{ animationDelay: '150ms' }}></div>
-                 <div className="h-3 bg-gradient-to-r from-blue-100 to-gray-100 dark:from-blue-900/40 dark:to-neutral-800 rounded-md w-[85%] animate-pulse" style={{ animationDelay: '300ms' }}></div>
-              </div>
+              {analyzeMutation.isPending ? (
+                <div className="space-y-4 w-full">
+                   <div className="h-3 bg-gradient-to-r from-blue-100 to-gray-100 dark:from-blue-900/40 dark:to-neutral-800 rounded-md w-full animate-pulse"></div>
+                   <div className="h-3 bg-gradient-to-r from-blue-100 to-gray-100 dark:from-blue-900/40 dark:to-neutral-800 rounded-md w-[92%] animate-pulse" style={{ animationDelay: '150ms' }}></div>
+                   <div className="h-3 bg-gradient-to-r from-blue-100 to-gray-100 dark:from-blue-900/40 dark:to-neutral-800 rounded-md w-[85%] animate-pulse" style={{ animationDelay: '300ms' }}></div>
+                </div>
+              ) : analysisResult ? (
+                <div className="space-y-6 text-[15px] leading-relaxed text-foreground">
+                  <div className="prose dark:prose-invert max-w-none">
+                    <p className="font-medium text-lg text-blue-600 dark:text-blue-400 mb-2">Analysis</p>
+                    {analysisResult.analysis}
+                  </div>
+                  
+                  {analysisResult.recommended_actions.length > 0 && (
+                    <div>
+                      <p className="font-bold text-sm uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
+                        <Activity size={16} /> Recommended Actions
+                      </p>
+                      <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {analysisResult.recommended_actions.map((action, i) => (
+                          <li key={i} className="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20 rounded-xl p-3 flex items-start gap-2">
+                            <span className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px] shrink-0 mt-0.5">{i+1}</span>
+                            <span className="font-medium text-blue-900 dark:text-blue-300">{action}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {analysisResult.recommended_specialty && (
+                    <div className="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/20 rounded-2xl p-4">
+                      <p className="font-bold text-xs uppercase tracking-tight text-emerald-600 dark:text-emerald-400 mb-2">Recommended Specialist</p>
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-emerald-500 rounded-lg text-white">
+                          <Stethoscope size={20} />
+                        </div>
+                        <div>
+                          <p className="font-bold text-lg text-emerald-900 dark:text-emerald-300">{analysisResult.recommended_specialty}</p>
+                          <p className="text-sm text-emerald-700 dark:text-emerald-500">Based on your shared symptoms.</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-red-500 font-medium">Something went wrong with the analysis. Please try again.</div>
+              )}
             </div>
           </div>
         </div>

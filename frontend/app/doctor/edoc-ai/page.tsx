@@ -21,18 +21,37 @@ import {
 } from "lucide-react";
 import { useUser } from "@/store/store";
 import { Button } from "@/components/ui/button";
+import { useAnalyzeDoctor, type DoctorAnalysisResponse } from "@/api/aiApi";
 
 export default function DoctorDashboardAssistant() {
   const user = useUser();
-  const [query, setQuery] = useState("I've been experiencing mild chest pain and shortness of breath for the last two days...");
+  const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
   const [chatActive, setChatActive] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<DoctorAnalysisResponse | null>(null);
 
-  const handleSubmit = () => {
-    if (!query.trim()) return;
-    setSubmittedQuery(query);
+  const analyzeMutation = useAnalyzeDoctor();
+
+  const handleSubmit = async () => {
+    if (!query.trim() || analyzeMutation.isPending) return;
+    
+    const currentQuery = query;
+    setSubmittedQuery(currentQuery);
     setQuery("");
     setChatActive(true);
+    setAnalysisResult(null);
+
+    try {
+      // For doctors, we'll need a patientId. 
+      // For now, using a placeholder if none is selected, but backend requires it.
+      const result = await analyzeMutation.mutateAsync({
+        patient_id: "demo-patient-id", // Placeholder till patient selection is added
+        professional_notes: currentQuery,
+      });
+      setAnalysisResult(result);
+    } catch (err) {
+      console.error("AI Clinical Analysis failed:", err);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -93,17 +112,57 @@ export default function DoctorDashboardAssistant() {
             </div>
           </div>
           
-          {/* Active Chat Conversation - AI Generating Response Skeleton */}
+          {/* Active Chat Conversation - AI Response */}
           <div className="flex justify-start mb-8 w-full gap-4 animate-in fade-in slide-in-from-bottom-3 duration-500">
             <div className="mt-1">
-              <Sparkles size={24} className="text-blue-500" fill="currentColor" />
+              <Sparkles size={24} className={analyzeMutation.isPending ? "text-blue-500 animate-pulse" : "text-blue-500"} fill="currentColor" />
             </div>
             <div className="flex-1 max-w-[85%] mt-2">
-              <div className="space-y-4 w-full">
-                 <div className="h-3 bg-gradient-to-r from-blue-100 to-gray-100 dark:from-blue-900/40 dark:to-neutral-800 rounded-md w-full animate-pulse"></div>
-                 <div className="h-3 bg-gradient-to-r from-blue-100 to-gray-100 dark:from-blue-900/40 dark:to-neutral-800 rounded-md w-[92%] animate-pulse" style={{ animationDelay: '150ms' }}></div>
-                 <div className="h-3 bg-gradient-to-r from-blue-100 to-gray-100 dark:from-blue-900/40 dark:to-neutral-800 rounded-md w-[85%] animate-pulse" style={{ animationDelay: '300ms' }}></div>
-              </div>
+              {analyzeMutation.isPending ? (
+                <div className="space-y-4 w-full">
+                   <div className="h-3 bg-gradient-to-r from-blue-100 to-gray-100 dark:from-blue-900/40 dark:to-neutral-800 rounded-md w-full animate-pulse"></div>
+                   <div className="h-3 bg-gradient-to-r from-blue-100 to-gray-100 dark:from-blue-900/40 dark:to-neutral-800 rounded-md w-[92%] animate-pulse" style={{ animationDelay: '150ms' }}></div>
+                   <div className="h-3 bg-gradient-to-r from-blue-100 to-gray-100 dark:from-blue-900/40 dark:to-neutral-800 rounded-md w-[85%] animate-pulse" style={{ animationDelay: '300ms' }}></div>
+                </div>
+              ) : analysisResult ? (
+                <div className="space-y-6 text-[15px] leading-relaxed text-foreground">
+                  <div className="prose dark:prose-invert max-w-none">
+                    <p className="font-medium text-lg text-blue-600 dark:text-blue-400 mb-2">Clinical Analysis</p>
+                    {analysisResult.clinical_analysis}
+                  </div>
+                  
+                  {analysisResult.differential_diagnosis.length > 0 && (
+                    <div>
+                      <p className="font-bold text-sm uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
+                        <Activity size={16} /> Differential Diagnosis
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {analysisResult.differential_diagnosis.map((diag, i) => (
+                          <span key={i} className="bg-orange-50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-900/20 rounded-full px-3 py-1 text-xs font-semibold text-orange-700 dark:text-orange-400">
+                            {diag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {analysisResult.investigation_recommendations.length > 0 && (
+                    <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20 rounded-2xl p-4">
+                      <p className="font-bold text-xs uppercase tracking-tight text-blue-600 dark:text-blue-400 mb-3">Recommended Investigations</p>
+                      <div className="space-y-2">
+                        {analysisResult.investigation_recommendations.map((rec, i) => (
+                          <div key={i} className="flex items-center gap-2 text-sm text-blue-900 dark:text-blue-300">
+                            <Plus size={14} className="text-blue-500" />
+                            {rec}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-red-500 font-medium">Something went wrong with the clinical analysis. Please try again.</div>
+              )}
             </div>
           </div>
         </div>
@@ -114,7 +173,7 @@ export default function DoctorDashboardAssistant() {
         <div className="relative flex flex-col w-full bg-[#fcfcfc] dark:bg-[#1C1C1C] rounded-[1.5rem] p-4 shadow-sm border border-gray-100 dark:border-neutral-800/80 focus-within:ring-[3px] focus-within:ring-blue-500/20 focus-within:border-blue-300 transition-all">
           <textarea
             className="w-full resize-none text-[15px] bg-transparent outline-none placeholder:text-muted-foreground text-foreground min-h-[40px] px-1 font-medium"
-            placeholder={chatActive ? "Ask eDoc AI..." : "Describe your symptoms or ask a health-related question..."}
+            placeholder={chatActive ? "Ask eDoc AI..." : "Enter professional clinical notes or analyze patient data..."}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}

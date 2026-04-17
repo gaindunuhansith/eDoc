@@ -39,10 +39,9 @@ def analyze_patient(request: PatientAnalysisRequest):
     recommended_doctors = IntegrationService.get_doctors_by_specialty(
         specialty=analysis_result.recommended_specialty
     )
-    if not recommended_doctors and analysis_result.recommended_specialty:
-        # Check if it was a genuine empty list or a failure (IntegrationService returns [] on failure currently)
-        # For simplicity, we'll just note if we couldn't find any.
-        pass
+    if recommended_doctors is None and analysis_result.recommended_specialty:
+        errors.append("Could not reach Doctor Service for recommended doctors.")
+        recommended_doctors = []
 
     analysis_result.available_doctors = recommended_doctors
     analysis_result.patient_summary = summary_dict
@@ -95,10 +94,6 @@ def analyze_doctor(request: DoctorAnalysisRequest):
 def analyze_admin(request: AdminAnalysisRequest):
     errors = []
     appointments = IntegrationService.get_all_appointments()
-    if not appointments: # IntegrationService currently returns [] on fail
-         # We could refine this to check None if we change IntegrationService
-         pass
-         
     payments = IntegrationService.get_all_payments()
     
     # Simple check for demo purposes

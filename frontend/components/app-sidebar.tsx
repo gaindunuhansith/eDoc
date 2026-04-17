@@ -70,7 +70,7 @@ export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
 
   const mainNav = getNavForPathname(pathname);
   const role = getRoleFromPathname(pathname);
-  const aiLink = role === "admin" ? "/patient/edoc-ai" : `/${role}/edoc-ai`;
+  const aiLink = `/${role}/edoc-ai`;
 
   const handleLogout = () => {
     clearAuth();
