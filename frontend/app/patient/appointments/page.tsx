@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/table";
 
 import { useGetMyPatientProfile } from "@/api/patientApi";
+import { BookAppointmentDialog } from "./BookAppointmentDialog";
 import {
   useGetAppointmentsByPatient,
   useCancelAppointment,
@@ -89,6 +90,7 @@ function TableSkeleton() {
 export default function AppointmentsPage() {
   const [tab, setTab] = useState<TabFilter>("ALL");
   const [cancelTarget, setCancelTarget] = useState<Appointment | null>(null);
+  const [bookingOpen, setBookingOpen] = useState(false);
   const router = useRouter();
 
   const { data: patient, isLoading: patientLoading } = useGetMyPatientProfile();
@@ -151,9 +153,18 @@ export default function AppointmentsPage() {
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900">My Appointments</h1>
-        <p className="text-gray-500 mt-1 text-sm">View and manage your appointments</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">My Appointments</h1>
+          <p className="text-gray-500 mt-1 text-sm">View and manage your appointments</p>
+        </div>
+        <Button
+          onClick={() => setBookingOpen(true)}
+          disabled={!patientId}
+          className="shrink-0"
+        >
+          + Book Appointment
+        </Button>
       </div>
 
       {/* Tabs */}
@@ -343,6 +354,13 @@ export default function AppointmentsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Book Appointment Dialog */}
+      <BookAppointmentDialog
+        patientId={patientId}
+        open={bookingOpen}
+        onOpenChange={setBookingOpen}
+      />
 
       {/* Cancel Confirmation Dialog */}
       <AlertDialog open={!!cancelTarget} onOpenChange={(open) => !open && setCancelTarget(null)}>
