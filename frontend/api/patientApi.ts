@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import apiClient from "./utils/axiosInstance";
-import { PATIENT_ENDPOINTS, REPORT_ENDPOINTS } from "./utils/endpoints";
+import { PATIENT_ENDPOINTS, REPORT_ENDPOINTS, PRESCRIPTION_PATIENT_ENDPOINTS } from "./utils/endpoints";
 import { queryKeys } from "./utils/queryKeys";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -132,3 +132,35 @@ export const useDeleteReport = () => {
     },
   });
 };
+
+// ─── Prescriptions ────────────────────────────────────────────────────────────
+
+export interface Medicine {
+  name: string;
+  dosage?: string;
+  frequency?: string;
+  duration?: string;
+  instructions?: string;
+}
+
+export interface Prescription {
+  id: string;
+  doctorId?: string;
+  patientId?: string;
+  appointmentId?: string;
+  diagnosis?: string;
+  notes?: string;
+  medicines?: Medicine[];
+  issuedAt?: string;
+  validUntil?: string;
+}
+
+export const fetchMyPrescriptions = () =>
+  apiClient.get<Prescription[]>(PRESCRIPTION_PATIENT_ENDPOINTS.MY_PRESCRIPTIONS);
+
+export const useGetMyPrescriptions = () =>
+  useQuery({
+    queryKey: queryKeys.patient.prescriptions(),
+    queryFn: () => fetchMyPrescriptions().then((r) => r.data),
+    retry: false,
+  });

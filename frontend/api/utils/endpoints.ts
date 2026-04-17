@@ -24,6 +24,10 @@ export const REPORT_ENDPOINTS = {
   DOWNLOAD: (id: number) => `/api/v1/patients/me/reports/${id}/download`,
 } as const;
 
+export const PRESCRIPTION_PATIENT_ENDPOINTS = {
+  MY_PRESCRIPTIONS: "/api/v1/patients/me/prescriptions",
+} as const;
+
 
 export const DOCTOR_ENDPOINTS = {
   GET_ALL: "/api/v1/doctors",
