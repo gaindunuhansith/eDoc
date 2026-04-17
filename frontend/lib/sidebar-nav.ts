@@ -20,17 +20,19 @@ export type SidebarNavItem = {
 
 const adminNav: SidebarNavItem[] = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
+  { title: "Users", url: "/admin/users", icon: Users },
   { title: "Patients", url: "/admin/patients", icon: Users },
   { title: "Appointments", url: "/admin/appointments", icon: Calendar },
+  { title: "Payments", url: "/admin/payments", icon: CreditCard },
   { title: "Reports", url: "/admin/reports", icon: FileText },
   { title: "Prescriptions", url: "/admin/prescriptions", icon: Pill },
   { title: "Feedback", url: "/admin/feedback", icon: MessageSquare },
   { title: "Telemedicine", url: "/admin/telemedicine", icon: Video },
-  { title: "Users", url: "/admin/users", icon: Users },
 ];
 
 const doctorNav: SidebarNavItem[] = [
   { title: "Dashboard", url: "/doctor", icon: LayoutDashboard },
+  { title: "eDoc AI", url: "/doctor/edoc-ai", icon: Bot },
   { title: "Patients", url: "/doctor/patients", icon: Users },
   { title: "Appointments", url: "/doctor/appointments", icon: Calendar },
   { title: "Reports", url: "/doctor/reports", icon: FileText },

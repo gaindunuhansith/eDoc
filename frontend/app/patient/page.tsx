@@ -10,4 +10,4 @@ const PatientDashboard = () => {
   );
 };
 
-export default page;
+export default PatientDashboard;

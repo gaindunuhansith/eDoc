@@ -1,13 +1,22 @@
 "use client";
 
 import React, { useState } from "react";
-import { Plus, Minus, Mail, CheckCircle2, Building, ChevronDown, Check } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Plus, Minus, Mail, CheckCircle2, Building, ChevronDown, Check, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 export default function ConfirmOrderPage() {
+  const router = useRouter();
   const [seats, setSeats] = useState(2);
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annually">("annually");
 
@@ -206,9 +215,42 @@ export default function ConfirmOrderPage() {
                 <span className="font-bold text-xl text-foreground">$88.00</span>
               </div>
 
-              <Button className="w-full h-12 bg-neutral-900 hover:bg-neutral-800 text-white font-medium text-base rounded-xl transition-all">
-                Continue to payment
-              </Button>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button className="w-full h-12 bg-neutral-900 hover:bg-neutral-800 text-white font-medium text-base rounded-xl transition-all">
+                    Proceed to pay
+                  </Button>
+                </DialogTrigger>
+                <DialogContent showCloseButton={false} className="sm:max-w-md text-center p-8 border-none shadow-2xl gap-0 rounded-2xl">
+                  {/* Visually hidden accessible title/description */}
+                  <DialogTitle className="sr-only">Payment Successful</DialogTitle>
+                  <DialogDescription className="sr-only">Your payment has been completed successfully.</DialogDescription>
+                  
+                  {/* Icon */}
+                  <div className="mx-auto w-14 h-14 text-emerald-500 rounded-full flex items-center justify-center border-[3px] border-emerald-500 mt-2 mb-6 shadow-sm">
+                    <Check className="w-8 h-8 stroke-[3]" />
+                  </div>
+                  
+                  {/* Text content */}
+                  <div className="space-y-3 mb-8">
+                    <h2 className="text-[22px] font-semibold text-foreground tracking-tight">Payment Successful</h2>
+                    <p className="text-[15px] sm:text-base text-muted-foreground leading-relaxed">
+                      Your payment is successful and the appointment is successfully scheduled.
+                    </p>
+                  </div>
+
+                  {/* Action */}
+                  <div className="flex justify-center border-t border-border/40 pt-4 -mx-8 -mb-4">
+                    <Button 
+                      variant="ghost" 
+                      className="text-muted-foreground hover:text-foreground text-sm font-medium gap-1 h-auto py-2"
+                      onClick={() => router.push('/patient/appointments')}
+                    >
+                      Okay <ChevronRight className="w-4 h-4 ml-1 opacity-70" />
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </CardContent>
           </Card>
         </div>

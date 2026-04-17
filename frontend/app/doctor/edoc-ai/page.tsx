@@ -22,7 +22,7 @@ import {
 import { useUser } from "@/store/store";
 import { Button } from "@/components/ui/button";
 
-export default function PatientDashboardAssistant() {
+export default function DoctorDashboardAssistant() {
   const user = useUser();
   const [query, setQuery] = useState("I've been experiencing mild chest pain and shortness of breath for the last two days...");
   const [submittedQuery, setSubmittedQuery] = useState("");
