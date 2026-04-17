@@ -4,19 +4,68 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type SyntheticEvent, useState } from "react";
-import { Eye, EyeOff, Hexagon, Lock, Mail, User } from "lucide-react";
+import { Eye, EyeOff, Hexagon, Lock, Mail, User, Phone } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { useLogin, useRegister } from "@/api/userApi";
 
 export default function AuthPage() {
   const router = useRouter();
-  const [role, setRole] = useState("doctor");
   const [showPassword, setShowPassword] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
 
+  // Form states
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [role, setRole] = useState<"PATIENT" | "DOCTOR">("PATIENT");
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const loginMutation = useLogin();
+  const registerMutation = useRegister();
+
   const handleSubmit = (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
-    router.push(`/${role}`);
+    setErrorMsg("");
+
+    if (isSignUp) {
+      if (password !== confirmPassword) {
+        setErrorMsg("Passwords do not match");
+        return;
+      }
+      registerMutation.mutate(
+        { name, email, password, phoneNumber, role },
+        {
+          onSuccess: () => {
+            toast.success("Account created successfully");
+            setIsSignUp(false);
+            setPassword("");
+            setConfirmPassword("");
+          },
+          onError: (err: any) => {
+            setErrorMsg(err.message || "Registration failed");
+          },
+        }
+      );
+    } else {
+      loginMutation.mutate(
+        { email, password },
+        {
+          onSuccess: (res: any) => {
+            const userRole = res.data.user.role;
+            if (userRole === "DOCTOR") router.push("/doctor");
+            else if (userRole === "ADMIN") router.push("/admin");
+            else router.push("/patient");
+          },
+          onError: (err: any) => {
+            setErrorMsg(err.message || "Login failed");
+          },
+        }
+      );
+    }
   };
 
   return (
@@ -39,25 +88,6 @@ export default function AuthPage() {
               : "We Are Happy To See You Again"}
           </p>
 
-          <div className="mb-6 bg-gray-50 p-3 rounded-lg text-sm border border-gray-200">
-            <label
-              htmlFor="role-select"
-              className="block text-gray-800 font-medium mb-1"
-            >
-              Mock Role Login (Test Redirects)
-            </label>
-            <select
-              id="role-select"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="w-full p-2 bg-white border border-gray-300 rounded-md focus:outline-none"
-            >
-              <option value="admin">Admin</option>
-              <option value="doctor">Doctor</option>
-              <option value="patient">Patient</option>
-            </select>
-          </div>
-
           <div className="flex rounded-full bg-gray-100 p-1 mb-8 border border-gray-200 relative">
             <div
               className="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-gray-900 rounded-full transition-transform duration-300 shadow-sm ease-in-out"
@@ -67,19 +97,31 @@ export default function AuthPage() {
             />
             <button
               type="button"
-              onClick={() => setIsSignUp(false)}
+              onClick={() => {
+                setIsSignUp(false);
+                setErrorMsg("");
+              }}
               className={`flex-1 relative z-10 text-center py-2 rounded-full font-medium transition-colors ${isSignUp ? "text-gray-500 hover:text-gray-900" : "text-white"}`}
             >
               Sign In
             </button>
             <button
               type="button"
-              onClick={() => setIsSignUp(true)}
+              onClick={() => {
+                setIsSignUp(true);
+                setErrorMsg("");
+              }}
               className={`flex-1 relative z-10 text-center py-2 rounded-full font-medium transition-colors ${isSignUp ? "text-white" : "text-gray-500 hover:text-gray-900"}`}
             >
               Sign Up
             </button>
           </div>
+
+          {errorMsg && (
+            <div className="mb-4 p-3 bg-red-50 text-red-600 border border-red-100 rounded-lg text-sm text-center">
+              {errorMsg}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit}>
             <div className="space-y-4 mb-6">
@@ -93,6 +135,8 @@ export default function AuthPage() {
                     type="text"
                     placeholder="Full Name"
                     required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
                     className="w-full py-3 px-4 bg-gray-50 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-gray-900 transition-all"
                   />
                   <User className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -108,10 +152,30 @@ export default function AuthPage() {
                   type="email"
                   placeholder="Enter your email"
                   required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full py-3 px-4 bg-gray-50 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-gray-900 transition-all"
                 />
                 <Mail className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               </div>
+
+              {isSignUp && (
+                <div className="relative">
+                  <label htmlFor="phone-number" className="sr-only">
+                    Phone Number
+                  </label>
+                  <input
+                    id="phone-number"
+                    type="tel"
+                    placeholder="Phone Number"
+                    required
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    className="w-full py-3 px-4 bg-gray-50 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-gray-900 transition-all"
+                  />
+                  <Phone className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                </div>
+              )}
 
               <div className="relative">
                 <label htmlFor="password" className="sr-only">
@@ -122,6 +186,8 @@ export default function AuthPage() {
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
                   required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="w-full py-3 px-4 bg-gray-50 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-gray-900 transition-all"
                 />
                 <button
@@ -148,9 +214,36 @@ export default function AuthPage() {
                     type="password"
                     placeholder="Confirm your password"
                     required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
                     className="w-full py-3 px-4 bg-gray-50 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-gray-900 transition-all"
                   />
                   <Lock className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                </div>
+              )}
+
+              {isSignUp && (
+                <div className="flex rounded-full bg-gray-100 p-1 mb-2 border border-gray-200 relative w-full mx-auto">
+                  <div
+                    className="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-gray-900 rounded-full transition-transform duration-300 shadow-sm ease-in-out"
+                    style={{
+                      transform: role === "DOCTOR" ? "translateX(100%)" : "translateX(0)",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setRole("PATIENT")}
+                    className={`flex-1 relative z-10 text-center py-1.5 text-xs rounded-full font-medium transition-colors ${role === "PATIENT" ? "text-white" : "text-gray-500 hover:text-gray-900"}`}
+                  >
+                    Patient
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRole("DOCTOR")}
+                    className={`flex-1 relative z-10 text-center py-1.5 text-xs rounded-full font-medium transition-colors ${role === "DOCTOR" ? "text-white" : "text-gray-500 hover:text-gray-900"}`}
+                  >
+                    Doctor
+                  </button>
                 </div>
               )}
             </div>
@@ -178,7 +271,7 @@ export default function AuthPage() {
             )}
 
             {isSignUp && (
-              <div className="mb-8">
+              <div className="mb-8 mt-4">
                 <label className="flex items-start gap-2 cursor-pointer group">
                   <input
                     type="checkbox"
@@ -207,9 +300,10 @@ export default function AuthPage() {
 
             <Button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-full py-3 text-base font-medium mb-4 shadow-md"
+              disabled={loginMutation.isPending || registerMutation.isPending}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-full py-3 text-base font-medium mb-4 shadow-md disabled:opacity-50"
             >
-              {isSignUp ? "Create Account" : "Login"}
+              {isSignUp ? (registerMutation.isPending ? "Creating..." : "Create Account") : (loginMutation.isPending ? "Logging in..." : "Login")}
             </Button>
           </form>
 

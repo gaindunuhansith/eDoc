@@ -51,4 +51,10 @@ public class UserController {
         userService.deleteCurrentUser();
         return ResponseEntity.noContent().build();
     }
+
+    @PatchMapping("/{userId}/profile-created")
+    public ResponseEntity<Void> markProfileCreated(@PathVariable String userId) {
+        userService.markProfileCreated(userId);
+        return ResponseEntity.noContent().build();
+    }
 }

@@ -18,6 +18,7 @@ public class UserMapper {
                 .email(user.getEmail())
                 .phoneNumber(user.getPhoneNumber())
                 .role(user.getRole())
+                .isProfileCreated(user.isProfileCreated())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .build();

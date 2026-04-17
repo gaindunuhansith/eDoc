@@ -14,6 +14,7 @@ import {
   User as UserIcon,
 } from "lucide-react";
 
+import { useUser, useStore } from "@/store/store";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -57,7 +58,20 @@ export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
   const isCollapsed = state === "collapsed";
   const [showTrialCard, setShowTrialCard] = useState(true);
 
+  const getInitials = (name?: string) => {
+    if (!name) return "U";
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  const user = useUser();
+  const clearAuth = useStore((s) => s.clearAuth);
+
   const mainNav = getNavForPathname(pathname);
+
+  const handleLogout = () => {
+    clearAuth();
+    localStorage.removeItem("edoc-store");
+  };
 
   return (
     <Sidebar collapsible="icon" className="border-r bg-[#f8fbff]" {...props}>
@@ -218,22 +232,18 @@ export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
               className={`flex items-center gap-3 rounded-xl border p-2 hover:bg-gray-100 cursor-pointer transition-colors ${isCollapsed ? "justify-center w-full" : ""}`}
             >
               <Avatar className="h-10 w-10 shrink-0">
-                <AvatarImage
-                  src="https://github.com/shadcn.png"
-                  alt="Felicia Reid"
-                />
                 <AvatarFallback className="bg-gray-800 text-white font-bold">
-                  FR
+                  {getInitials(user?.name)}
                 </AvatarFallback>
               </Avatar>
               {!isCollapsed && (
                 <>
                   <div className="flex flex-col flex-1 overflow-hidden min-w-0">
                     <span className="text-sm font-semibold truncate text-gray-900">
-                      Felicia Reid
+                      {user?.name || "User"}
                     </span>
                     <span className="text-xs text-gray-500 truncate">
-                      felicia@gmail.com
+                      {user?.email || "user@example.com"}
                     </span>
                   </div>
                   <MoreHorizontal className="h-4 w-4 text-gray-400 shrink-0" />
@@ -257,7 +267,7 @@ export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
               asChild
               className="text-red-600 focus:bg-red-50 focus:text-red-600 cursor-pointer"
             >
-              <Link href="/">
+              <Link href="/" onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </Link>

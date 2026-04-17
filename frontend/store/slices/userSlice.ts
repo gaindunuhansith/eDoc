@@ -2,13 +2,12 @@ import { StateCreator } from "zustand";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface UserProfile {
-  id: string;
+  userId: string;
   email: string;
-  firstName: string;
-  lastName: string;
+  name: string;
   role: "PATIENT" | "DOCTOR" | "ADMIN";
   phoneNumber?: string;
-  profilePicture?: string;
+  isProfileCreated: boolean;
 }
 
 export interface UserSlice {

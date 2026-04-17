@@ -103,6 +103,19 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     @Transactional
+    public void markProfileCreated(String userId) {
+        User target = findByUserId(userId);
+        User current = userRepository.findByEmail(securityUtils.getCurrentEmail())
+                .orElseThrow(() -> new UserNotFoundException(AUTHENTICATED_USER_NOT_FOUND));
+
+        enforceOwnerOrAdmin(current, target.getUserId());
+
+        target.setProfileCreated(true);
+        userRepository.save(target);
+    }
+
+    @Override
+    @Transactional
     public void deleteCurrentUser() {
         User current = userRepository.findByEmail(securityUtils.getCurrentEmail())
                 .orElseThrow(() -> new UserNotFoundException(AUTHENTICATED_USER_NOT_FOUND));

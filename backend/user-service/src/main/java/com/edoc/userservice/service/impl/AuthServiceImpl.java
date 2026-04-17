@@ -38,12 +38,16 @@ public class AuthServiceImpl implements IAuthService {
             throw new EmailAlreadyExistsException("A user already exists with the given email");
         }
 
+        if (request.getRole() == UserRole.ADMIN) {
+            throw new IllegalArgumentException("Cannot register with ADMIN role");
+        }
+
         User user = User.builder()
                 .name(request.getName().trim())
                 .email(normalizedEmail)
                 .password(passwordEncoder.encode(request.getPassword()))
                 .phoneNumber(request.getPhoneNumber().trim())
-                .role(UserRole.PATIENT)
+                .role(request.getRole())
                 .build();
 
         User saved = userRepository.save(user);
