@@ -1,0 +1,1218 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: edoc
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: edoc-secrets
+  namespace: edoc
+type: Opaque
+stringData:
+  DB_USER: user
+  DB_PASSWORD: password
+  JWT_PRIVATE_KEY_PATH: /app/secrets/private.pem
+  JWT_PUBLIC_KEY_PATH: /app/secrets/public.pem
+  GROQ_API_KEY: ""
+  PAYHERE_MERCHANT_ID: your_merchant_id
+  PAYHERE_MERCHANT_SECRET: your_merchant_secret
+  RESEND_API_KEY: ""
+  VONAGE_API_KEY: ""
+  VONAGE_API_SECRET: ""
+  TWILIO_ACCOUNT_SID: ""
+  TWILIO_AUTH_TOKEN: ""
+  TWILIO_API_KEY_SID: ""
+  TWILIO_API_SECRET: ""
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: edoc-config
+  namespace: edoc
+data:
+  USER_SERVICE_URL: http://user-service:8088
+  PATIENT_SERVICE_URL: http://patient-service:8084
+  DOCTOR_SERVICE_URL: http://doctor-service:8082
+  APPOINTMENT_SERVICE_URL: http://appointment-service:8081
+  PAYMENT_SERVICE_URL: http://payment-service:8085
+  NOTIFICATION_SERVICE_URL: http://notification-service:8083
+  TELEMEDICINE_SERVICE_URL: http://telemedicine-service:8086
+  FEEDBACK_SERVICE_URL: http://feedback-service:8089
+  AI_SERVICE_URL: http://ai-service:8090
+  APPOINTMENT_SERVICE_BASE_URL: http://appointment-service:8081
+  NOTIFICATION_SERVICE_BASE_URL: http://notification-service:8083
+  API_GATEWAY_ORIGIN: http://api-gateway:8080
+  CORS_ALLOWED_ORIGIN_1: http://localhost:3000
+  CORS_ALLOWED_ORIGIN_2: http://localhost:3001
+  NEXT_PUBLIC_API_BASE_URL: http://api-gateway:8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-db
+  namespace: edoc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-db
+  template:
+    metadata:
+      labels:
+        app: user-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: user_db
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: DB_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: DB_PASSWORD
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-db
+  namespace: edoc
+spec:
+  selector:
+    app: user-db
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: patient-db
+  namespace: edoc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: patient-db
+  template:
+    metadata:
+      labels:
+        app: patient-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: patient_db
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: DB_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: DB_PASSWORD
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: patient-db
+  namespace: edoc
+spec:
+  selector:
+    app: patient-db
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-db
+  namespace: edoc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-db
+  template:
+    metadata:
+      labels:
+        app: notification-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: notification_db
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: DB_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: DB_PASSWORD
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-db
+  namespace: edoc
+spec:
+  selector:
+    app: notification-db
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: telemedicine-db
+  namespace: edoc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: telemedicine-db
+  template:
+    metadata:
+      labels:
+        app: telemedicine-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: telemedicine_db
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: DB_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: DB_PASSWORD
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: telemedicine-db
+  namespace: edoc
+spec:
+  selector:
+    app: telemedicine-db
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: feedback-db
+  namespace: edoc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: feedback-db
+  template:
+    metadata:
+      labels:
+        app: feedback-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: feedback_db
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: DB_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: DB_PASSWORD
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: feedback-db
+  namespace: edoc
+spec:
+  selector:
+    app: feedback-db
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-db
+  namespace: edoc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payment-db
+  template:
+    metadata:
+      labels:
+        app: payment-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: payment_db
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: DB_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: DB_PASSWORD
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-db
+  namespace: edoc
+spec:
+  selector:
+    app: payment-db
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: doctor-db
+  namespace: edoc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: doctor-db
+  template:
+    metadata:
+      labels:
+        app: doctor-db
+    spec:
+      containers:
+        - name: mongodb
+          image: mongo:7
+          ports:
+            - containerPort: 27017
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: DB_USER
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: DB_PASSWORD
+          volumeMounts:
+            - name: data
+              mountPath: /data/db
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: doctor-db
+  namespace: edoc
+spec:
+  selector:
+    app: doctor-db
+  ports:
+    - port: 27017
+      targetPort: 27017
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: appointment-db
+  namespace: edoc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: appointment-db
+  template:
+    metadata:
+      labels:
+        app: appointment-db
+    spec:
+      containers:
+        - name: mongodb
+          image: mongo:7
+          ports:
+            - containerPort: 27017
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: DB_USER
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: DB_PASSWORD
+          volumeMounts:
+            - name: data
+              mountPath: /data/db
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: appointment-db
+  namespace: edoc
+spec:
+  selector:
+    app: appointment-db
+  ports:
+    - port: 27017
+      targetPort: 27017
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+  namespace: edoc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-service
+  template:
+    metadata:
+      labels:
+        app: user-service
+    spec:
+      containers:
+        - name: user-service
+          image: edoc/user-service:latest
+          ports:
+            - containerPort: 8088
+          env:
+            - name: SERVER_PORT
+              value: "8088"
+            - name: DB_HOST
+              value: user-db
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: user_db
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: DB_PASSWORD
+            - name: JWT_PRIVATE_KEY_PATH
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: JWT_PRIVATE_KEY_PATH
+            - name: JWT_PUBLIC_KEY_PATH
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: JWT_PUBLIC_KEY_PATH
+            - name: PATIENT_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: PATIENT_SERVICE_URL
+            - name: DOCTOR_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: DOCTOR_SERVICE_URL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+  namespace: edoc
+spec:
+  selector:
+    app: user-service
+  ports:
+    - port: 8088
+      targetPort: 8088
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: patient-service
+  namespace: edoc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: patient-service
+  template:
+    metadata:
+      labels:
+        app: patient-service
+    spec:
+      containers:
+        - name: patient-service
+          image: edoc/patient-service:latest
+          ports:
+            - containerPort: 8084
+          env:
+            - name: SERVER_PORT
+              value: "8084"
+            - name: DB_HOST
+              value: patient-db
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: patient_db
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: DB_PASSWORD
+            - name: JWT_PUBLIC_KEY_PATH
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: JWT_PUBLIC_KEY_PATH
+            - name: DOCTOR_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: DOCTOR_SERVICE_URL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: patient-service
+  namespace: edoc
+spec:
+  selector:
+    app: patient-service
+  ports:
+    - port: 8084
+      targetPort: 8084
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: doctor-service
+  namespace: edoc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: doctor-service
+  template:
+    metadata:
+      labels:
+        app: doctor-service
+    spec:
+      containers:
+        - name: doctor-service
+          image: edoc/doctor-service:latest
+          ports:
+            - containerPort: 8082
+          env:
+            - name: SERVER_PORT
+              value: "8082"
+            - name: MONGO_URI
+              value: mongodb://user:password@doctor-db:27017/edoc_doctor_db?authSource=admin
+            - name: JWT_PUBLIC_KEY_PATH
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: JWT_PUBLIC_KEY_PATH
+            - name: PATIENT_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: PATIENT_SERVICE_URL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: doctor-service
+  namespace: edoc
+spec:
+  selector:
+    app: doctor-service
+  ports:
+    - port: 8082
+      targetPort: 8082
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: appointment-service
+  namespace: edoc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: appointment-service
+  template:
+    metadata:
+      labels:
+        app: appointment-service
+    spec:
+      containers:
+        - name: appointment-service
+          image: edoc/appointment-service:latest
+          ports:
+            - containerPort: 8081
+          env:
+            - name: SERVER_PORT
+              value: "8081"
+            - name: MONGO_URI
+              value: mongodb://user:password@appointment-db:27017/edoc_appointment_db?authSource=admin
+            - name: JWT_PUBLIC_KEY_PATH
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: JWT_PUBLIC_KEY_PATH
+            - name: DOCTOR_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: DOCTOR_SERVICE_URL
+            - name: PATIENT_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: PATIENT_SERVICE_URL
+            - name: NOTIFICATION_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: NOTIFICATION_SERVICE_URL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: appointment-service
+  namespace: edoc
+spec:
+  selector:
+    app: appointment-service
+  ports:
+    - port: 8081
+      targetPort: 8081
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  namespace: edoc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-service
+  template:
+    metadata:
+      labels:
+        app: notification-service
+    spec:
+      containers:
+        - name: notification-service
+          image: edoc/notification-service:latest
+          ports:
+            - containerPort: 8083
+          env:
+            - name: SERVER_PORT
+              value: "8083"
+            - name: DB_HOST
+              value: notification-db
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: notification_db
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: DB_PASSWORD
+            - name: JWT_PUBLIC_KEY_PATH
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: JWT_PUBLIC_KEY_PATH
+            - name: DOCTOR_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: DOCTOR_SERVICE_URL
+            - name: PATIENT_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: PATIENT_SERVICE_URL
+            - name: USER_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: USER_SERVICE_URL
+            - name: RESEND_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: RESEND_API_KEY
+            - name: VONAGE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: VONAGE_API_KEY
+            - name: VONAGE_API_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: VONAGE_API_SECRET
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+  namespace: edoc
+spec:
+  selector:
+    app: notification-service
+  ports:
+    - port: 8083
+      targetPort: 8083
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-service
+  namespace: edoc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payment-service
+  template:
+    metadata:
+      labels:
+        app: payment-service
+    spec:
+      containers:
+        - name: payment-service
+          image: edoc/payment-service:latest
+          ports:
+            - containerPort: 8085
+          env:
+            - name: SERVER_PORT
+              value: "8085"
+            - name: DB_HOST
+              value: payment-db
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: payment_db
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: DB_PASSWORD
+            - name: JWT_PUBLIC_KEY_PATH
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: JWT_PUBLIC_KEY_PATH
+            - name: APPOINTMENT_SERVICE_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: APPOINTMENT_SERVICE_BASE_URL
+            - name: NOTIFICATION_SERVICE_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: NOTIFICATION_SERVICE_BASE_URL
+            - name: API_GATEWAY_ORIGIN
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: API_GATEWAY_ORIGIN
+            - name: PAYHERE_MERCHANT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: PAYHERE_MERCHANT_ID
+            - name: PAYHERE_MERCHANT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: PAYHERE_MERCHANT_SECRET
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-service
+  namespace: edoc
+spec:
+  selector:
+    app: payment-service
+  ports:
+    - port: 8085
+      targetPort: 8085
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: telemedicine-service
+  namespace: edoc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: telemedicine-service
+  template:
+    metadata:
+      labels:
+        app: telemedicine-service
+    spec:
+      containers:
+        - name: telemedicine-service
+          image: edoc/telemedicine-service:latest
+          ports:
+            - containerPort: 8086
+          env:
+            - name: SERVER_PORT
+              value: "8086"
+            - name: DB_HOST
+              value: telemedicine-db
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: telemedicine_db
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: DB_PASSWORD
+            - name: JWT_PUBLIC_KEY_PATH
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: JWT_PUBLIC_KEY_PATH
+            - name: APPOINTMENT_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: APPOINTMENT_SERVICE_URL
+            - name: NOTIFICATION_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: NOTIFICATION_SERVICE_URL
+            - name: USER_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: USER_SERVICE_URL
+            - name: TWILIO_ACCOUNT_SID
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: TWILIO_ACCOUNT_SID
+            - name: TWILIO_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: TWILIO_AUTH_TOKEN
+            - name: TWILIO_API_KEY_SID
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: TWILIO_API_KEY_SID
+            - name: TWILIO_API_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: TWILIO_API_SECRET
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: telemedicine-service
+  namespace: edoc
+spec:
+  selector:
+    app: telemedicine-service
+  ports:
+    - port: 8086
+      targetPort: 8086
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: feedback-service
+  namespace: edoc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: feedback-service
+  template:
+    metadata:
+      labels:
+        app: feedback-service
+    spec:
+      containers:
+        - name: feedback-service
+          image: edoc/feedback-service:latest
+          ports:
+            - containerPort: 8089
+          env:
+            - name: SERVER_PORT
+              value: "8089"
+            - name: DB_HOST
+              value: feedback-db
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: feedback_db
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: DB_PASSWORD
+            - name: JWT_PUBLIC_KEY_PATH
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: JWT_PUBLIC_KEY_PATH
+            - name: APPOINTMENT_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: APPOINTMENT_SERVICE_URL
+            - name: NOTIFICATION_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: NOTIFICATION_SERVICE_URL
+            - name: USER_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: USER_SERVICE_URL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: feedback-service
+  namespace: edoc
+spec:
+  selector:
+    app: feedback-service
+  ports:
+    - port: 8089
+      targetPort: 8089
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-service
+  namespace: edoc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ai-service
+  template:
+    metadata:
+      labels:
+        app: ai-service
+    spec:
+      containers:
+        - name: ai-service
+          image: edoc/ai-service:latest
+          ports:
+            - containerPort: 8090
+          env:
+            - name: PUBLIC_KEY_PATH
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: JWT_PUBLIC_KEY_PATH
+            - name: GROQ_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: GROQ_API_KEY
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-service
+  namespace: edoc
+spec:
+  selector:
+    app: ai-service
+  ports:
+    - port: 8090
+      targetPort: 8090
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: edoc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      containers:
+        - name: api-gateway
+          image: edoc/api-gateway:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SERVER_PORT
+              value: "8080"
+            - name: USER_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: USER_SERVICE_URL
+            - name: PATIENT_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: PATIENT_SERVICE_URL
+            - name: DOCTOR_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: DOCTOR_SERVICE_URL
+            - name: APPOINTMENT_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: APPOINTMENT_SERVICE_URL
+            - name: PAYMENT_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: PAYMENT_SERVICE_URL
+            - name: NOTIFICATION_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: NOTIFICATION_SERVICE_URL
+            - name: TELEMEDICINE_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: TELEMEDICINE_SERVICE_URL
+            - name: FEEDBACK_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: FEEDBACK_SERVICE_URL
+            - name: AI_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: AI_SERVICE_URL
+            - name: CORS_ALLOWED_ORIGIN_1
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: CORS_ALLOWED_ORIGIN_1
+            - name: CORS_ALLOWED_ORIGIN_2
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: CORS_ALLOWED_ORIGIN_2
+            - name: JWT_PUBLIC_KEY_PATH
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: JWT_PUBLIC_KEY_PATH
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+  namespace: edoc
+spec:
+  type: NodePort
+  selector:
+    app: api-gateway
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 30080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: edoc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: edoc/frontend:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NEXT_PUBLIC_API_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: NEXT_PUBLIC_API_BASE_URL
+            - name: NODE_ENV
+              value: production
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: edoc
+spec:
+  type: NodePort
+  selector:
+    app: frontend
+  ports:
+    - port: 3000
+      targetPort: 3000
+      nodePort: 30030

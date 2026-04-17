@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: telemedicine-service-db-config
+  namespace: edoc
+data:
+  DB_HOST: telemedicine-service-db
+  DB_PORT: "5432"
+  DB_NAME: telemedicine_db
+

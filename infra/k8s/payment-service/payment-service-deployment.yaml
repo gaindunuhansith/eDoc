@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-service
+  namespace: edoc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payment-service
+  template:
+    metadata:
+      labels:
+        app: payment-service
+    spec:
+      containers:
+        - name: payment-service
+          image: edoc/payment-service:latest
+          ports:
+            - containerPort: 8085
+          env:
+            - name: SERVER_PORT
+              value: "8085"
+            - name: DB_HOST
+              value: "payment-service-db"
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: "payment_db"
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: DB_PASSWORD
+            - name: APPOINTMENT_SERVICE_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: APPOINTMENT_SERVICE_BASE_URL
+            - name: NOTIFICATION_SERVICE_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: NOTIFICATION_SERVICE_BASE_URL
+            - name: API_GATEWAY_ORIGIN
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: API_GATEWAY_ORIGIN
+            - name: JWT_PUBLIC_KEY_PATH
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: JWT_PUBLIC_KEY_PATH
+            - name: PAYHERE_MERCHANT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: PAYHERE_MERCHANT_ID
+            - name: PAYHERE_MERCHANT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: PAYHERE_MERCHANT_SECRET
+          readinessProbe:
+            tcpSocket:
+              port: 8085
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 8085
+            initialDelaySeconds: 30
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-service
+  namespace: edoc
+spec:
+  type: ClusterIP
+  selector:
+    app: payment-service
+  ports:
+    - port: 8085
+      targetPort: 8085
+

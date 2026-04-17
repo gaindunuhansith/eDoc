@@ -1,0 +1,19 @@
+services:
+  ai-service-db:
+    image: postgres:16-alpine
+    container_name: ai-service-db
+    environment:
+      POSTGRES_DB: ai_service_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432"
+
+  ai-service:
+    image: edoc/ai-service:latest
+    container_name: ai-service
+    depends_on:
+      - ai-service-db
+    ports:
+      - "8090:8090"
+

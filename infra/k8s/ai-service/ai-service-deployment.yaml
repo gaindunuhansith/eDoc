@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-service
+  namespace: edoc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ai-service
+  template:
+    metadata:
+      labels:
+        app: ai-service
+    spec:
+      containers:
+        - name: ai-service
+          image: edoc/ai-service:latest
+          ports:
+            - containerPort: 8090
+          env:
+            - name: PUBLIC_KEY_PATH
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: JWT_PUBLIC_KEY_PATH
+            - name: GROQ_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: edoc-secrets
+                  key: GROQ_API_KEY
+            - name: PATIENT_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: PATIENT_SERVICE_URL
+            - name: DOCTOR_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: edoc-config
+                  key: DOCTOR_SERVICE_URL
+          readinessProbe:
+            tcpSocket:
+              port: 8090
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 8090
+            initialDelaySeconds: 30
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-service
+  namespace: edoc
+spec:
+  type: ClusterIP
+  selector:
+    app: ai-service
+  ports:
+    - port: 8090
+      targetPort: 8090
+

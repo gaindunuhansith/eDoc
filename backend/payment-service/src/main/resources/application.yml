@@ -26,10 +26,10 @@ services:
   notification-base-url: ${NOTIFICATION_SERVICE_BASE_URL:http://notification-service:8083}
 
 app:
-  api-gateway-origin: ${API_GATEWAY_ORIGIN:http://localhost:8080}
+  api-gateway-origin: ${API_GATEWAY_ORIGIN:http://api-gateway:8080}
 
 server:
   port: ${SERVER_PORT:8085}
 
 jwt:
-  public-key-path: ${JWT_PUBLIC_KEY_PATH:classpath:secrets/public.pem}
+  public-key-path: ${JWT_PUBLIC_KEY_PATH:secrets/public.pem}

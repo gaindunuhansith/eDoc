@@ -15,17 +15,17 @@ spring:
 # Service URLs - following patient service pattern
 appointment:
   service:
-    base-url: ${APPOINTMENT_SERVICE_URL:http://localhost:8081}
+    base-url: ${APPOINTMENT_SERVICE_URL:http://appointment-service:8081}
 notification:
   service:
-    base-url: ${NOTIFICATION_SERVICE_URL:http://localhost:8083}
+    base-url: ${NOTIFICATION_SERVICE_URL:http://notification-service:8083}
 user:
   service:
-    base-url: ${USER_SERVICE_URL:http://localhost:8088}
+    base-url: ${USER_SERVICE_URL:http://user-service:8088}
 
 server:
   port: ${SERVER_PORT:8089}
 
 jwt:
-  public-key-path: ${JWT_PUBLIC_KEY_PATH:classpath:secrets/public.pem}
+  public-key-path: ${JWT_PUBLIC_KEY_PATH:secrets/public.pem}
 

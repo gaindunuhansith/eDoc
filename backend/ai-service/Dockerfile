@@ -5,12 +5,13 @@ WORKDIR /app
 # Bootstrap: Install uv using pip (one-time only, for package management)
 RUN python -m pip install --no-cache-dir uv
 
-COPY pyproject.toml ./
+COPY pyproject.toml uv.lock ./
 
 # Use uv to sync all dependencies (no more pip after this)
 RUN uv sync --no-dev
 
-COPY . .
+COPY app ./app
+COPY server.py ./server.py
 
 EXPOSE 8087
 

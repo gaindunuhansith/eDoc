@@ -16,13 +16,13 @@ server:
   port: ${SERVER_PORT:8083}
 
 doctor-service:
-  base-url: ${DOCTOR_SERVICE_URL:http://localhost:8082}
+  base-url: ${DOCTOR_SERVICE_URL:http://doctor-service:8082}
 
 patient-service:
-  base-url: ${PATIENT_SERVICE_URL:http://localhost:8084}
+  base-url: ${PATIENT_SERVICE_URL:http://patient-service:8084}
 
 user-service:
-  base-url: ${USER_SERVICE_URL:http://localhost:8088}
+  base-url: ${USER_SERVICE_URL:http://user-service:8088}
 
 resend:
   api-key: ${RESEND_API_KEY:}
@@ -36,4 +36,4 @@ vonage:
   sms-from: ${VONAGE_SMS_FROM:eDoc}
 
 jwt:
-  public-key-path: ${JWT_PUBLIC_KEY_PATH:classpath:secrets/public.pem}
+  public-key-path: ${JWT_PUBLIC_KEY_PATH:secrets/public.pem}

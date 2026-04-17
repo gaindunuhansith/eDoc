@@ -1,0 +1,19 @@
+services:
+  notification-service-db:
+    image: postgres:16-alpine
+    container_name: notification-service-db
+    environment:
+      POSTGRES_DB: notification_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432"
+
+  notification-service:
+    image: edoc/notification-service:latest
+    container_name: notification-service
+    depends_on:
+      - notification-service-db
+    ports:
+      - "8083:8083"
+

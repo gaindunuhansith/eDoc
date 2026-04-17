@@ -1,0 +1,19 @@
+services:
+  patient-service-db:
+    image: postgres:16-alpine
+    container_name: patient-service-db
+    environment:
+      POSTGRES_DB: patient_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432"
+
+  patient-service:
+    image: edoc/patient-service:latest
+    container_name: patient-service
+    depends_on:
+      - patient-service-db
+    ports:
+      - "8084:8084"
+

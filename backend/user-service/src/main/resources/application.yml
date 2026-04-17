@@ -13,16 +13,16 @@ spring:
         format_sql: true
 
 jwt:
-  private-key-path: ${JWT_PRIVATE_KEY_PATH:classpath:secrets/private.pem}
-  public-key-path: ${JWT_PUBLIC_KEY_PATH:classpath:secrets/public.pem}
+  private-key-path: ${JWT_PRIVATE_KEY_PATH:secrets/private.pem}
+  public-key-path: ${JWT_PUBLIC_KEY_PATH:secrets/public.pem}
   expiration: ${JWT_EXPIRATION:86400000}
 
 microservices:
   patient:
-    base-url: ${PATIENT_SERVICE_URL:http://localhost:8084}
+    base-url: ${PATIENT_SERVICE_URL:http://patient-service:8084}
     delete-by-user-id-path: ${PATIENT_DELETE_BY_USER_ID_PATH:/patients/{userId}}
   doctor:
-    base-url: ${DOCTOR_SERVICE_URL:http://localhost:8082}
+    base-url: ${DOCTOR_SERVICE_URL:http://doctor-service:8082}
     delete-by-user-id-path: ${DOCTOR_DELETE_BY_USER_ID_PATH:/api/v1/doctors/{userId}}
 
 server:

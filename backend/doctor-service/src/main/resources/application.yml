@@ -1,5 +1,5 @@
 server:
-  port: 8082
+  port: ${SERVER_PORT:8082}
 
 spring:
   application:
@@ -10,11 +10,11 @@ spring:
       database: edoc_doctor_db
 
 jwt:
-  public-key-path: ${JWT_PUBLIC_KEY_PATH:classpath:secrets/public.pem}
+  public-key-path: ${JWT_PUBLIC_KEY_PATH:secrets/public.pem}
 
 patient:
   service:
-    url: http://localhost:8084
+    url: ${PATIENT_SERVICE_URL:http://patient-service:8084}
 
 logging:
   level:

@@ -1,0 +1,19 @@
+services:
+  feedback-service-db:
+    image: postgres:16-alpine
+    container_name: feedback-service-db
+    environment:
+      POSTGRES_DB: feedback_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432"
+
+  feedback-service:
+    image: edoc/feedback-service:latest
+    container_name: feedback-service
+    depends_on:
+      - feedback-service-db
+    ports:
+      - "8089:8089"
+

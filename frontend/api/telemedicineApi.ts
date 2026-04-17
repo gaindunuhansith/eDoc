@@ -109,7 +109,10 @@ export const handleTelemedicineError = (error: unknown, context: string): Teleme
   if (error && typeof error === "object" && "response" in error) {
     const axiosError = error as AxiosError;
     const status = axiosError.response?.status;
-    const data = axiosError.response?.data;
+    const data = axiosError.response?.data as {
+      appointmentId?: string;
+      message?: string;
+    } | undefined;
 
     switch (status) {
       case 401:

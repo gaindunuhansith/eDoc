@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: user-service-db-config
+  namespace: edoc
+data:
+  DB_HOST: user-service-db
+  DB_PORT: "5432"
+  DB_NAME: user_db
+

@@ -11,6 +11,14 @@ services:
       - "5437:5432"
     volumes:
       - payment-db-data:/data/postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d payment_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - edoc-network
+
   patient-db:
     image: postgres:16-alpine
     container_name: patient-db
@@ -23,6 +31,14 @@ services:
       - "5436:5432"
     volumes:
       - patient-db-data:/data/postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d patient_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - edoc-network
+
   notification-db:
     image: postgres:16-alpine
     container_name: notification-db
@@ -35,6 +51,14 @@ services:
       - "5435:5432"
     volumes:
       - notification-db-data:/data/postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d notification_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - edoc-network
+
   telemedicine-db:
     image: postgres:16-alpine
     container_name: telemedicine-db
@@ -47,6 +71,14 @@ services:
       - "5438:5432"
     volumes:
       - telemedicine-db-data:/data/postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d telemedicine_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - edoc-network
+
   feedback-db:
     image: postgres:16-alpine
     container_name: feedback-db
@@ -59,6 +91,14 @@ services:
       - "5442:5432"
     volumes:
       - feedback-db-data:/data/postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d feedback_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - edoc-network
+
   user-db:
     image: postgres:16-alpine
     container_name: user-db
@@ -71,6 +111,13 @@ services:
       - "5440:5432"
     volumes:
       - user-db-data:/data/postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d user_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - edoc-network
 
   doctor-db:
     image: mongo:latest
@@ -83,6 +130,13 @@ services:
       - "5434:27017"
     volumes:
       - doctor-db-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - edoc-network
 
   appointment-db:
     image: mongo:latest
@@ -95,7 +149,308 @@ services:
       - "5433:27017"
     volumes:
       - appointment-db-data:/data/db
-  
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - edoc-network
+
+  user-service:
+    build:
+      context: ./backend/user-service
+      dockerfile: Dockerfile
+    container_name: user-service
+    env_file:
+      - ./backend/user-service/.env
+    environment:
+      SERVER_PORT: 8088
+      DB_HOST: user-db
+      DB_PORT: 5432
+      DB_NAME: user_db
+      DB_USER: user
+      DB_PASSWORD: password
+      JWT_PRIVATE_KEY_PATH: /app/secrets/private.pem
+      JWT_PUBLIC_KEY_PATH: /app/secrets/public.pem
+      PATIENT_SERVICE_URL: http://patient-service:8084
+      DOCTOR_SERVICE_URL: http://doctor-service:8082
+    volumes:
+      - ./backend/user-service/secrets/private.pem:/app/secrets/private.pem:ro
+      - ./backend/user-service/secrets/public.pem:/app/secrets/public.pem:ro
+    ports:
+      - "8088:8088"
+    depends_on:
+      user-db:
+        condition: service_healthy
+    networks:
+      - edoc-network
+
+  patient-service:
+    build:
+      context: ./backend/patient-service
+      dockerfile: Dockerfile
+    container_name: patient-service
+    env_file:
+      - ./backend/patient-service/.env
+    environment:
+      SERVER_PORT: 8084
+      DB_HOST: patient-db
+      DB_PORT: 5432
+      DB_NAME: patient_db
+      DB_USER: user
+      DB_PASSWORD: password
+      DOCTOR_SERVICE_URL: http://doctor-service:8082
+      JWT_PUBLIC_KEY_PATH: /app/secrets/public.pem
+      REPORTS_DIR: /app/uploads/reports
+    volumes:
+      - ./backend/user-service/secrets/public.pem:/app/secrets/public.pem:ro
+      - ./uploads:/app/uploads
+    ports:
+      - "8084:8084"
+    depends_on:
+      patient-db:
+        condition: service_healthy
+    networks:
+      - edoc-network
+
+  doctor-service:
+    build:
+      context: ./backend/doctor-service
+      dockerfile: Dockerfile
+    container_name: doctor-service
+    env_file:
+      - ./backend/doctor-service/.env
+    environment:
+      SERVER_PORT: 8082
+      MONGO_URI: mongodb://user:password@doctor-db:27017/edoc_doctor_db?authSource=admin
+      PATIENT_SERVICE_URL: http://patient-service:8084
+      JWT_PUBLIC_KEY_PATH: /app/secrets/public.pem
+    volumes:
+      - ./backend/user-service/secrets/public.pem:/app/secrets/public.pem:ro
+    ports:
+      - "8082:8082"
+    depends_on:
+      doctor-db:
+        condition: service_healthy
+    networks:
+      - edoc-network
+
+  appointment-service:
+    build:
+      context: ./backend/appointment-service
+      dockerfile: Dockerfile
+    container_name: appointment-service
+    env_file:
+      - ./backend/appointment-service/.env
+    environment:
+      SERVER_PORT: 8081
+      MONGO_URI: mongodb://user:password@appointment-db:27017/edoc_appointment_db?authSource=admin
+      DOCTOR_SERVICE_URL: http://doctor-service:8082
+      PATIENT_SERVICE_URL: http://patient-service:8084
+      NOTIFICATION_SERVICE_URL: http://notification-service:8083
+      JWT_PUBLIC_KEY_PATH: /app/secrets/public.pem
+    volumes:
+      - ./backend/user-service/secrets/public.pem:/app/secrets/public.pem:ro
+    ports:
+      - "8081:8081"
+    depends_on:
+      appointment-db:
+        condition: service_healthy
+    networks:
+      - edoc-network
+
+  payment-service:
+    build:
+      context: ./backend/payment-service
+      dockerfile: Dockerfile
+    container_name: payment-service
+    env_file:
+      - ./backend/payment-service/.env
+    environment:
+      SERVER_PORT: 8085
+      DB_HOST: payment-db
+      DB_PORT: 5432
+      DB_NAME: payment_db
+      DB_USER: user
+      DB_PASSWORD: password
+      APPOINTMENT_SERVICE_BASE_URL: http://appointment-service:8081
+      NOTIFICATION_SERVICE_BASE_URL: http://notification-service:8083
+      API_GATEWAY_ORIGIN: http://localhost:8080
+      JWT_PUBLIC_KEY_PATH: /app/secrets/public.pem
+    volumes:
+      - ./backend/user-service/secrets/public.pem:/app/secrets/public.pem:ro
+    ports:
+      - "8085:8085"
+    depends_on:
+      payment-db:
+        condition: service_healthy
+    networks:
+      - edoc-network
+
+  notification-service:
+    build:
+      context: ./backend/notification-service
+      dockerfile: Dockerfile
+    container_name: notification-service
+    env_file:
+      - ./backend/notification-service/.env
+    environment:
+      SERVER_PORT: 8083
+      DB_HOST: notification-db
+      DB_PORT: 5432
+      DB_NAME: notification_db
+      DB_USER: user
+      DB_PASSWORD: password
+      DOCTOR_SERVICE_URL: http://doctor-service:8082
+      PATIENT_SERVICE_URL: http://patient-service:8084
+      USER_SERVICE_URL: http://user-service:8088
+      JWT_PUBLIC_KEY_PATH: /app/secrets/public.pem
+    volumes:
+      - ./backend/user-service/secrets/public.pem:/app/secrets/public.pem:ro
+    ports:
+      - "8083:8083"
+    depends_on:
+      notification-db:
+        condition: service_healthy
+    networks:
+      - edoc-network
+
+  telemedicine-service:
+    build:
+      context: ./backend/telemedicine-service
+      dockerfile: Dockerfile
+    container_name: telemedicine-service
+    env_file:
+      - ./backend/telemedicine-service/.env
+    environment:
+      SERVER_PORT: 8086
+      DB_HOST: telemedicine-db
+      DB_PORT: 5432
+      DB_NAME: telemedicine_db
+      DB_USER: user
+      DB_PASSWORD: password
+      APPOINTMENT_SERVICE_URL: http://appointment-service:8081
+      NOTIFICATION_SERVICE_URL: http://notification-service:8083
+      USER_SERVICE_URL: http://user-service:8088
+      JWT_PUBLIC_KEY_PATH: /app/secrets/public.pem
+    volumes:
+      - ./backend/user-service/secrets/public.pem:/app/secrets/public.pem:ro
+    ports:
+      - "8086:8086"
+    depends_on:
+      telemedicine-db:
+        condition: service_healthy
+    networks:
+      - edoc-network
+
+  feedback-service:
+    build:
+      context: ./backend/feedback-service
+      dockerfile: Dockerfile
+    container_name: feedback-service
+    env_file:
+      - ./backend/feedback-service/.env
+    environment:
+      SERVER_PORT: 8089
+      DB_HOST: feedback-db
+      DB_PORT: 5432
+      DB_NAME: feedback_db
+      DB_USER: user
+      DB_PASSWORD: password
+      APPOINTMENT_SERVICE_URL: http://appointment-service:8081
+      NOTIFICATION_SERVICE_URL: http://notification-service:8083
+      USER_SERVICE_URL: http://user-service:8088
+      JWT_PUBLIC_KEY_PATH: /app/secrets/public.pem
+    volumes:
+      - ./backend/user-service/secrets/public.pem:/app/secrets/public.pem:ro
+    ports:
+      - "8089:8089"
+    depends_on:
+      feedback-db:
+        condition: service_healthy
+    networks:
+      - edoc-network
+
+  ai-service:
+    build:
+      context: ./backend/ai-service
+      dockerfile: Dockerfile
+    container_name: ai-service
+    env_file:
+      - ./backend/ai-service/.env
+    environment:
+      PUBLIC_KEY_PATH: /app/secrets/public.pem
+      PATIENT_SERVICE_URL: http://patient-service:8084
+      DOCTOR_SERVICE_URL: http://doctor-service:8082
+    volumes:
+      - ./backend/user-service/secrets/public.pem:/app/secrets/public.pem:ro
+    ports:
+      - "8090:8090"
+    networks:
+      - edoc-network
+
+  api-gateway:
+    build:
+      context: ./backend/api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    env_file:
+      - ./backend/api-gateway/.env
+    environment:
+      SERVER_PORT: 8080
+      USER_SERVICE_URL: http://user-service:8088
+      PATIENT_SERVICE_URL: http://patient-service:8084
+      DOCTOR_SERVICE_URL: http://doctor-service:8082
+      APPOINTMENT_SERVICE_URL: http://appointment-service:8081
+      PAYMENT_SERVICE_URL: http://payment-service:8085
+      NOTIFICATION_SERVICE_URL: http://notification-service:8083
+      TELEMEDICINE_SERVICE_URL: http://telemedicine-service:8086
+      FEEDBACK_SERVICE_URL: http://feedback-service:8089
+      AI_SERVICE_URL: http://ai-service:8090
+      JWT_PUBLIC_KEY_PATH: /app/secrets/public.pem
+      CORS_ALLOWED_ORIGIN_1: http://localhost:3000
+      CORS_ALLOWED_ORIGIN_2: http://localhost:3001
+    volumes:
+      - ./backend/user-service/secrets/public.pem:/app/secrets/public.pem:ro
+    ports:
+      - "8080:8080"
+    depends_on:
+      - user-service
+      - patient-service
+      - doctor-service
+      - appointment-service
+      - payment-service
+      - notification-service
+      - telemedicine-service
+      - feedback-service
+      - ai-service
+    networks:
+      - edoc-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: http://localhost:8080
+    container_name: frontend
+    env_file:
+      - ./frontend/.env.local
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8080
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api-gateway
+    networks:
+      - edoc-network
+
+networks:
+  edoc-network:
+    driver: bridge
+
 volumes:
   payment-db-data:
   patient-db-data:

@@ -1,0 +1,19 @@
+services:
+  appointment-service-db:
+    image: postgres:16-alpine
+    container_name: appointment-service-db
+    environment:
+      POSTGRES_DB: appointment_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432"
+
+  appointment-service:
+    image: edoc/appointment-service:latest
+    container_name: appointment-service
+    depends_on:
+      - appointment-service-db
+    ports:
+      - "8081:8081"
+

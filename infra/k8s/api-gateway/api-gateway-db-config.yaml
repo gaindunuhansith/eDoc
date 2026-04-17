@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-gateway-db-config
+  namespace: edoc
+data:
+  DB_HOST: api-gateway-db
+  DB_PORT: "5432"
+  DB_NAME: api_gateway_db
+
