@@ -37,9 +37,9 @@ export interface CreateSessionPayload {
 export const fetchAllSessions = () =>
   apiClient.get<TelemedicineSession[]>(TELEMEDICINE_ENDPOINTS.SESSIONS);
 
-export const fetchSessionById = (id: string) =>
+export const fetchSessionByAppointmentId = (appointmentId: string) =>
   apiClient.get<TelemedicineSession>(
-    TELEMEDICINE_ENDPOINTS.SESSION_BY_ID(id)
+    TELEMEDICINE_ENDPOINTS.SESSION_BY_APPOINTMENT_ID(appointmentId)
   );
 
 export const createSession = (payload: CreateSessionPayload) =>
@@ -48,19 +48,21 @@ export const createSession = (payload: CreateSessionPayload) =>
     payload
   );
 
-export const startSession = (id: string) =>
-  apiClient.patch<TelemedicineSession>(
-    TELEMEDICINE_ENDPOINTS.START_SESSION(id)
+export const startSession = (appointmentId: string) =>
+  apiClient.put<TelemedicineSession>(
+    TELEMEDICINE_ENDPOINTS.START_SESSION(appointmentId)
   );
 
-export const endSession = (id: string) =>
-  apiClient.patch<TelemedicineSession>(TELEMEDICINE_ENDPOINTS.END_SESSION(id));
+export const endSession = (appointmentId: string) =>
+  apiClient.put<TelemedicineSession>(TELEMEDICINE_ENDPOINTS.END_SESSION(appointmentId));
 
-export const joinSession = (id: string) =>
-  apiClient.post<TelemedicineSession>(TELEMEDICINE_ENDPOINTS.JOIN_SESSION(id));
+export const fetchSessionToken = (appointmentId: string, userId: string) =>
+  apiClient.get<SessionToken>(
+    `${TELEMEDICINE_ENDPOINTS.SESSION_TOKEN(appointmentId)}?userId=${userId}`
+  );
 
-export const fetchSessionToken = (id: string) =>
-  apiClient.get<SessionToken>(TELEMEDICINE_ENDPOINTS.SESSION_TOKEN(id));
+export const deleteSession = (appointmentId: string) =>
+  apiClient.delete(TELEMEDICINE_ENDPOINTS.DELETE_SESSION(appointmentId));
 
 export const useGetAllSessions = () =>
   useQuery({
@@ -68,18 +70,18 @@ export const useGetAllSessions = () =>
     queryFn: () => fetchAllSessions().then((r) => r.data),
   });
 
-export const useGetSessionById = (id: string) =>
+export const useGetSessionByAppointmentId = (appointmentId: string) =>
   useQuery({
-    queryKey: queryKeys.telemedicine.session(id),
-    queryFn: () => fetchSessionById(id).then((r) => r.data),
-    enabled: !!id,
+    queryKey: queryKeys.telemedicine.session(appointmentId),
+    queryFn: () => fetchSessionByAppointmentId(appointmentId).then((r) => r.data),
+    enabled: !!appointmentId,
   });
 
-export const useGetSessionToken = (id: string) =>
+export const useGetSessionToken = (appointmentId: string, userId: string) =>
   useQuery({
-    queryKey: queryKeys.telemedicine.token(id),
-    queryFn: () => fetchSessionToken(id).then((r) => r.data),
-    enabled: !!id,
+    queryKey: queryKeys.telemedicine.token(appointmentId),
+    queryFn: () => fetchSessionToken(appointmentId, userId).then((r) => r.data),
+    enabled: !!appointmentId && !!userId,
     staleTime: 1 * 60 * 1000,
     gcTime: 2 * 60 * 1000,
   });
@@ -97,10 +99,10 @@ export const useCreateSession = () => {
 export const useStartSession = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: startSession,
+    mutationFn: (appointmentId: string) => startSession(appointmentId),
     onSuccess: (data) => {
       qc.invalidateQueries({
-        queryKey: queryKeys.telemedicine.session(data.data.id),
+        queryKey: queryKeys.telemedicine.session(data.data.appointmentId),
       });
       qc.invalidateQueries({ queryKey: queryKeys.telemedicine.sessions() });
     },
@@ -110,15 +112,22 @@ export const useStartSession = () => {
 export const useEndSession = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: endSession,
+    mutationFn: (appointmentId: string) => endSession(appointmentId),
     onSuccess: (data) => {
       qc.invalidateQueries({
-        queryKey: queryKeys.telemedicine.session(data.data.id),
+        queryKey: queryKeys.telemedicine.session(data.data.appointmentId),
       });
       qc.invalidateQueries({ queryKey: queryKeys.telemedicine.sessions() });
     },
   });
 };
 
-export const useJoinSession = () =>
-  useMutation({ mutationFn: joinSession });
+export const useDeleteSession = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (appointmentId: string) => deleteSession(appointmentId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.telemedicine.sessions() });
+    },
+  });
+};
