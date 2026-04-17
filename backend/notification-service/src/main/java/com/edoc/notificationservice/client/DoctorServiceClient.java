@@ -24,7 +24,7 @@ public class DoctorServiceClient {
     public DoctorContact getDoctorById(String doctorId) {
         try {
             return restClient.get()
-                    .uri(doctorServiceBaseUrl + "/api/doctors/{id}", doctorId)
+                    .uri(doctorServiceBaseUrl + "/api/v1/doctors/{id}", doctorId)
                     .retrieve()
                     .body(DoctorContact.class);
         } catch (RestClientException ex) {

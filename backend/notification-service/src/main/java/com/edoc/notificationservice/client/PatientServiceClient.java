@@ -27,7 +27,7 @@ public class PatientServiceClient {
     public Map<?, ?> getPatientById(String patientId) {
         try {
             return restClient.get()
-                    .uri(patientServiceBaseUrl + "/internal/patients/{id}", patientId)
+                    .uri(patientServiceBaseUrl + "/api/v1/internal/patients/{id}", patientId)
                     .retrieve()
                     .body(Map.class);
         } catch (RestClientException ex) {

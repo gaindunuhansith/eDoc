@@ -26,7 +26,7 @@ public class DoctorPrescriptionClient {
     public List<PrescriptionResponseDTO> getPrescriptionsByPatient(String patientId) {
         try {
             List<PrescriptionResponseDTO> prescriptions = restClient.get()
-                    .uri(doctorServiceBaseUrl + "/api/prescriptions/patient/{patientId}", patientId)
+                    .uri(doctorServiceBaseUrl + "/api/v1/prescriptions/patient/{patientId}", patientId)
                     .retrieve()
                     .body(new ParameterizedTypeReference<List<PrescriptionResponseDTO>>() { });
             return prescriptions == null ? Collections.emptyList() : prescriptions;

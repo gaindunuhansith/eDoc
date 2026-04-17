@@ -30,7 +30,7 @@ public class NotificationServiceClient {
         try {
             webClientBuilder.build()
                     .post()
-                    .uri(notificationServiceUrl + "/notifications/send")
+                    .uri(notificationServiceUrl + "/api/v1/notifications/send")
                     .bodyValue(request)
                     .retrieve()
                     .bodyToMono(Void.class)
