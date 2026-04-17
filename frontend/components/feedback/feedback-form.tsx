@@ -10,11 +10,12 @@ import { Star } from "lucide-react";
 interface FeedbackFormProps {
   appointmentId: number;
   doctorId: number;
+  doctorName?: string;
   onSubmit: (rating: number, comment: string) => void;
   isLoading?: boolean;
 }
 
-export function FeedbackForm({ appointmentId, doctorId, onSubmit, isLoading }: FeedbackFormProps) {
+export function FeedbackForm({ appointmentId, doctorId, doctorName, onSubmit, isLoading }: FeedbackFormProps) {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [hoverRating, setHoverRating] = useState(0);
@@ -57,6 +58,11 @@ export function FeedbackForm({ appointmentId, doctorId, onSubmit, isLoading }: F
     <Card className="bg-white border border-gray-200 shadow-sm max-w-2xl mx-auto">
       <CardHeader>
         <CardTitle className="text-gray-900">Leave Feedback</CardTitle>
+        {doctorName && (
+          <p className="text-sm text-gray-600 mt-2">
+            For: <span className="font-medium">{doctorName}</span>
+          </p>
+        )}
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">

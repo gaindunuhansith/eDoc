@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { FeedbackForm } from "@/components/feedback";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,8 +15,13 @@ import { toast } from "sonner";
 export default function SubmitFeedbackPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const appointmentIdStr = params.appointmentId as string;
   const [submitted, setSubmitted] = useState(false);
+
+  // Get data from URL params or search params
+  const doctorId = searchParams.get('doctorId');
+  const doctorName = searchParams.get('doctorName');
 
   const { data: appointment, isLoading: apptLoading } =
     useGetAppointmentById(appointmentIdStr);
@@ -26,12 +31,18 @@ export default function SubmitFeedbackPage() {
   const isLoading = apptLoading || profileLoading;
 
   const handleSubmit = (rating: number, comment: string) => {
-    if (!patient?.id || !appointment) return;
+    if (!patient?.id) return;
+
+    const finalDoctorId = doctorId ? Number(doctorId) : (appointment ? Number(appointment.doctorId) : null);
+    if (!finalDoctorId) {
+      toast.error("Doctor information not available. Please try again.");
+      return;
+    }
 
     submitFeedback(
       {
         appointmentId: Number(appointmentIdStr),
-        doctorId: Number(appointment.doctorId),
+        doctorId: finalDoctorId,
         rating,
         comment: comment || undefined,
       },
@@ -109,7 +120,8 @@ export default function SubmitFeedbackPage() {
 
       <FeedbackForm
         appointmentId={Number(appointmentIdStr)}
-        doctorId={Number(appointment.doctorId)}
+        doctorId={doctorId ? Number(doctorId) : Number(appointment.doctorId)}
+        doctorName={doctorName || appointment.doctorName}
         onSubmit={handleSubmit}
         isLoading={isPending}
       />
