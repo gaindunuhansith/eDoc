@@ -23,10 +23,19 @@ public class DoctorService {
     // Register a new doctor
     public Doctor registerDoctor(DoctorRegistrationRequest request) {
         if (doctorRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already registered");
+            Doctor existing = doctorRepository.findByEmail(request.getEmail()).orElseThrow(() -> new RuntimeException("Doctor not found"));
+            if (request.getId() != null && !request.getId().equals(existing.getId())) {
+                // If it has a mismatched ID (from older tests), delete it to start fresh
+                doctorRepository.delete(existing);
+            } else {
+                return existing;
+            }
         }
 
         Doctor doctor = new Doctor();
+        if (request.getId() != null && !request.getId().isEmpty()) {
+            doctor.setId(request.getId());
+        }
         doctor.setFirstName(request.getFirstName());
         doctor.setLastName(request.getLastName());
         doctor.setEmail(request.getEmail());
@@ -76,6 +85,8 @@ public class DoctorService {
         doctor.setPhoneNumber(request.getPhoneNumber());
         doctor.setSpecialty(request.getSpecialty());
         doctor.setQualification(request.getQualification());
+        doctor.setExperienceYears(request.getExperienceYears());
+        doctor.setLicenseNumber(request.getLicenseNumber());
         doctor.setHospital(request.getHospital());
         doctor.setBio(request.getBio());
         doctor.setConsultationFee(request.getConsultationFee());

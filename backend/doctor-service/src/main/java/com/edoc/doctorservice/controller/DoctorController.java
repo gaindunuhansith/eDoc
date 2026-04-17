@@ -17,7 +17,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/doctors")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")    // Allows frontend to call this API
 public class DoctorController {
 
     private final DoctorService doctorService;

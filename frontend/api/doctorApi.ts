@@ -48,6 +48,8 @@ export interface Prescription {
 }
 
 export interface CreateDoctorPayload {
+  id?: string;
+  email?: string;
   firstName: string;
   lastName: string;
   specialty: string;

@@ -21,6 +21,7 @@ export type SidebarNavItem = {
 const adminNav: SidebarNavItem[] = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
   { title: "Users", url: "/admin/users", icon: Users },
+  { title: "Pending Doctors", url: "/admin/pending-doctors", icon: Building2 },
   { title: "Patients", url: "/admin/patients", icon: Users },
   { title: "Appointments", url: "/admin/appointments", icon: Calendar },
   { title: "Payments", url: "/admin/payments", icon: CreditCard },
