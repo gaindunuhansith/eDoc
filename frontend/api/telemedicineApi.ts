@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AxiosError } from "axios";
 import { toast } from "sonner";
 
 import apiClient from "./utils/axiosInstance";
@@ -7,6 +8,12 @@ import { queryKeys } from "./utils/queryKeys";
 import { useStore } from "../store/store";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+export type SessionStatus =
+  | "SCHEDULED"
+  | "ACTIVE"
+  | "ENDED"
+  | "CANCELLED";
+
 export interface TelemedicineSession {
   id: string;
   appointmentId: string;
@@ -25,19 +32,6 @@ export interface TelemedicineSession {
   createdAt: string;
   updatedAt: string;
 }
-
-export interface CreateSessionPayload {
-  appointmentId: string;
-  notes?: string;
-}
-
-export interface JoinTokenResponse {
-  token: string;
-  roomName: string;
-  identity: string;
-}
-
-// ─── Error Classes ────────────────────────────────────────────────────────────
 export class TelemedicineError extends Error {
   constructor(
     message: string,
@@ -113,7 +107,7 @@ export const handleTelemedicineError = (error: unknown, context: string): Teleme
   }
 
   if (error && typeof error === "object" && "response" in error) {
-    const axiosError = error as any;
+    const axiosError = error as AxiosError;
     const status = axiosError.response?.status;
     const data = axiosError.response?.data;
 
@@ -197,25 +191,6 @@ export const showTelemedicineErrorToast = (error: TelemedicineError) => {
 export const showTelemedicineSuccessToast = (message: string, description?: string) => {
   toast.success(message, description ? { description } : undefined);
 };
-
-export type SessionStatus =
-  | "SCHEDULED"
-  | "ACTIVE"
-  | "ENDED"
-  | "CANCELLED";
-
-export interface TelemedicineSession {
-  id: string;
-  appointmentId: string;
-  doctorId: string;
-  patientId: string;
-  status: SessionStatus;
-  roomName?: string;
-  startedAt?: string;
-  endedAt?: string;
-  scheduledAt: string;
-  durationMinutes?: number;
-}
 
 export interface SessionToken {
   token: string;

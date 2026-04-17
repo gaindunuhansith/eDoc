@@ -33,7 +33,7 @@ export interface UserProfile {
   userId: string;
   email: string;
   name: string;
-  role: string;
+  role: "PATIENT" | "DOCTOR" | "ADMIN";
   phoneNumber?: string;
   isProfileCreated: boolean;
   createdAt: string;

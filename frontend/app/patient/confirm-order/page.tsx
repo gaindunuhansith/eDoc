@@ -35,23 +35,23 @@ export default function ConfirmOrderPage() {
               <h3 className="font-medium text-foreground">Number of seats</h3>
               <p className="text-sm text-muted-foreground mb-4">Select how many seats you need.</p>
               <div className="flex items-center w-full max-w-md h-12 border rounded-xl overflow-hidden ring-1 ring-border/50">
-                <button 
+                <Button 
                   variant="ghost" 
                   className="px-4 h-full flex items-center justify-center text-muted-foreground hover:bg-muted/50 transition-colors"
                   onClick={() => setSeats(Math.max(1, seats - 1))}
                 >
                   <Minus className="w-5 h-5" />
-                </button>
+                </Button>
                 <div className="flex-1 h-full flex items-center justify-center font-bold text-xl border-x">
                   {seats}
                 </div>
-                <button 
+                <Button 
                   variant="ghost" 
                   className="px-4 h-full flex items-center justify-center text-muted-foreground hover:bg-muted/50 transition-colors"
                   onClick={() => setSeats(seats + 1)}
                 >
                   <Plus className="w-5 h-5" />
-                </button>
+                </Button>
               </div>
             </div>
 
