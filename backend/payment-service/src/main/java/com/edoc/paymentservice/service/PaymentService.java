@@ -7,6 +7,7 @@ import com.edoc.paymentservice.dto.InitiatePaymentResponse;
 import com.edoc.paymentservice.dto.PayHereWebhookDTO;
 import com.edoc.paymentservice.dto.PaymentDetailResponse;
 import com.edoc.paymentservice.dto.PaymentHistoryResponse;
+import com.edoc.paymentservice.exception.PaymentSecurityException;
 import com.edoc.paymentservice.mapper.PaymentMapper;
 import com.edoc.paymentservice.model.Payment;
 import com.edoc.paymentservice.model.PaymentTransactionLog;
@@ -90,7 +91,7 @@ public class PaymentService {
                 webhook.getMd5sig());
 
         if (!validSignature) {
-            throw new IllegalArgumentException(AppMessages.INVALID_SIGNATURE);
+            throw new PaymentSecurityException(AppMessages.INVALID_SIGNATURE);
         }
 
         if (webhook.getPaymentId() != null
