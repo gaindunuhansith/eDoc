@@ -18,16 +18,20 @@ import com.edoc.paymentservice.type.PaymentStatus;
 import com.edoc.paymentservice.util.HashUtil;
 import java.util.List;
 import java.util.UUID;
+
+import com.edoc.paymentservice.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
-public class PaymentService {
+public class PaymentService implements IPaymentService {
 
     private final PaymentRepository paymentRepository;
     private final TransactionLogRepository transactionLogRepository;
@@ -43,14 +47,22 @@ public class PaymentService {
     @Value("${payhere.checkout-url}")
     private String checkoutUrl;
 
+    @Value("${payhere.notify-url}")
+    private String notifyUrl;
+
+    @Override
     @Transactional
     public InitiatePaymentResponse initiatePayment(InitiatePaymentRequest request, Long userId) {
+        SecurityUtil.populateMdc(null, userId);
+
         Payment existing = paymentRepository.findByAppointmentId(request.appointmentId()).orElse(null);
         if (existing != null) {
             if (existing.getStatus() == PaymentStatus.PENDING) {
+                log.debug("Returning existing pending payment for appointmentId={}", request.appointmentId());
                 return buildInitiateResponse(existing);
             }
             if (existing.getStatus() == PaymentStatus.SUCCESS) {
+                log.warn("Payment already completed for appointmentId={}", request.appointmentId());
                 throw new IllegalStateException(AppMessages.PAYMENT_ALREADY_COMPLETED);
             }
         }
@@ -65,6 +77,10 @@ public class PaymentService {
                 .build();
 
         Payment saved = paymentRepository.save(payment);
+
+        SecurityUtil.populateMdc(saved.getOrderId(), userId);
+        log.info("Payment initiated: appointmentId={}, orderId={}, amount={}", request.appointmentId(), saved.getOrderId(), request.amount());
+
         transactionLogRepository.save(PaymentTransactionLog.builder()
                 .payment(saved)
                 .event(PayHereConstants.EVENT_PAYMENT_INITIATED)
@@ -74,11 +90,13 @@ public class PaymentService {
         return buildInitiateResponse(saved);
     }
 
+    @Override
     public Payment getPaymentByAppointmentId(Long appointmentId) {
         return paymentRepository.findByAppointmentId(appointmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Payment not found for appointment"));
     }
 
+    @Override
     @Transactional
     public void processWebhook(PayHereWebhookDTO webhook) {
         boolean validSignature = HashUtil.verifyWebhookSignature(
@@ -119,38 +137,49 @@ public class PaymentService {
         if (saved.getStatus() == PaymentStatus.SUCCESS) {
             paymentNotificationService.notifyPaymentSuccess(saved);
         }
+        log.info("Webhook processed: orderId={}, status={}", webhook.getOrderId(), saved.getStatus());
     }
 
+    @Override
     public Payment getPaymentByOrderId(String orderId) {
         return paymentRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Payment not found for order"));
     }
 
+    @Override
     public Page<PaymentHistoryResponse> getPaymentHistory(Long userId, Pageable pageable) {
+        log.debug("Fetching payment history for userId={}", userId);
         return paymentRepository.findByUserId(userId, pageable).map(paymentMapper::toHistoryResponse);
     }
 
+    @Override
     public PaymentDetailResponse getPaymentById(UUID paymentId) {
+        log.debug("Fetching payment detail for paymentId={}", paymentId);
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new IllegalArgumentException(AppMessages.PAYMENT_NOT_FOUND));
         List<PaymentTransactionLog> logs = transactionLogRepository.findByPayment_IdOrderByCreatedAtDesc(paymentId);
         return paymentMapper.toDetailResponse(payment, logs);
     }
 
+    @Override
     public Page<PaymentHistoryResponse> getAllPayments(Pageable pageable) {
         return paymentRepository.findAll(pageable).map(paymentMapper::toHistoryResponse);
     }
 
+    @Override
     public Page<PaymentHistoryResponse> getPaymentsByUser(Long userId, Pageable pageable) {
         return paymentRepository.findByUserId(userId, pageable).map(paymentMapper::toHistoryResponse);
     }
 
+    @Override
     public Page<PaymentHistoryResponse> getPaymentsByStatus(PaymentStatus status, Pageable pageable) {
         return paymentRepository.findByStatus(status, pageable).map(paymentMapper::toHistoryResponse);
     }
 
+    @Override
     @Transactional
     public void flagForReconciliation(UUID paymentId) {
+        log.info("Flagging payment for reconciliation: paymentId={}", paymentId);
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new IllegalArgumentException(AppMessages.PAYMENT_NOT_FOUND));
         transactionLogRepository.save(PaymentTransactionLog.builder()
@@ -182,6 +211,7 @@ public class PaymentService {
                 payment.getAmount(),
                 payment.getCurrency().name(),
                 hash,
-                checkoutUrl);
+                checkoutUrl,
+                notifyUrl);
     }
 }
