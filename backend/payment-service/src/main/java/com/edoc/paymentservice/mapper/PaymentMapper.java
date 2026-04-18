@@ -27,11 +27,14 @@ public interface PaymentMapper {
         return new PaymentDetailResponse(
                 payment.getId(),
                 payment.getAppointmentId(),
+                payment.getUserId(),
                 payment.getAmount(),
                 payment.getCurrency(),
                 payment.getStatus(),
                 payment.getOrderId(),
+                payment.getPayhereId(),
                 payment.getCreatedAt(),
+                payment.getUpdatedAt(),
                 entries);
     }
 }

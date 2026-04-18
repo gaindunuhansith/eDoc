@@ -1,5 +1,7 @@
 package com.edoc.paymentservice.config;
 
+import java.time.Duration;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -9,15 +11,20 @@ import org.springframework.web.client.RestClient;
 @Configuration
 public class RestClientConfig {
 
+    @Value("${app.appointment-service.base-url}")
+    private String appointmentBaseUrl;
+
     @Bean
-    RestClient restClient(@Value("${app.appointment-service.base-url}") String appointmentBaseUrl) {
+    public RestClient restClient() {
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
-        requestFactory.setConnectTimeout(5000);
-        requestFactory.setReadTimeout(5000);
+        requestFactory.setConnectTimeout((int) Duration.ofSeconds(5).toMillis());
+        requestFactory.setReadTimeout((int) Duration.ofSeconds(5).toMillis());
 
         return RestClient.builder()
                 .baseUrl(appointmentBaseUrl)
                 .requestFactory(requestFactory)
+                .defaultHeader("Accept", "application/json")
+                .defaultHeader("Content-Type", "application/json")
                 .build();
     }
 }
