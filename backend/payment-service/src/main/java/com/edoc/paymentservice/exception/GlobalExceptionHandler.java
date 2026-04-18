@@ -5,6 +5,7 @@ import com.edoc.paymentservice.constant.ErrorCodes;
 import com.edoc.paymentservice.dto.ErrorResponse;
 import java.util.NoSuchElementException;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -24,6 +26,21 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(PaymentSecurityException.class)
     public ResponseEntity<ErrorResponse> handleSecurity(PaymentSecurityException ex) {
         return build(HttpStatus.BAD_REQUEST, ErrorCodes.ERR_INVALID_SIGNATURE, ex.getMessage());
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalState(IllegalStateException ex) {
+        if (AppMessages.PAYMENT_ALREADY_COMPLETED.equals(ex.getMessage())) {
+            return build(HttpStatus.CONFLICT, ErrorCodes.ERR_PAYMENT_COMPLETED, ex.getMessage());
+        }
+        log.error("Illegal state exception", ex);
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, ErrorCodes.ERR_INTERNAL, AppMessages.INTERNAL_ERROR);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
+        log.warn("Illegal argument provided: {}", ex.getMessage());
+        return build(HttpStatus.BAD_REQUEST, ErrorCodes.ERR_NOT_FOUND, ex.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -40,8 +57,15 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.NOT_FOUND, ErrorCodes.ERR_NOT_FOUND, AppMessages.PAYMENT_NOT_FOUND);
     }
 
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ErrorResponse> handleRuntime(RuntimeException ex) {
+        log.error("Unexpected runtime exception", ex);
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, ErrorCodes.ERR_INTERNAL, AppMessages.INTERNAL_ERROR);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleFallback(Exception ex) {
+        log.error("Unexpected exception", ex);
         return build(HttpStatus.INTERNAL_SERVER_ERROR, ErrorCodes.ERR_INTERNAL, AppMessages.INTERNAL_ERROR);
     }
 
