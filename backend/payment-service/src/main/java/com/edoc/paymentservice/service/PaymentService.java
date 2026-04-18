@@ -5,6 +5,9 @@ import com.edoc.paymentservice.constant.PayHereConstants;
 import com.edoc.paymentservice.dto.InitiatePaymentRequest;
 import com.edoc.paymentservice.dto.InitiatePaymentResponse;
 import com.edoc.paymentservice.dto.PayHereWebhookDTO;
+import com.edoc.paymentservice.dto.PaymentDetailResponse;
+import com.edoc.paymentservice.dto.PaymentHistoryResponse;
+import com.edoc.paymentservice.mapper.PaymentMapper;
 import com.edoc.paymentservice.model.Payment;
 import com.edoc.paymentservice.model.PaymentTransactionLog;
 import com.edoc.paymentservice.repository.PaymentRepository;
@@ -12,9 +15,12 @@ import com.edoc.paymentservice.repository.TransactionLogRepository;
 import com.edoc.paymentservice.service.bridge.PaymentNotificationService;
 import com.edoc.paymentservice.type.PaymentStatus;
 import com.edoc.paymentservice.util.HashUtil;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +31,7 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final TransactionLogRepository transactionLogRepository;
     private final PaymentNotificationService paymentNotificationService;
+    private final PaymentMapper paymentMapper;
 
     @Value("${payhere.merchant-id}")
     private String merchantId;
@@ -116,6 +123,40 @@ public class PaymentService {
     public Payment getPaymentByOrderId(String orderId) {
         return paymentRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Payment not found for order"));
+    }
+
+    public Page<PaymentHistoryResponse> getPaymentHistory(Long userId, Pageable pageable) {
+        return paymentRepository.findByUserId(userId, pageable).map(paymentMapper::toHistoryResponse);
+    }
+
+    public PaymentDetailResponse getPaymentById(UUID paymentId) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new IllegalArgumentException(AppMessages.PAYMENT_NOT_FOUND));
+        List<PaymentTransactionLog> logs = transactionLogRepository.findByPayment_IdOrderByCreatedAtDesc(paymentId);
+        return paymentMapper.toDetailResponse(payment, logs);
+    }
+
+    public Page<PaymentHistoryResponse> getAllPayments(Pageable pageable) {
+        return paymentRepository.findAll(pageable).map(paymentMapper::toHistoryResponse);
+    }
+
+    public Page<PaymentHistoryResponse> getPaymentsByUser(Long userId, Pageable pageable) {
+        return paymentRepository.findByUserId(userId, pageable).map(paymentMapper::toHistoryResponse);
+    }
+
+    public Page<PaymentHistoryResponse> getPaymentsByStatus(PaymentStatus status, Pageable pageable) {
+        return paymentRepository.findByStatus(status, pageable).map(paymentMapper::toHistoryResponse);
+    }
+
+    @Transactional
+    public void flagForReconciliation(UUID paymentId) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new IllegalArgumentException(AppMessages.PAYMENT_NOT_FOUND));
+        transactionLogRepository.save(PaymentTransactionLog.builder()
+                .payment(payment)
+                .event(PayHereConstants.EVENT_RECONCILE_FLAGGED)
+                .rawPayload("{\"paymentId\":\"" + payment.getId() + "\",\"reason\":\"MANUAL_RECONCILIATION\"}")
+                .build());
     }
 
     private PaymentStatus resolveStatus(String statusCode) {
