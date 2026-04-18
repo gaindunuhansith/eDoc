@@ -4,10 +4,12 @@ import com.edoc.paymentservice.constant.AppMessages;
 import com.edoc.paymentservice.constant.PayHereConstants;
 import com.edoc.paymentservice.dto.InitiatePaymentRequest;
 import com.edoc.paymentservice.dto.InitiatePaymentResponse;
+import com.edoc.paymentservice.dto.PayHereWebhookDTO;
 import com.edoc.paymentservice.model.Payment;
 import com.edoc.paymentservice.model.PaymentTransactionLog;
 import com.edoc.paymentservice.repository.PaymentRepository;
 import com.edoc.paymentservice.repository.TransactionLogRepository;
+import com.edoc.paymentservice.service.bridge.PaymentNotificationService;
 import com.edoc.paymentservice.type.PaymentStatus;
 import com.edoc.paymentservice.util.HashUtil;
 import java.util.UUID;
@@ -22,6 +24,7 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final TransactionLogRepository transactionLogRepository;
+    private final PaymentNotificationService paymentNotificationService;
 
     @Value("${payhere.merchant-id}")
     private String merchantId;
@@ -66,6 +69,61 @@ public class PaymentService {
     public Payment getPaymentByAppointmentId(Long appointmentId) {
         return paymentRepository.findByAppointmentId(appointmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Payment not found for appointment"));
+    }
+
+    @Transactional
+    public void processWebhook(PayHereWebhookDTO webhook) {
+        boolean validSignature = HashUtil.verifyWebhookSignature(
+                webhook.getMerchantId(),
+                webhook.getOrderId(),
+                webhook.getPayhereAmount(),
+                webhook.getPayhereCurrency(),
+                webhook.getStatusCode(),
+                merchantSecret,
+                webhook.getMd5sig());
+
+        if (!validSignature) {
+            throw new IllegalArgumentException(AppMessages.INVALID_SIGNATURE);
+        }
+
+        if (webhook.getPaymentId() != null
+                && paymentRepository.findByPayhereId(webhook.getPaymentId()).isPresent()) {
+            return;
+        }
+
+        Payment payment = paymentRepository.findByOrderId(webhook.getOrderId())
+                .orElseThrow(() -> new IllegalArgumentException("Payment not found for order"));
+
+        payment.setPayhereId(webhook.getPaymentId());
+        payment.setStatus(resolveStatus(webhook.getStatusCode()));
+        Payment saved = paymentRepository.save(payment);
+
+        String rawPayload = "{\"orderId\":\"" + webhook.getOrderId()
+                + "\",\"paymentId\":\"" + webhook.getPaymentId()
+                + "\",\"statusCode\":\"" + webhook.getStatusCode() + "\"}";
+
+        transactionLogRepository.save(PaymentTransactionLog.builder()
+                .payment(saved)
+                .event(PayHereConstants.EVENT_WEBHOOK_RECEIVED)
+                .rawPayload(rawPayload)
+                .build());
+
+        if (saved.getStatus() == PaymentStatus.SUCCESS) {
+            paymentNotificationService.notifyPaymentSuccess(saved);
+        }
+    }
+
+    public Payment getPaymentByOrderId(String orderId) {
+        return paymentRepository.findByOrderId(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Payment not found for order"));
+    }
+
+    private PaymentStatus resolveStatus(String statusCode) {
+        return switch (statusCode) {
+            case PayHereConstants.STATUS_SUCCESS -> PaymentStatus.SUCCESS;
+            case PayHereConstants.STATUS_PENDING -> PaymentStatus.PENDING;
+            default -> PaymentStatus.FAILED;
+        };
     }
 
     private InitiatePaymentResponse buildInitiateResponse(Payment payment) {
