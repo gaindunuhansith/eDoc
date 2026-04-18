@@ -6,7 +6,13 @@ import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
 
 public record InitiatePaymentRequest(
-        @NotNull Long appointmentId,
-        @NotNull @Positive BigDecimal amount,
-        @NotNull CurrencyType currency) {
+        @NotNull(message = "appointment is required")
+        Long appointmentId,
+
+        @NotNull(message = "amount is required")
+        @Positive(message = "amount must be positive")
+        BigDecimal amount,
+
+        @NotNull(message = "currency is required")
+        CurrencyType currency) {
 }

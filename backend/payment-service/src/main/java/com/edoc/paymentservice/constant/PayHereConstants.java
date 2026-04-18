@@ -8,6 +8,7 @@ public final class PayHereConstants {
     public static final String STATUS_SUCCESS = "2";
     public static final String STATUS_PENDING = "0";
     public static final String STATUS_FAILED = "-1";
+    public static final String STATUS_CHARGEBACK = "-2";
 
     public static final String EVENT_WEBHOOK_RECEIVED = "WEBHOOK_RECEIVED";
     public static final String EVENT_PAYMENT_INITIATED = "PAYMENT_INITIATED";

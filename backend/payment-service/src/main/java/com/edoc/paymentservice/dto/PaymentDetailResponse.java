@@ -10,10 +10,13 @@ import java.util.UUID;
 public record PaymentDetailResponse(
         UUID id,
         Long appointmentId,
+        Long userId,
         BigDecimal amount,
         CurrencyType currency,
         PaymentStatus status,
         String orderId,
+        String payhereId,
         Instant createdAt,
+        Instant updatedAt,
         List<TransactionLogEntryResponse> transactionLogs) {
 }

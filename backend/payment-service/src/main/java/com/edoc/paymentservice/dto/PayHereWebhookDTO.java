@@ -32,6 +32,19 @@ public class PayHereWebhookDTO {
     @JsonProperty("status_code")
     private String statusCode;
 
+    @JsonProperty("status_Message")
+    private String statusMessage;
+
+    @JsonProperty("method")
+    private String method;
+
     @JsonProperty("md5sig")
     private String md5sig;
+
+    @JsonProperty("custom_1")
+    private String custom1;
+
+    @JsonProperty("custom_2")
+    private String custom2;
+
 }
