@@ -1,8 +1,8 @@
 package com.edoc.userservice.service;
 
-import com.edoc.userservice.dto.AuthResponse;
-import com.edoc.userservice.dto.LoginUserRequest;
-import com.edoc.userservice.dto.RegisterUserRequest;
+import com.edoc.userservice.payload.response.AuthResponse;
+import com.edoc.userservice.payload.request.LoginUserRequest;
+import com.edoc.userservice.payload.request.RegisterUserRequest;
 
 public interface IAuthService {
 

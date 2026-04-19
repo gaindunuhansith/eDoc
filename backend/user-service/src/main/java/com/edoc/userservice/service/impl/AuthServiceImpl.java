@@ -1,8 +1,8 @@
 package com.edoc.userservice.service.impl;
 
-import com.edoc.userservice.dto.AuthResponse;
-import com.edoc.userservice.dto.LoginUserRequest;
-import com.edoc.userservice.dto.RegisterUserRequest;
+import com.edoc.userservice.payload.response.AuthResponse;
+import com.edoc.userservice.payload.request.LoginUserRequest;
+import com.edoc.userservice.payload.request.RegisterUserRequest;
 import com.edoc.userservice.exception.EmailAlreadyExistsException;
 import com.edoc.userservice.mapper.UserMapper;
 import com.edoc.userservice.model.User;
@@ -11,6 +11,8 @@ import com.edoc.userservice.repository.UserRepository;
 import com.edoc.userservice.security.JwtService;
 import com.edoc.userservice.service.IAuthService;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,6 +25,8 @@ import java.util.Locale;
 @RequiredArgsConstructor
 public class AuthServiceImpl implements IAuthService {
 
+    private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
@@ -34,7 +38,7 @@ public class AuthServiceImpl implements IAuthService {
     public AuthResponse register(RegisterUserRequest request) {
         String normalizedEmail = normalizeEmail(request.getEmail());
 
-        if (userRepository.existsByEmail(normalizedEmail)) {
+        if (userRepository.existsByEmailAndIsDeletedFalse(normalizedEmail)) {
             throw new EmailAlreadyExistsException("A user already exists with the given email");
         }
 
@@ -53,6 +57,8 @@ public class AuthServiceImpl implements IAuthService {
         User saved = userRepository.save(user);
         String token = jwtService.generateToken(saved);
 
+        log.info("Registered new user userId={} role={}", saved.getUserId(), saved.getRole());
+
         return AuthResponse.builder()
                 .token(token)
                 .expiresIn(jwtService.getExpiration())
@@ -68,10 +74,16 @@ public class AuthServiceImpl implements IAuthService {
                 new UsernamePasswordAuthenticationToken(normalizedEmail, request.getPassword())
         );
 
-        User user = userRepository.findByEmail(normalizedEmail)
+        User user = userRepository.findByEmailAndIsDeletedFalse(normalizedEmail)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
 
+        if (!user.isActive()) {
+            throw new IllegalArgumentException("Account is deactivated");
+        }
+
         String token = jwtService.generateToken(user);
+
+        log.info("User login successful userId={}", user.getUserId());
 
         return AuthResponse.builder()
                 .token(token)
