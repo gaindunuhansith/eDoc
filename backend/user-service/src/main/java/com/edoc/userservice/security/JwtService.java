@@ -85,8 +85,14 @@ public class JwtService {
 
     private PrivateKey getSigningKey() {
         try {
-            String pem = readPem(jwtProperties.privateKeyPath());
-            byte[] keyBytes = decodePemContent(pem);
+            byte[] keyBytes;
+            String privateKeyBase64 = jwtProperties.privateKeyBase64();
+            if (privateKeyBase64 != null && !privateKeyBase64.isBlank()) {
+                keyBytes = Base64.getDecoder().decode(privateKeyBase64.trim());
+            } else {
+                String pem = readPem(jwtProperties.privateKeyPath());
+                keyBytes = decodePemContent(pem);
+            }
             PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
             return KeyFactory.getInstance("RSA").generatePrivate(spec);
         } catch (Exception ex) {
@@ -96,8 +102,14 @@ public class JwtService {
 
     private PublicKey getVerificationKey() {
         try {
-            String pem = readPem(jwtProperties.publicKeyPath());
-            byte[] keyBytes = decodePemContent(pem);
+            byte[] keyBytes;
+            String publicKeyBase64 = jwtProperties.publicKeyBase64();
+            if (publicKeyBase64 != null && !publicKeyBase64.isBlank()) {
+                keyBytes = Base64.getDecoder().decode(publicKeyBase64.trim());
+            } else {
+                String pem = readPem(jwtProperties.publicKeyPath());
+                keyBytes = decodePemContent(pem);
+            }
             X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
             return KeyFactory.getInstance("RSA").generatePublic(spec);
         } catch (Exception ex) {
