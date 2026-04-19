@@ -172,12 +172,12 @@ services:
       DB_USER: user
       DB_PASSWORD: password
       JWT_PRIVATE_KEY_PATH: /app/secrets/private.pem
-      JWT_PUBLIC_KEY_PATH: /app/secrets/public.pem
+      JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64}
+      JWT_PRIVATE_KEY_BASE64: ${JWT_PRIVATE_KEY_BASE64}
       PATIENT_SERVICE_URL: http://patient-service:8084
       DOCTOR_SERVICE_URL: http://doctor-service:8082
     volumes:
       - ./backend/user-service/secrets/private.pem:/app/secrets/private.pem:ro
-      - ./backend/user-service/secrets/public.pem:/app/secrets/public.pem:ro
     ports:
       - "8088:8088"
     depends_on:
