@@ -121,8 +121,7 @@ $services = @(
       @{ Name='DB_USER'; SecretKey='DB_USER' },
       @{ Name='DB_PASSWORD'; SecretKey='DB_PASSWORD' },
       @{ Name='JWT_PRIVATE_KEY_PATH'; SecretKey='JWT_PRIVATE_KEY_PATH' },
-      @{ Name='JWT_PUBLIC_KEY_PATH'; SecretKey='JWT_PUBLIC_KEY_PATH' },
-      @{ Name='PATIENT_SERVICE_URL'; ConfigKey='PATIENT_SERVICE_URL' },
+      @{ Name='JWT_PUBLIC_KEY_BASE64'; SecretKey='JWT_PUBLIC_KEY_BASE64' },       @{ Name='JWT_PRIVATE_KEY_BASE64'; SecretKey='JWT_PRIVATE_KEY_BASE64' },      @{ Name='PATIENT_SERVICE_URL'; ConfigKey='PATIENT_SERVICE_URL' },
       @{ Name='DOCTOR_SERVICE_URL'; ConfigKey='DOCTOR_SERVICE_URL' }
     ) }
 )
