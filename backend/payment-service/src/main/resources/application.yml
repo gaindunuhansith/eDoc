@@ -33,3 +33,5 @@ server:
 
 jwt:
   public-key-path: ${JWT_PUBLIC_KEY_PATH:secrets/public.pem}
+  public-key-base64: ${JWT_PUBLIC_KEY_BASE64:}
+  private-key-base64: ${JWT_PRIVATE_KEY_BASE64:}

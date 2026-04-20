@@ -67,18 +67,27 @@ public class SecurityConfig {
 
     @Bean
     public JwtDecoder jwtDecoder(@Value("${jwt.public-key-path}") String publicKeyPath,
+                                 @Value("${jwt.public-key-base64:}") String publicKeyBase64,
                                  ResourceLoader resourceLoader) {
-        RSAPublicKey publicKeyObj = loadPublicKey(publicKeyPath, resourceLoader);
+        RSAPublicKey publicKeyObj = loadPublicKey(publicKeyPath, publicKeyBase64, resourceLoader);
         return NimbusJwtDecoder.withPublicKey(publicKeyObj)
                 .signatureAlgorithm(SignatureAlgorithm.RS256)
                 .build();
     }
 
-    private RSAPublicKey loadPublicKey(String publicKeyPath, ResourceLoader resourceLoader) {
+    private RSAPublicKey loadPublicKey(String publicKeyPath, String publicKeyBase64, ResourceLoader resourceLoader) {
         try {
+            // Try loading from base64 env var first
+            if (publicKeyBase64 != null && !publicKeyBase64.isBlank()) {
+                byte[] keyBytes = Base64.getDecoder().decode(publicKeyBase64.trim());
+                X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
+                return (RSAPublicKey) KeyFactory.getInstance("RSA").generatePublic(spec);
+            }
+            
+            // Fallback to file-based loading
             String pem;
             if (publicKeyPath == null || publicKeyPath.isBlank()) {
-                throw new IllegalStateException("jwt.public-key-path must not be null or blank");
+                throw new IllegalStateException("jwt.public-key-base64 or jwt.public-key-path must not be null or blank");
             }
             if (publicKeyPath.startsWith("file:") || publicKeyPath.startsWith("classpath:")) {
                 Resource resource = resourceLoader.getResource(publicKeyPath);
