@@ -3,7 +3,7 @@ package com.edoc.userservice.controller;
 import com.edoc.userservice.payload.response.AuthResponse;
 import com.edoc.userservice.payload.request.LoginUserRequest;
 import com.edoc.userservice.payload.request.RegisterUserRequest;
-import com.edoc.userservice.service.IAuthService;
+import com.edoc.userservice.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final IAuthService authService;
+    private final AuthService authService;
 
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterUserRequest request) {

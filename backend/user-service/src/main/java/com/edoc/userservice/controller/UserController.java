@@ -3,7 +3,7 @@ package com.edoc.userservice.controller;
 import com.edoc.userservice.payload.request.PatchUserRequest;
 import com.edoc.userservice.payload.request.UpdateUserRequest;
 import com.edoc.userservice.payload.response.UserResponse;
-import com.edoc.userservice.service.IUserService;
+import com.edoc.userservice.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class UserController {
 
-    private final IUserService userService;
+    private final UserService userService;
 
     @GetMapping("/me")
     @PreAuthorize("isAuthenticated()")
@@ -37,13 +37,13 @@ public class UserController {
     }
 
     @GetMapping("/{userId}")
-    @PreAuthorize("@securityUtils.isOwner(#userId) or hasRole('ADMIN')")
+    @PreAuthorize("@userService.isOwner(#userId) or hasRole('ADMIN')")
     public ResponseEntity<UserResponse> getByUserId(@PathVariable String userId) {
         return ResponseEntity.ok(userService.getByUserId(userId));
     }
 
     @PutMapping("/{userId}")
-    @PreAuthorize("@securityUtils.isOwner(#userId) or hasRole('ADMIN')")
+    @PreAuthorize("@userService.isOwner(#userId) or hasRole('ADMIN')")
     public ResponseEntity<UserResponse> updateByUserId(
             @PathVariable String userId,
             @Valid @RequestBody UpdateUserRequest request
@@ -81,7 +81,7 @@ public class UserController {
     }
 
     @PatchMapping("/{userId}/profile-created")
-    @PreAuthorize("@securityUtils.isOwner(#userId) or hasRole('ADMIN')")
+    @PreAuthorize("@userService.isOwner(#userId) or hasRole('ADMIN')")
     public ResponseEntity<Void> markProfileCreated(@PathVariable String userId) {
         userService.markProfileCreated(userId);
         return ResponseEntity.noContent().build();
