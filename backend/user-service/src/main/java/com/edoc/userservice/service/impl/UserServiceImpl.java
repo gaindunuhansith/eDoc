@@ -12,7 +12,7 @@ import com.edoc.userservice.mapper.UserMapper;
 import com.edoc.userservice.model.User;
 import com.edoc.userservice.model.enums.UserRole;
 import com.edoc.userservice.repository.UserRepository;
-import com.edoc.userservice.service.IUserService;
+import com.edoc.userservice.service.UserService;
 import com.edoc.userservice.util.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -27,7 +27,7 @@ import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
-public class UserServiceImpl implements IUserService {
+public class UserServiceImpl implements UserService {
 
     private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
     private static final String AUTHENTICATED_USER_NOT_FOUND = "Authenticated user not found";
@@ -293,6 +293,22 @@ public class UserServiceImpl implements IUserService {
         user.setActive(false);
         userRepository.save(user);
         log.info("Soft deleted user userId={}", user.getUserId());
+    }
+
+    @Override
+    public boolean isOwner(String userId) {
+        if (userId == null || userId.isBlank()) {
+            return false;
+        }
+        try {
+            String email = securityUtils.getCurrentEmail();
+            return userRepository.findByEmailAndIsDeletedFalse(email)
+                    .map(User::getUserId)
+                    .map(userId::equals)
+                    .orElse(false);
+        } catch (Exception ex) {
+            return false;
+        }
     }
 
     @Override
