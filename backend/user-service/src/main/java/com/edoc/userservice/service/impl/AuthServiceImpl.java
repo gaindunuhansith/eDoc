@@ -9,7 +9,7 @@ import com.edoc.userservice.model.User;
 import com.edoc.userservice.model.enums.UserRole;
 import com.edoc.userservice.repository.UserRepository;
 import com.edoc.userservice.security.JwtService;
-import com.edoc.userservice.service.IAuthService;
+import com.edoc.userservice.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +23,7 @@ import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
-public class AuthServiceImpl implements IAuthService {
+public class AuthServiceImpl implements AuthService {
 
     private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
 
