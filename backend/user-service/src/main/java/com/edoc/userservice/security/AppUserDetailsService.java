@@ -1,7 +1,7 @@
 package com.edoc.userservice.security;
 
 import com.edoc.userservice.model.User;
-import com.edoc.userservice.service.IUserService;
+import com.edoc.userservice.service.UserService;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -13,9 +13,9 @@ import java.util.List;
 @Service
 public class AppUserDetailsService implements UserDetailsService {
 
-    private final IUserService userService;
+    private final UserService userService;
 
-    public AppUserDetailsService(IUserService userService) {
+    public AppUserDetailsService(UserService userService) {
         this.userService = userService;
     }
 
