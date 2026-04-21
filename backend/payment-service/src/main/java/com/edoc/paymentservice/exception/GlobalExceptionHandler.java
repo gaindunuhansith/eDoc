@@ -1,81 +1,75 @@
 package com.edoc.paymentservice.exception;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.edoc.paymentservice.constant.AppMessages;
+import com.edoc.paymentservice.constant.ErrorCodes;
+import com.edoc.paymentservice.dto.ErrorResponse;
+import java.util.NoSuchElementException;
+import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.servlet.resource.NoResourceFoundException;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
-
-    private static final String CODE_PAYMENT_NOT_FOUND = "PAYMENT_NOT_FOUND";
-    private static final String CODE_INVALID_SIGNATURE = "INVALID_NOTIFICATION_SIGNATURE";
-    private static final String CODE_BAD_REQUEST = "BAD_REQUEST";
-    private static final String CODE_NOT_FOUND = "NOT_FOUND";
-    private static final String CODE_INTERNAL_ERROR = "INTERNAL_SERVER_ERROR";
-
-    @ExceptionHandler(PaymentNotFoundException.class)
-    public ResponseEntity<Map<String, String>> handlePaymentNotFound(PaymentNotFoundException ex) {
-        log.warn("Payment not found error: {}", ex.getMessage());
-        return error(HttpStatus.NOT_FOUND, CODE_PAYMENT_NOT_FOUND, ex.getMessage());
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicate(DataIntegrityViolationException ex) {
+        return build(HttpStatus.CONFLICT, ErrorCodes.ERR_DUPLICATE_TRANSACTION, AppMessages.DUPLICATE_TRANSACTION);
     }
 
-    @ExceptionHandler(InvalidNotificationSignatureException.class)
-    public ResponseEntity<Map<String, String>> handleInvalidSignature(InvalidNotificationSignatureException ex) {
-        log.warn("Invalid notification signature: {}", ex.getMessage());
-        return error(HttpStatus.BAD_REQUEST, CODE_INVALID_SIGNATURE, ex.getMessage());
+    @ExceptionHandler(PaymentSecurityException.class)
+    public ResponseEntity<ErrorResponse> handleSecurity(PaymentSecurityException ex) {
+        return build(HttpStatus.BAD_REQUEST, ErrorCodes.ERR_INVALID_SIGNATURE, ex.getMessage());
     }
 
-    @ExceptionHandler({IllegalArgumentException.class, MethodArgumentNotValidException.class})
-    public ResponseEntity<Map<String, String>> handleBadRequest(Exception ex) {
-        String message;
-        if (ex instanceof MethodArgumentNotValidException methodArgumentNotValidException) {
-            message = methodArgumentNotValidException.getBindingResult().getFieldErrors().stream()
-                    .findFirst()
-                    .map(fieldError -> {
-                        String defaultMessage = fieldError.getDefaultMessage();
-                        if (defaultMessage == null) {
-                            return "Validation failed";
-                        }
-                        return defaultMessage;
-                    })
-                    .orElse("Validation failed");
-        } else {
-            message = ex.getMessage();
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalState(IllegalStateException ex) {
+        if (AppMessages.PAYMENT_ALREADY_COMPLETED.equals(ex.getMessage())) {
+            return build(HttpStatus.CONFLICT, ErrorCodes.ERR_PAYMENT_COMPLETED, ex.getMessage());
         }
-
-        if (message == null) {
-            message = "Bad request";
-        }
-        log.warn("Bad request: {}", message);
-        return error(HttpStatus.BAD_REQUEST, CODE_BAD_REQUEST, message);
+        log.error("Illegal state exception", ex);
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, ErrorCodes.ERR_INTERNAL, AppMessages.INTERNAL_ERROR);
     }
 
-    @ExceptionHandler(NoResourceFoundException.class)
-    public ResponseEntity<Map<String, String>> handleNoResourceFound(NoResourceFoundException ex) {
-        log.debug("No resource found: {}", ex.getResourcePath());
-        return error(HttpStatus.NOT_FOUND, CODE_NOT_FOUND, "Resource not found");
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
+        log.warn("Illegal argument provided: {}", ex.getMessage());
+        return build(HttpStatus.BAD_REQUEST, ErrorCodes.ERR_NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
+        String message = ex.getBindingResult().getFieldErrors().stream()
+                .findFirst()
+                .map(FieldError::getDefaultMessage)
+                .orElse("Validation failed");
+        return build(HttpStatus.BAD_REQUEST, ErrorCodes.ERR_INTERNAL, message);
+    }
+
+    @ExceptionHandler(NoSuchElementException.class)
+    public ResponseEntity<ErrorResponse> handleNotFound(NoSuchElementException ex) {
+        return build(HttpStatus.NOT_FOUND, ErrorCodes.ERR_NOT_FOUND, AppMessages.PAYMENT_NOT_FOUND);
+    }
+
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ErrorResponse> handleRuntime(RuntimeException ex) {
+        log.error("Unexpected runtime exception", ex);
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, ErrorCodes.ERR_INTERNAL, AppMessages.INTERNAL_ERROR);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, String>> handleUnexpected(Exception ex) {
-        log.error("Unexpected server error", ex);
-        return error(HttpStatus.INTERNAL_SERVER_ERROR, CODE_INTERNAL_ERROR, "Unexpected server error");
+    public ResponseEntity<ErrorResponse> handleFallback(Exception ex) {
+        log.error("Unexpected exception", ex);
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, ErrorCodes.ERR_INTERNAL, AppMessages.INTERNAL_ERROR);
     }
 
-    private ResponseEntity<Map<String, String>> error(HttpStatus status, String code, String message) {
-        Map<String, String> body = new LinkedHashMap<>();
-        body.put("code", code);
-        body.put("error", message);
-        return ResponseEntity.status(status).body(body);
+    private ResponseEntity<ErrorResponse> build(HttpStatus status, String code, String message) {
+        return ResponseEntity.status(status).body(new ErrorResponse(code, message, UUID.randomUUID().toString()));
     }
 }

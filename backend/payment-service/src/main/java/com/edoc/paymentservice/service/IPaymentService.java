@@ -1,24 +1,35 @@
 package com.edoc.paymentservice.service;
 
-import com.edoc.paymentservice.model.CustomerData;
+import com.edoc.paymentservice.dto.InitiatePaymentRequest;
+import com.edoc.paymentservice.dto.InitiatePaymentResponse;
+import com.edoc.paymentservice.dto.PayHereWebhookDTO;
+import com.edoc.paymentservice.dto.PaymentDetailResponse;
+import com.edoc.paymentservice.dto.PaymentHistoryResponse;
 import com.edoc.paymentservice.model.Payment;
-
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Map;
+import com.edoc.paymentservice.type.PaymentStatus;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface IPaymentService {
 
-    Payment createPayment(UUID appointmentId, UUID userId, BigDecimal amount, String currency);
+    InitiatePaymentResponse initiatePayment(InitiatePaymentRequest request, Long userId);
 
-    String generatePayHereHash(String orderId, BigDecimal amount, String currency);
+    void processWebhook(PayHereWebhookDTO webhook);
 
-    Map<String, String> initiatePayment(UUID paymentId, CustomerData customerData);
+    Page<PaymentHistoryResponse> getPaymentHistory(Long userId, Pageable pageable);
 
-    void handleNotification(Map<String, String> params);
+    PaymentDetailResponse getPaymentById(UUID paymentId);
 
-    Payment getPaymentById(UUID paymentId);
+    Page<PaymentHistoryResponse> getAllPayments(Pageable pageable);
 
-    List<Payment> getAllPayments();
+    Page<PaymentHistoryResponse> getPaymentsByUser(Long userId, Pageable pageable);
+
+    Page<PaymentHistoryResponse> getPaymentsByStatus(PaymentStatus status, Pageable pageable);
+
+    void flagForReconciliation(UUID paymentId);
+
+    Payment getPaymentByAppointmentId(Long appointmentId);
+
+    Payment getPaymentByOrderId(String orderId);
 }

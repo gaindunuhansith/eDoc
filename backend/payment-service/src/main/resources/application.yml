@@ -1,35 +1,51 @@
 spring:
-  application:
-    name: payment-service
-  datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5437}/${DB_NAME:payment_db}
-    username: ${DB_USER:user}
-    password: ${DB_PASSWORD:password}
-  jpa:
-    hibernate:
-      ddl-auto: create
-    properties:
-      hibernate:
-        format_sql: true
-
-payhere:
-  merchant-id: ${PAYHERE_MERCHANT_ID:your_merchant_id}
-  merchant-secret: ${PAYHERE_MERCHANT_SECRET:your_merchant_secret}
-  checkout-url: ${PAYHERE_CHECKOUT_URL:https://sandbox.payhere.lk/pay/checkout}
-  return-url: ${PAYHERE_RETURN_URL:http://localhost:3000/patient/payments?status=success}
-  cancel-url: ${PAYHERE_CANCEL_URL:http://localhost:3000/patient/payments?status=cancel}
-  notify-url: ${PAYHERE_NOTIFY_URL:https://smarty-lymphocytotic-larry.ngrok-free.dev/api/v1/payments/notify}
-  sandbox: ${PAYHERE_SANDBOX:true}
-
-services:
-  appointment-base-url: ${APPOINTMENT_SERVICE_BASE_URL:http://appointment-service:8081}
-  notification-base-url: ${NOTIFICATION_SERVICE_BASE_URL:http://notification-service:8083}
-
-app:
-  api-gateway-origin: ${API_GATEWAY_ORIGIN:http://api-gateway:8080}
+	application:
+		name: payment-service
+	datasource:
+		url: ${DB_URL:jdbc:postgresql://localhost:5437/payment_db}
+		username: ${DB_USER:user}
+		password: ${DB_PASSWORD:password}
+	jpa:
+		hibernate:
+			ddl-auto: update
+		defer-datasource-initialization: true
+		properties:
+			hibernate:
+				dialect: org.hibernate.dialect.PostgreSQLDialect
+				format_sql: true
+	sql:
+		init:
+			mode: never
+			schema-locations: classpath:db/schema.sql
+			data-locations: classpath:db/seed.sql
+	security:
+		oauth2:
+			resourceserver:
+				jwt:
+					public-key-location: ${JWT_PUBLIC_KEY_LOCATION:classpath:public.pem}
 
 server:
-  port: ${SERVER_PORT:8085}
+	port: ${SERVER_PORT:8085}
 
-jwt:
-  public-key-path: ${JWT_PUBLIC_KEY_PATH:secrets/public.pem}
+payhere:
+	merchant-id: ${PAYHERE_MERCHANT_ID:}
+	merchant-secret: ${PAYHERE_MERCHANT_SECRET:}
+	checkout-url: ${PAYHERE_CHECKOUT_URL:https://sandbox.payhere.lk/pay/checkout}
+	notify-url: ${PAYHERE_NOTIFY_URL:http://localhost:8085/api/v1/payments/webhook/notify}
+
+app:
+	appointment-service:
+		base-url: ${APPOINTMENT_SERVICE_URL:http://appointment-service:8081}
+
+logging:
+	pattern:
+		console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] [orderId=%X{orderId}] [userId=%X{userId}] %logger{36} - %msg%n"
+
+---
+spring:
+	config:
+		activate:
+			on-profile: local,dev
+	sql:
+		init:
+			mode: always
