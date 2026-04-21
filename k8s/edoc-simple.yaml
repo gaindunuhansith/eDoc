@@ -43,8 +43,7 @@ data:
   APPOINTMENT_SERVICE_BASE_URL: http://appointment-service:8081
   NOTIFICATION_SERVICE_BASE_URL: http://notification-service:8083
   API_GATEWAY_ORIGIN: http://api-gateway:8080
-  CORS_ALLOWED_ORIGIN_1: http://localhost:3000
-  CORS_ALLOWED_ORIGIN_2: http://localhost:3001
+  CORS_ALLOWED_ORIGINS: http://localhost:3000
   NEXT_PUBLIC_API_BASE_URL: http://api-gateway:8080
 ---
 apiVersion: apps/v1
@@ -1144,16 +1143,11 @@ spec:
                 configMapKeyRef:
                   name: edoc-config
                   key: AI_SERVICE_URL
-            - name: CORS_ALLOWED_ORIGIN_1
+            - name: CORS_ALLOWED_ORIGINS
               valueFrom:
                 configMapKeyRef:
                   name: edoc-config
-                  key: CORS_ALLOWED_ORIGIN_1
-            - name: CORS_ALLOWED_ORIGIN_2
-              valueFrom:
-                configMapKeyRef:
-                  name: edoc-config
-                  key: CORS_ALLOWED_ORIGIN_2
+                  key: CORS_ALLOWED_ORIGINS
             - name: JWT_PUBLIC_KEY_PATH
               valueFrom:
                 secretKeyRef:
