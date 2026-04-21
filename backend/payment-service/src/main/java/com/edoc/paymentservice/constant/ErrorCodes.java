@@ -11,4 +11,5 @@ public final class ErrorCodes {
     public static final String ERR_NOT_FOUND = "ERR_NOT_FOUND";
     public static final String ERR_INTERNAL = "ERR_INTERNAL";
     public static final String ERR_VALIDATION = "ERR_VALIDATION";
+    public static final String ERR_DOWNSTREAM = "ERR_DOWNSTREAM";
 }
