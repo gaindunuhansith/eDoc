@@ -13,8 +13,7 @@ $services = @(
       @{ Name='TELEMEDICINE_SERVICE_URL'; ConfigKey='TELEMEDICINE_SERVICE_URL' },
       @{ Name='FEEDBACK_SERVICE_URL'; ConfigKey='FEEDBACK_SERVICE_URL' },
       @{ Name='AI_SERVICE_URL'; ConfigKey='AI_SERVICE_URL' },
-      @{ Name='CORS_ALLOWED_ORIGIN_1'; ConfigKey='CORS_ALLOWED_ORIGIN_1' },
-      @{ Name='CORS_ALLOWED_ORIGIN_2'; ConfigKey='CORS_ALLOWED_ORIGIN_2' },
+      @{ Name='CORS_ALLOWED_ORIGINS'; ConfigKey='CORS_ALLOWED_ORIGINS' },
       @{ Name='JWT_PUBLIC_KEY_PATH'; SecretKey='JWT_PUBLIC_KEY_PATH' }
     ) },
   @{ Name='ai-service'; Port=8090; DbName='ai_service_db'; Env=@(
