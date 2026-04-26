@@ -117,7 +117,7 @@ export default function DoctorFeedbackPage() {
   const filteredFeedbacks = useMemo(() => {
     return feedbacks.filter((feedback) => {
       const matchesSearch = feedback.comment?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           feedback.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           feedback.patientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            feedback.rating.toString().includes(searchTerm);
       const matchesStatus = statusFilter === "all" || feedback.status === statusFilter;
       const matchesRating = ratingFilter === "all" || feedback.rating.toString() === ratingFilter;

@@ -113,6 +113,13 @@ export const useGetAppointmentsByDoctor = (doctorId: string) =>
     enabled: !!doctorId,
   });
 
+export const useGetPendingAppointmentsByDoctor = (doctorId: string) =>
+  useQuery({
+    queryKey: ["appointments", "pending", doctorId],
+    queryFn: () => fetchPendingAppointmentsByDoctor(doctorId).then((r) => r.data),
+    enabled: !!doctorId,
+  });
+
 export const useGetAppointmentById = (id: string) =>
   useQuery({
     queryKey: queryKeys.appointment.detail(id),
@@ -150,9 +157,4 @@ export const useUpdateAppointmentStatus = () => {
   });
 };
 
-export const useGetPendingAppointmentsByDoctor = (doctorId: string) =>
-  useQuery({
-    queryKey: queryKeys.appointment.pendingByDoctor(doctorId),
-    queryFn: () => fetchPendingAppointmentsByDoctor(doctorId).then((r) => r.data),
-    enabled: !!doctorId,
-  });
+
