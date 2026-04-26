@@ -45,10 +45,9 @@ app:
     send-path: ${NOTIFICATION_SEND_PATH:/api/v1/notifications/send}
 
 springdoc:
-  api-docs:
-    path: /api-docs
   swagger-ui:
     path: /swagger-ui.html
+    url: /v3/api-docs
 
 logging:
   pattern:
