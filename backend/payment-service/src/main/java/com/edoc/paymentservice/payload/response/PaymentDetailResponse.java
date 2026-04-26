@@ -1,4 +1,4 @@
-package com.edoc.paymentservice.dto;
+package com.edoc.paymentservice.payload.response;
 
 import com.edoc.paymentservice.type.CurrencyType;
 import com.edoc.paymentservice.type.PaymentStatus;

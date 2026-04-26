@@ -1,8 +1,8 @@
 package com.edoc.paymentservice.mapper;
 
-import com.edoc.paymentservice.dto.PaymentDetailResponse;
-import com.edoc.paymentservice.dto.PaymentHistoryResponse;
-import com.edoc.paymentservice.dto.TransactionLogEntryResponse;
+import com.edoc.paymentservice.payload.response.PaymentDetailResponse;
+import com.edoc.paymentservice.payload.response.PaymentHistoryResponse;
+import com.edoc.paymentservice.payload.response.TransactionLogEntryResponse;
 import com.edoc.paymentservice.model.Payment;
 import com.edoc.paymentservice.model.PaymentTransactionLog;
 import java.util.List;

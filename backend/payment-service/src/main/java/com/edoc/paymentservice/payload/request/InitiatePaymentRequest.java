@@ -1,4 +1,4 @@
-package com.edoc.paymentservice.dto;
+package com.edoc.paymentservice.payload.request;
 
 import com.edoc.paymentservice.type.CurrencyType;
 import jakarta.validation.constraints.NotNull;

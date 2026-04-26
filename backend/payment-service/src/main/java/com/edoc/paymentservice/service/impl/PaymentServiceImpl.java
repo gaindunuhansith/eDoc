@@ -2,11 +2,11 @@ package com.edoc.paymentservice.service.impl;
 
 import com.edoc.paymentservice.constant.AppMessages;
 import com.edoc.paymentservice.constant.PayHereConstants;
-import com.edoc.paymentservice.dto.InitiatePaymentRequest;
-import com.edoc.paymentservice.dto.InitiatePaymentResponse;
-import com.edoc.paymentservice.dto.PayHereWebhookDTO;
-import com.edoc.paymentservice.dto.PaymentDetailResponse;
-import com.edoc.paymentservice.dto.PaymentHistoryResponse;
+import com.edoc.paymentservice.payload.request.InitiatePaymentRequest;
+import com.edoc.paymentservice.payload.response.InitiatePaymentResponse;
+import com.edoc.paymentservice.payload.PayHereWebhookDTO;
+import com.edoc.paymentservice.payload.response.PaymentDetailResponse;
+import com.edoc.paymentservice.payload.response.PaymentHistoryResponse;
 import com.edoc.paymentservice.exception.PaymentSecurityException;
 import com.edoc.paymentservice.mapper.PaymentMapper;
 import com.edoc.paymentservice.model.Payment;
