@@ -468,7 +468,8 @@ export function BookAppointmentDialog({
         reasonForVisit: reason.trim() || undefined,
       },
       {
-        onSuccess: (createdAppointment) => {
+        onSuccess: (response) => {
+          const createdAppointment = response.data;
           toast.success("Appointment booked! Awaiting doctor confirmation.");
           handleClose();
 
