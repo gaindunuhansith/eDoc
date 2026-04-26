@@ -10,6 +10,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -40,7 +41,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
         log.warn("Illegal argument provided: {}", ex.getMessage());
-        return build(HttpStatus.BAD_REQUEST, ErrorCodes.ERR_NOT_FOUND, ex.getMessage());
+        String message = ex.getMessage() == null ? "Invalid request" : ex.getMessage();
+        if (message.toLowerCase().contains("not found")) {
+            return build(HttpStatus.NOT_FOUND, ErrorCodes.ERR_NOT_FOUND, message);
+        }
+        return build(HttpStatus.BAD_REQUEST, ErrorCodes.ERR_VALIDATION, message);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -49,7 +54,13 @@ public class GlobalExceptionHandler {
                 .findFirst()
                 .map(FieldError::getDefaultMessage)
                 .orElse("Validation failed");
-        return build(HttpStatus.BAD_REQUEST, ErrorCodes.ERR_INTERNAL, message);
+        return build(HttpStatus.BAD_REQUEST, ErrorCodes.ERR_VALIDATION, message);
+    }
+
+    @ExceptionHandler(RestClientException.class)
+    public ResponseEntity<ErrorResponse> handleDownstream(RestClientException ex) {
+        log.warn("Downstream service call failed: {}", ex.getMessage());
+        return build(HttpStatus.SERVICE_UNAVAILABLE, ErrorCodes.ERR_DOWNSTREAM, AppMessages.INTERNAL_ERROR);
     }
 
     @ExceptionHandler(NoSuchElementException.class)
