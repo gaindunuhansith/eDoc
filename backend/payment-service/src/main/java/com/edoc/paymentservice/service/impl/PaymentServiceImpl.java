@@ -1,7 +1,7 @@
 package com.edoc.paymentservice.service.impl;
 
 import com.edoc.paymentservice.constant.AppMessages;
-import com.edoc.paymentservice.constant.PayHereConstants;
+import com.edoc.paymentservice.constant.PaymentConstants;
 import com.edoc.paymentservice.payload.request.InitiatePaymentRequest;
 import com.edoc.paymentservice.payload.response.InitiatePaymentResponse;
 import com.edoc.paymentservice.payload.PayHereWebhookDTO;
@@ -15,6 +15,7 @@ import com.edoc.paymentservice.repository.PaymentRepository;
 import com.edoc.paymentservice.repository.TransactionLogRepository;
 import com.edoc.paymentservice.service.PaymentService;
 import com.edoc.paymentservice.client.appointment.AppointmentClient;
+import com.edoc.paymentservice.client.notification.NotificationClient;
 import com.edoc.paymentservice.type.PaymentStatus;
 import com.edoc.paymentservice.util.HashUtil;
 import com.edoc.paymentservice.util.SecurityUtil;
@@ -36,6 +37,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentRepository paymentRepository;
     private final TransactionLogRepository transactionLogRepository;
     private final AppointmentClient appointmentClient;
+    private final NotificationClient notificationClient;
     private final PaymentMapper paymentMapper;
 
     @Value("${payhere.merchant-id}")
@@ -83,7 +85,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         transactionLogRepository.save(PaymentTransactionLog.builder()
                 .payment(saved)
-                .event(PayHereConstants.EVENT_PAYMENT_INITIATED)
+                .event(PaymentConstants.EVENT_PAYMENT_INITIATED)
                 .rawPayload("{\"orderId\":\"" + saved.getOrderId() + "\",\"status\":\"PENDING\"}")
                 .build());
 
@@ -131,12 +133,13 @@ public class PaymentServiceImpl implements PaymentService {
 
         transactionLogRepository.save(PaymentTransactionLog.builder()
                 .payment(saved)
-                .event(PayHereConstants.EVENT_WEBHOOK_RECEIVED)
+                .event(PaymentConstants.EVENT_WEBHOOK_RECEIVED)
                 .rawPayload(rawPayload)
                 .build());
 
         if (saved.getStatus() == PaymentStatus.SUCCESS) {
             appointmentClient.notifyPaymentSuccess(saved);
+            notificationClient.notifyPaymentSuccess(saved);
         }
         log.info("Webhook processed: orderId={}, status={}", webhook.getOrderId(), saved.getStatus());
     }
@@ -185,15 +188,15 @@ public class PaymentServiceImpl implements PaymentService {
                 .orElseThrow(() -> new IllegalArgumentException(AppMessages.PAYMENT_NOT_FOUND));
         transactionLogRepository.save(PaymentTransactionLog.builder()
                 .payment(payment)
-                .event(PayHereConstants.EVENT_RECONCILE_FLAGGED)
+                .event(PaymentConstants.EVENT_RECONCILE_FLAGGED)
                 .rawPayload("{\"paymentId\":\"" + payment.getId() + "\",\"reason\":\"MANUAL_RECONCILIATION\"}")
                 .build());
     }
 
     private PaymentStatus resolveStatus(String statusCode) {
         return switch (statusCode) {
-            case PayHereConstants.STATUS_SUCCESS -> PaymentStatus.SUCCESS;
-            case PayHereConstants.STATUS_PENDING -> PaymentStatus.PENDING;
+            case PaymentConstants.STATUS_SUCCESS -> PaymentStatus.SUCCESS;
+            case PaymentConstants.STATUS_PENDING -> PaymentStatus.PENDING;
             default -> PaymentStatus.FAILED;
         };
     }

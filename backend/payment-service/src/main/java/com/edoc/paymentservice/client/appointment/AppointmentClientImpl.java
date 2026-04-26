@@ -1,7 +1,7 @@
 package com.edoc.paymentservice.client.appointment;
 
 import com.edoc.paymentservice.client.appointment.payload.PaymentSuccessRequest;
-import com.edoc.paymentservice.constant.PayHereConstants;
+import com.edoc.paymentservice.constant.PaymentConstants;
 import com.edoc.paymentservice.model.Payment;
 import com.edoc.paymentservice.model.PaymentTransactionLog;
 import com.edoc.paymentservice.repository.TransactionLogRepository;
@@ -47,7 +47,7 @@ public class AppointmentClientImpl implements AppointmentClient {
 
             transactionLogRepository.save(PaymentTransactionLog.builder()
                     .payment(payment)
-                    .event(PayHereConstants.EVENT_REST_NOTIFY_SENT)
+                    .event(PaymentConstants.EVENT_REST_NOTIFY_SENT)
                     .rawPayload(payloadJson)
                     .build());
 
@@ -59,13 +59,13 @@ public class AppointmentClientImpl implements AppointmentClient {
 
             transactionLogRepository.save(PaymentTransactionLog.builder()
                     .payment(payment)
-                    .event(PayHereConstants.EVENT_REST_NOTIFY_FAILED)
+                    .event(PaymentConstants.EVENT_REST_NOTIFY_FAILED)
                     .rawPayload(payloadJson)
                     .build());
 
             transactionLogRepository.save(PaymentTransactionLog.builder()
                     .payment(payment)
-                    .event(PayHereConstants.EVENT_RECONCILE_FLAGGED)
+                    .event(PaymentConstants.EVENT_RECONCILE_FLAGGED)
                     .rawPayload("{\"reason\":\"APPOINTMENT_SERVICE_UNAVAILABLE\"}")
                     .build());
         }
