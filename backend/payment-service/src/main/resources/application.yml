@@ -1,60 +1,66 @@
 spring:
-	application:
-		name: payment-service
-	datasource:
-		url: ${DB_URL:jdbc:postgresql://localhost:5437/payment_db}
-		username: ${DB_USER:user}
-		password: ${DB_PASSWORD:password}
-	jpa:
-		hibernate:
-			ddl-auto: update
-		defer-datasource-initialization: true
-		properties:
-			hibernate:
-				dialect: org.hibernate.dialect.PostgreSQLDialect
-				format_sql: true
-	sql:
-		init:
-			mode: never
-			schema-locations: classpath:db/schema.sql
-			data-locations: classpath:db/seed.sql
-	security:
-		oauth2:
-			resourceserver:
-				jwt:
-					public-key-location: ${JWT_PUBLIC_KEY_LOCATION:classpath:public.pem}
+  application:
+    name: payment-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5437/payment_db}
+    username: ${DB_USER:user}
+    password: ${DB_PASSWORD:password}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    defer-datasource-initialization: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+  sql:
+    init:
+      mode: never
+      schema-locations: classpath:db/schema.sql
+      data-locations: classpath:db/seed.sql
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          public-key-location: ${JWT_PUBLIC_KEY_LOCATION:classpath:public.pem}
+
+jwt:
+  public-key-base64: ${JWT_PUBLIC_KEY_BASE64:}
 
 server:
-	port: ${SERVER_PORT:8085}
+  port: ${SERVER_PORT:8085}
 
 payhere:
-	merchant-id: ${PAYHERE_MERCHANT_ID:}
-	merchant-secret: ${PAYHERE_MERCHANT_SECRET:}
-	checkout-url: ${PAYHERE_CHECKOUT_URL:https://sandbox.payhere.lk/pay/checkout}
-	notify-url: ${PAYHERE_NOTIFY_URL:http://localhost:8085/api/v1/payments/webhook/notify}
+  merchant-id: ${PAYHERE_MERCHANT_ID:}
+  merchant-secret: ${PAYHERE_MERCHANT_SECRET:}
+  checkout-url: ${PAYHERE_CHECKOUT_URL:https://sandbox.payhere.lk/pay/checkout}
+  notify-url: ${PAYHERE_NOTIFY_URL:http://localhost:8085/api/v1/payments/webhook/notify}
 
 app:
-	appointment-service:
-		base-url: ${APPOINTMENT_SERVICE_URL:http://appointment-service:8081}
-		notify-path: ${APPOINTMENT_NOTIFY_PATH:/api/v1/appointments/payments/notify-success}
-	notification:
-		provider: ${PAYMENT_NOTIFICATION_PROVIDER:rest}
+  appointment-service:
+    base-url: ${APPOINTMENT_SERVICE_URL:http://appointment-service:8081}
+    notify-path: ${APPOINTMENT_NOTIFY_PATH:/api/v1/appointments/payments/notify-success}
+  notification:
+    provider: ${PAYMENT_NOTIFICATION_PROVIDER:rest}
 
 springdoc:
-	api-docs:
-		path: /v1/api-docs
-	swagger-ui:
-		path: /v1/swagger-ui.html
+  api-docs:
+    path: /v1/api-docs
+  swagger-ui:
+    path: /v1/swagger-ui.html
 
 logging:
-	pattern:
-		console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] [orderId=%X{orderId}] [userId=%X{userId}] %logger{36} - %msg%n"
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] [orderId=%X{orderId}] [userId=%X{userId}] %logger{36} - %msg%n"
 
 ---
 spring:
-	config:
-		activate:
-			on-profile: local,dev
-	sql:
-		init:
-			mode: always
+  config:
+    activate:
+      on-profile: local,dev
+  jpa:
+    hibernate:
+      ddl-auto: none
+  sql:
+    init:
+      mode: always

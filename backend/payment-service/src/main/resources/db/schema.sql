@@ -1,3 +1,6 @@
+DROP TABLE IF EXISTS payment_transaction_logs;
+DROP TABLE IF EXISTS payments;
+
 CREATE TABLE IF NOT EXISTS payments (
     id UUID PRIMARY KEY,
     appointment_id BIGINT NOT NULL UNIQUE,
