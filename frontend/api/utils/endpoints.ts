@@ -33,6 +33,8 @@ export const DOCTOR_ENDPOINTS = {
   ME: "/api/v1/doctors/me",
   GET_ALL: "/api/v1/doctors",
   GET_BY_ID: (id: string) => `/api/v1/doctors/${id}`,
+  GET_PATIENT: (doctorId: string, patientId: string) => `/api/v1/doctors/${doctorId}/patients/${patientId}`,
+  GET_PATIENT_REPORTS: (doctorId: string, patientId: string) => `/api/v1/doctors/${doctorId}/patients/${patientId}/reports`,
   BY_SPECIALTY: (specialty: string) => `/api/v1/doctors/specialty/${specialty}`,
   CREATE: "/api/v1/doctors/register",
   UPDATE: (id: string) => `/api/v1/doctors/${id}`,
@@ -44,6 +46,7 @@ export const DOCTOR_ENDPOINTS = {
   PRESCRIPTIONS_BY_DOCTOR: (doctorId: string) => `/api/v1/prescriptions/doctor/${doctorId}`,
   PRESCRIPTIONS_BY_APPOINTMENT: (appointmentId: string) => `/api/v1/prescriptions/appointment/${appointmentId}`,
   PRESCRIPTION_BY_ID: (id: string) => `/api/v1/prescriptions/${id}`,
+  PRESCRIPTIONS_BY_PATIENT: (patientId: string) => `/api/v1/prescriptions/patient/${patientId}`,
   CREATE_PRESCRIPTION: (doctorId: string) => `/api/v1/prescriptions/${doctorId}`,
   UPDATE_PRESCRIPTION: (id: string) => `/api/v1/prescriptions/${id}`,
 } as const;
