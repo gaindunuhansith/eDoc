@@ -158,7 +158,7 @@ export default function AppointmentsPage() {
         </div>
         <Button
           onClick={() => router.push("/patient/appointments/book")}
-          disabled={!patientId}
+          disabled={!patientId}  // remove this to feely click the button
           className="shrink-0"
         >
           + Book Appointment
