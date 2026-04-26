@@ -102,6 +102,10 @@ export const updateDoctor = ({
   payload: UpdateDoctorPayload;
 }) => apiClient.put<Doctor>(DOCTOR_ENDPOINTS.UPDATE(id), payload);
 
+export const toggleDoctorAvailability = (id: string) =>
+  apiClient.patch<{ message: string; isAvailable: boolean }>(`${DOCTOR_ENDPOINTS.UPDATE(id)}/toggle-availability`);
+
+
 export const deleteDoctor = (id: string) =>
   apiClient.delete(DOCTOR_ENDPOINTS.DELETE(id));
 
@@ -245,7 +249,16 @@ export const useUpdateDoctor = () => {
     },
   });
 };
-
+export const useToggleDoctorAvailability = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: toggleDoctorAvailability,
+    onSuccess: (_, id) => {
+      qc.invalidateQueries({ queryKey: queryKeys.doctor.detail(id) });
+      qc.invalidateQueries({ queryKey: queryKeys.doctor.detail("me") });
+    },
+  });
+};
 export const useDeleteDoctor = () => {
   const qc = useQueryClient();
   return useMutation({
