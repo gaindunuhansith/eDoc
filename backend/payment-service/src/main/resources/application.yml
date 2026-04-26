@@ -40,12 +40,15 @@ app:
   appointment-service:
     base-url: ${APPOINTMENT_SERVICE_URL:http://appointment-service:8081}
     notify-path: ${APPOINTMENT_NOTIFY_PATH:/api/v1/appointments/payments/notify-success}
+  notification-service:
+    base-url: ${NOTIFICATION_SERVICE_URL:http://notification-service:8083}
+    send-path: ${NOTIFICATION_SEND_PATH:/api/v1/notifications/send}
 
 springdoc:
   api-docs:
-    path: /v1/api-docs
+    path: /api-docs
   swagger-ui:
-    path: /v1/swagger-ui.html
+    path: /swagger-ui.html
 
 logging:
   pattern:
