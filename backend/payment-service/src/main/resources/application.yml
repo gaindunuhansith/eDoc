@@ -7,7 +7,7 @@ spring:
     password: ${DB_PASSWORD:password}
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     defer-datasource-initialization: true
     properties:
       hibernate:
@@ -15,7 +15,7 @@ spring:
         format_sql: true
   sql:
     init:
-      mode: never
+      mode: always
       schema-locations: classpath:db/schema.sql
       data-locations: classpath:db/seed.sql
   security:
@@ -40,8 +40,6 @@ app:
   appointment-service:
     base-url: ${APPOINTMENT_SERVICE_URL:http://appointment-service:8081}
     notify-path: ${APPOINTMENT_NOTIFY_PATH:/api/v1/appointments/payments/notify-success}
-  notification:
-    provider: ${PAYMENT_NOTIFICATION_PROVIDER:rest}
 
 springdoc:
   api-docs:
@@ -53,14 +51,3 @@ logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] [orderId=%X{orderId}] [userId=%X{userId}] %logger{36} - %msg%n"
 
----
-spring:
-  config:
-    activate:
-      on-profile: local,dev
-  jpa:
-    hibernate:
-      ddl-auto: none
-  sql:
-    init:
-      mode: always
