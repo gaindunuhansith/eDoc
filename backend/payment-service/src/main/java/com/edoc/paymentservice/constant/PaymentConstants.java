@@ -17,4 +17,5 @@ public final class PaymentConstants {
     public static final String EVENT_NOTIFICATION_SENT = "NOTIFICATION_SENT";
     public static final String EVENT_NOTIFICATION_FAILED = "NOTIFICATION_FAILED";
     public static final String EVENT_RECONCILE_FLAGGED = "RECONCILE_FLAGGED";
+    public static final String EVENT_INVOICE_GENERATED = "INVOICE_GENERATED";
 }
