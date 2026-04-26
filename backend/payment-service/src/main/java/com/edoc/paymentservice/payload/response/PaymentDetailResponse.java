@@ -18,5 +18,7 @@ public record PaymentDetailResponse(
         String payhereId,
         Instant createdAt,
         Instant updatedAt,
+        BillingResponse billing,
         List<TransactionLogEntryResponse> transactionLogs) {
 }
+

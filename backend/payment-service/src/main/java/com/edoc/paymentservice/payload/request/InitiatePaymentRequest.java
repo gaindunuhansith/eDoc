@@ -1,6 +1,7 @@
 package com.edoc.paymentservice.payload.request;
 
 import com.edoc.paymentservice.type.CurrencyType;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
@@ -14,5 +15,10 @@ public record InitiatePaymentRequest(
         BigDecimal amount,
 
         @NotNull(message = "currency is required")
-        CurrencyType currency) {
+        CurrencyType currency,
+
+        @NotNull(message = "billing details are required")
+        @Valid
+        BillingRequest billing) {
 }
+
