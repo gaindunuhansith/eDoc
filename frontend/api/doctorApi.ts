@@ -114,6 +114,13 @@ export const fetchDoctorsBySpecialty = (specialty: string) =>
 
 export const fetchDoctorAvailability = (id: string) =>
   apiClient.get<DoctorAvailability[]>(DOCTOR_ENDPOINTS.AVAILABILITY(id));
+
+export const fetchDoctorPatientProfile = (doctorId: string, patientId: string) =>
+  apiClient.get(DOCTOR_ENDPOINTS.GET_PATIENT(doctorId, patientId));
+
+export const fetchDoctorPatientReports = (doctorId: string, patientId: string) =>
+  apiClient.get(DOCTOR_ENDPOINTS.GET_PATIENT_REPORTS(doctorId, patientId));
+
 export const setDoctorAvailability = (id: string, payload: { dayOfWeek: string; timeSlots: Omit<AvailabilityTimeSlot, 'isBooked'>[] }) =>
   apiClient.post<DoctorAvailability>(DOCTOR_ENDPOINTS.AVAILABILITY(id), payload);
 
@@ -121,6 +128,9 @@ export const deleteDoctorAvailability = (id: string, day: string) =>
   apiClient.delete(DOCTOR_ENDPOINTS.DELETE_AVAILABILITY(id, day));
 export const fetchPrescriptionsByDoctor = (doctorId: string) =>
   apiClient.get<Prescription[]>(DOCTOR_ENDPOINTS.PRESCRIPTIONS_BY_DOCTOR(doctorId));
+
+export const fetchPrescriptionsByPatient = (patientId: string) =>
+  apiClient.get<Prescription[]>(DOCTOR_ENDPOINTS.PRESCRIPTIONS_BY_PATIENT(patientId));
 
 export const fetchPrescriptionById = (id: string) =>
   apiClient.get<Prescription>(DOCTOR_ENDPOINTS.PRESCRIPTION_BY_ID(id));
