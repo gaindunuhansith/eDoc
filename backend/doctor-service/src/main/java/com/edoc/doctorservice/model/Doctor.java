@@ -18,6 +18,9 @@ public class Doctor {
     @Id
     private String id;
 
+    // Links to the user-service account (JWT uid claim).
+    private String userId;
+
     @Indexed(unique = true)    // Email must be unique
     private String email;
 

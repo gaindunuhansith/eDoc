@@ -21,7 +21,7 @@ public class DoctorService {
     private final PrescriptionRepository prescriptionRepository;
 
     // Register a new doctor
-    public Doctor registerDoctor(DoctorRegistrationRequest request) {
+    public Doctor registerDoctor(DoctorRegistrationRequest request, String userId) {
         if (doctorRepository.existsByEmail(request.getEmail())) {
             Doctor existing = doctorRepository.findByEmail(request.getEmail()).orElseThrow(() -> new RuntimeException("Doctor not found"));
             if (request.getId() != null && !request.getId().equals(existing.getId())) {
@@ -36,6 +36,7 @@ public class DoctorService {
         if (request.getId() != null && !request.getId().isEmpty()) {
             doctor.setId(request.getId());
         }
+        doctor.setUserId(userId);
         doctor.setFirstName(request.getFirstName());
         doctor.setLastName(request.getLastName());
         doctor.setEmail(request.getEmail());
