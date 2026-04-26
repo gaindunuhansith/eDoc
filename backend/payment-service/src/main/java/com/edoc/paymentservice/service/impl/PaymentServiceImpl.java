@@ -14,7 +14,7 @@ import com.edoc.paymentservice.model.PaymentTransactionLog;
 import com.edoc.paymentservice.repository.PaymentRepository;
 import com.edoc.paymentservice.repository.TransactionLogRepository;
 import com.edoc.paymentservice.service.PaymentService;
-import com.edoc.paymentservice.service.bridge.PaymentNotificationService;
+import com.edoc.paymentservice.client.appointment.AppointmentClient;
 import com.edoc.paymentservice.type.PaymentStatus;
 import com.edoc.paymentservice.util.HashUtil;
 import com.edoc.paymentservice.util.SecurityUtil;
@@ -35,7 +35,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final TransactionLogRepository transactionLogRepository;
-    private final PaymentNotificationService paymentNotificationService;
+    private final AppointmentClient appointmentClient;
     private final PaymentMapper paymentMapper;
 
     @Value("${payhere.merchant-id}")
@@ -136,7 +136,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .build());
 
         if (saved.getStatus() == PaymentStatus.SUCCESS) {
-            paymentNotificationService.notifyPaymentSuccess(saved);
+            appointmentClient.notifyPaymentSuccess(saved);
         }
         log.info("Webhook processed: orderId={}, status={}", webhook.getOrderId(), saved.getStatus());
     }
