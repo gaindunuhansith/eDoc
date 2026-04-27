@@ -32,4 +32,6 @@ public interface PaymentService {
     Payment getPaymentByAppointmentId(Long appointmentId);
 
     Payment getPaymentByOrderId(String orderId);
+
+    Payment getPaymentEntityById(UUID paymentId);
 }

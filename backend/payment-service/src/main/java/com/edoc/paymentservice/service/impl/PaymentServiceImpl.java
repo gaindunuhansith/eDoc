@@ -9,8 +9,10 @@ import com.edoc.paymentservice.payload.response.PaymentDetailResponse;
 import com.edoc.paymentservice.payload.response.PaymentHistoryResponse;
 import com.edoc.paymentservice.exception.PaymentSecurityException;
 import com.edoc.paymentservice.mapper.PaymentMapper;
+import com.edoc.paymentservice.model.BillingDetails;
 import com.edoc.paymentservice.model.Payment;
 import com.edoc.paymentservice.model.PaymentTransactionLog;
+import com.edoc.paymentservice.repository.BillingDetailsRepository;
 import com.edoc.paymentservice.repository.PaymentRepository;
 import com.edoc.paymentservice.repository.TransactionLogRepository;
 import com.edoc.paymentservice.service.PaymentService;
@@ -36,6 +38,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final TransactionLogRepository transactionLogRepository;
+    private final BillingDetailsRepository billingDetailsRepository;
     private final AppointmentClient appointmentClient;
     private final NotificationClient notificationClient;
     private final PaymentMapper paymentMapper;
@@ -79,6 +82,18 @@ public class PaymentServiceImpl implements PaymentService {
                 .build();
 
         Payment saved = paymentRepository.save(payment);
+
+        if (!billingDetailsRepository.existsByPaymentId(saved.getId())) {
+            billingDetailsRepository.save(BillingDetails.builder()
+                    .paymentId(saved.getId())
+                    .fullName(request.billing().fullName())
+                    .email(request.billing().email())
+                    .phone(request.billing().phone())
+                    .address(request.billing().address())
+                    .city(request.billing().city())
+                    .country(request.billing().country())
+                    .build());
+        }
 
         SecurityUtil.populateMdc(saved.getOrderId(), userId);
         log.info("Payment initiated: appointmentId={}, orderId={}, amount={}", request.appointmentId(), saved.getOrderId(), request.amount());
@@ -151,6 +166,12 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
+    public Payment getPaymentEntityById(UUID paymentId) {
+        return paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new IllegalArgumentException(AppMessages.PAYMENT_NOT_FOUND));
+    }
+
+    @Override
     public Page<PaymentHistoryResponse> getPaymentHistory(Long userId, Pageable pageable) {
         log.debug("Fetching payment history for userId={}", userId);
         return paymentRepository.findByUserId(userId, pageable).map(paymentMapper::toHistoryResponse);
@@ -162,7 +183,8 @@ public class PaymentServiceImpl implements PaymentService {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new IllegalArgumentException(AppMessages.PAYMENT_NOT_FOUND));
         List<PaymentTransactionLog> logs = transactionLogRepository.findByPayment_IdOrderByCreatedAtDesc(paymentId);
-        return paymentMapper.toDetailResponse(payment, logs);
+        BillingDetails billing = billingDetailsRepository.findByPaymentId(paymentId).orElse(null);
+        return paymentMapper.toDetailResponse(payment, logs, billing);
     }
 
     @Override
