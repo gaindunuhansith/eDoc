@@ -32,6 +32,7 @@ export const PRESCRIPTION_PATIENT_ENDPOINTS = {
 export const DOCTOR_ENDPOINTS = {
   ME: "/api/v1/doctors/me",
   GET_ALL: "/api/v1/doctors",
+  ADMIN_ALL: "/api/v1/doctors/admin/all",
   GET_BY_ID: (id: string) => `/api/v1/doctors/${id}`,
   GET_PATIENT: (doctorId: string, patientId: string) => `/api/v1/doctors/${doctorId}/patients/${patientId}`,
   GET_PATIENT_REPORTS: (doctorId: string, patientId: string) => `/api/v1/doctors/${doctorId}/patients/${patientId}/reports`,
@@ -40,6 +41,7 @@ export const DOCTOR_ENDPOINTS = {
   UPDATE: (id: string) => `/api/v1/doctors/${id}`,
   DELETE: (id: string) => `/api/v1/doctors/${id}`,
   VERIFY: (id: string) => `/api/v1/doctors/${id}/verify`,
+  TOGGLE_AVAILABILITY: (id: string) => `/api/v1/doctors/${id}/toggle-availability`,
   AVAILABILITY: (id: string) => `/api/v1/doctors/${id}/availability`,
   DELETE_AVAILABILITY: (id: string, day: string) => `/api/v1/doctors/${id}/availability/${day}`,
   
