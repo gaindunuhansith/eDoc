@@ -81,6 +81,22 @@ export const cancelAppointment = ({
   return apiClient.delete<Appointment>(url);
 };
 
+export const updateAppointment = ({
+  id,
+  update,
+}: {
+  id: string;
+  update: Partial<CreateAppointmentPayload>;
+}) => apiClient.put<Appointment>(APPOINTMENT_ENDPOINTS.UPDATE(id), update);
+
+export const deleteAppointment = ({
+  id,
+  patientId,
+}: {
+  id: string;
+  patientId: string;
+}) => apiClient.delete<void>(`${APPOINTMENT_ENDPOINTS.DELETE(id)}?patientId=${patientId}`);
+
 export interface AppointmentStatusUpdate {
   status: AppointmentStatus;
   doctorNotes?: string;
@@ -151,6 +167,26 @@ export const useUpdateAppointmentStatus = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: updateAppointmentStatus,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.appointment.all });
+    },
+  });
+};
+
+export const useUpdateAppointment = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: updateAppointment,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.appointment.all });
+    },
+  });
+};
+
+export const useDeleteAppointment = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: deleteAppointment,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.appointment.all });
     },
