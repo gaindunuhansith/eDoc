@@ -55,6 +55,8 @@ export const DOCTOR_ENDPOINTS = {
 export const APPOINTMENT_ENDPOINTS = {
   GET_BY_ID: (id: string) => `/api/v1/appointments/${id}`,
   CREATE: "/api/v1/appointments",
+  UPDATE: (id: string) => `/api/v1/appointments/${id}`,
+  DELETE: (id: string) => `/api/v1/appointments/${id}`,
   CANCEL: (id: string) => `/api/v1/appointments/${id}/cancel`,
   UPDATE_STATUS: (id: string) => `/api/v1/appointments/${id}/status`,
   BY_PATIENT: (patientId: string) => `/api/v1/appointments/patient/${patientId}`,
