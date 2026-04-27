@@ -22,6 +22,7 @@ const adminNav: SidebarNavItem[] = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
   { title: "eDoc AI", url: "/admin/edoc-ai", icon: Bot },
   { title: "Users", url: "/admin/users", icon: Users },
+  { title: "Doctors", url: "/admin/doctors", icon: Building2 },
   { title: "Pending Doctors", url: "/admin/pending-doctors", icon: Building2 },
   { title: "Patients", url: "/admin/patients", icon: Users },
   { title: "Appointments", url: "/admin/appointments", icon: Calendar },
