@@ -88,6 +88,9 @@ export const fetchMyDoctorProfile = () =>
 export const fetchAllDoctors = () =>
   apiClient.get<Doctor[]>(DOCTOR_ENDPOINTS.GET_ALL);
 
+export const fetchAdminAllDoctors = () =>
+  apiClient.get<Doctor[]>(DOCTOR_ENDPOINTS.ADMIN_ALL);
+
 export const fetchDoctorById = (id: string) =>
   apiClient.get<Doctor>(DOCTOR_ENDPOINTS.GET_BY_ID(id));
 
@@ -161,6 +164,12 @@ export const useGetAllDoctors = () =>
   useQuery({
     queryKey: queryKeys.doctor.lists(),
     queryFn: () => fetchAllDoctors().then((r) => r.data),
+  });
+
+export const useGetAdminAllDoctors = () =>
+  useQuery({
+    queryKey: ["admin", "doctors"],
+    queryFn: () => fetchAdminAllDoctors().then((r) => r.data),
   });
 
 export const useGetDoctorById = (id: string) =>
