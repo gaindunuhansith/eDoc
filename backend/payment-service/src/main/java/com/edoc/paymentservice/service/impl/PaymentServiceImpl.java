@@ -1,20 +1,23 @@
 package com.edoc.paymentservice.service.impl;
 
 import com.edoc.paymentservice.constant.AppMessages;
-import com.edoc.paymentservice.constant.PayHereConstants;
-import com.edoc.paymentservice.dto.InitiatePaymentRequest;
-import com.edoc.paymentservice.dto.InitiatePaymentResponse;
-import com.edoc.paymentservice.dto.PayHereWebhookDTO;
-import com.edoc.paymentservice.dto.PaymentDetailResponse;
-import com.edoc.paymentservice.dto.PaymentHistoryResponse;
+import com.edoc.paymentservice.constant.PaymentConstants;
+import com.edoc.paymentservice.payload.request.InitiatePaymentRequest;
+import com.edoc.paymentservice.payload.response.InitiatePaymentResponse;
+import com.edoc.paymentservice.payload.PayHereWebhookDTO;
+import com.edoc.paymentservice.payload.response.PaymentDetailResponse;
+import com.edoc.paymentservice.payload.response.PaymentHistoryResponse;
 import com.edoc.paymentservice.exception.PaymentSecurityException;
 import com.edoc.paymentservice.mapper.PaymentMapper;
+import com.edoc.paymentservice.model.BillingDetails;
 import com.edoc.paymentservice.model.Payment;
 import com.edoc.paymentservice.model.PaymentTransactionLog;
+import com.edoc.paymentservice.repository.BillingDetailsRepository;
 import com.edoc.paymentservice.repository.PaymentRepository;
 import com.edoc.paymentservice.repository.TransactionLogRepository;
 import com.edoc.paymentservice.service.PaymentService;
-import com.edoc.paymentservice.service.bridge.PaymentNotificationService;
+import com.edoc.paymentservice.client.appointment.AppointmentClient;
+import com.edoc.paymentservice.client.notification.NotificationClient;
 import com.edoc.paymentservice.type.PaymentStatus;
 import com.edoc.paymentservice.util.HashUtil;
 import com.edoc.paymentservice.util.SecurityUtil;
@@ -35,7 +38,9 @@ public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final TransactionLogRepository transactionLogRepository;
-    private final PaymentNotificationService paymentNotificationService;
+    private final BillingDetailsRepository billingDetailsRepository;
+    private final AppointmentClient appointmentClient;
+    private final NotificationClient notificationClient;
     private final PaymentMapper paymentMapper;
 
     @Value("${payhere.merchant-id}")
@@ -78,12 +83,24 @@ public class PaymentServiceImpl implements PaymentService {
 
         Payment saved = paymentRepository.save(payment);
 
+        if (!billingDetailsRepository.existsByPaymentId(saved.getId())) {
+            billingDetailsRepository.save(BillingDetails.builder()
+                    .paymentId(saved.getId())
+                    .fullName(request.billing().fullName())
+                    .email(request.billing().email())
+                    .phone(request.billing().phone())
+                    .address(request.billing().address())
+                    .city(request.billing().city())
+                    .country(request.billing().country())
+                    .build());
+        }
+
         SecurityUtil.populateMdc(saved.getOrderId(), userId);
         log.info("Payment initiated: appointmentId={}, orderId={}, amount={}", request.appointmentId(), saved.getOrderId(), request.amount());
 
         transactionLogRepository.save(PaymentTransactionLog.builder()
                 .payment(saved)
-                .event(PayHereConstants.EVENT_PAYMENT_INITIATED)
+                .event(PaymentConstants.EVENT_PAYMENT_INITIATED)
                 .rawPayload("{\"orderId\":\"" + saved.getOrderId() + "\",\"status\":\"PENDING\"}")
                 .build());
 
@@ -131,12 +148,13 @@ public class PaymentServiceImpl implements PaymentService {
 
         transactionLogRepository.save(PaymentTransactionLog.builder()
                 .payment(saved)
-                .event(PayHereConstants.EVENT_WEBHOOK_RECEIVED)
+                .event(PaymentConstants.EVENT_WEBHOOK_RECEIVED)
                 .rawPayload(rawPayload)
                 .build());
 
         if (saved.getStatus() == PaymentStatus.SUCCESS) {
-            paymentNotificationService.notifyPaymentSuccess(saved);
+            appointmentClient.notifyPaymentSuccess(saved);
+            notificationClient.notifyPaymentSuccess(saved);
         }
         log.info("Webhook processed: orderId={}, status={}", webhook.getOrderId(), saved.getStatus());
     }
@@ -145,6 +163,12 @@ public class PaymentServiceImpl implements PaymentService {
     public Payment getPaymentByOrderId(String orderId) {
         return paymentRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Payment not found for order"));
+    }
+
+    @Override
+    public Payment getPaymentEntityById(UUID paymentId) {
+        return paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new IllegalArgumentException(AppMessages.PAYMENT_NOT_FOUND));
     }
 
     @Override
@@ -159,7 +183,8 @@ public class PaymentServiceImpl implements PaymentService {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new IllegalArgumentException(AppMessages.PAYMENT_NOT_FOUND));
         List<PaymentTransactionLog> logs = transactionLogRepository.findByPayment_IdOrderByCreatedAtDesc(paymentId);
-        return paymentMapper.toDetailResponse(payment, logs);
+        BillingDetails billing = billingDetailsRepository.findByPaymentId(paymentId).orElse(null);
+        return paymentMapper.toDetailResponse(payment, logs, billing);
     }
 
     @Override
@@ -185,15 +210,15 @@ public class PaymentServiceImpl implements PaymentService {
                 .orElseThrow(() -> new IllegalArgumentException(AppMessages.PAYMENT_NOT_FOUND));
         transactionLogRepository.save(PaymentTransactionLog.builder()
                 .payment(payment)
-                .event(PayHereConstants.EVENT_RECONCILE_FLAGGED)
+                .event(PaymentConstants.EVENT_RECONCILE_FLAGGED)
                 .rawPayload("{\"paymentId\":\"" + payment.getId() + "\",\"reason\":\"MANUAL_RECONCILIATION\"}")
                 .build());
     }
 
     private PaymentStatus resolveStatus(String statusCode) {
         return switch (statusCode) {
-            case PayHereConstants.STATUS_SUCCESS -> PaymentStatus.SUCCESS;
-            case PayHereConstants.STATUS_PENDING -> PaymentStatus.PENDING;
+            case PaymentConstants.STATUS_SUCCESS -> PaymentStatus.SUCCESS;
+            case PaymentConstants.STATUS_PENDING -> PaymentStatus.PENDING;
             default -> PaymentStatus.FAILED;
         };
     }

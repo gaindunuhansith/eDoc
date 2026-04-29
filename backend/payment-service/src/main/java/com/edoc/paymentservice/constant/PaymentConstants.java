@@ -1,8 +1,8 @@
 package com.edoc.paymentservice.constant;
 
-public final class PayHereConstants {
+public final class PaymentConstants {
 
-    private PayHereConstants() {
+    private PaymentConstants() {
     }
 
     public static final String STATUS_SUCCESS = "2";
@@ -14,5 +14,8 @@ public final class PayHereConstants {
     public static final String EVENT_PAYMENT_INITIATED = "PAYMENT_INITIATED";
     public static final String EVENT_REST_NOTIFY_SENT = "REST_NOTIFY_SENT";
     public static final String EVENT_REST_NOTIFY_FAILED = "REST_NOTIFY_FAILED";
+    public static final String EVENT_NOTIFICATION_SENT = "NOTIFICATION_SENT";
+    public static final String EVENT_NOTIFICATION_FAILED = "NOTIFICATION_FAILED";
     public static final String EVENT_RECONCILE_FLAGGED = "RECONCILE_FLAGGED";
+    public static final String EVENT_INVOICE_GENERATED = "INVOICE_GENERATED";
 }

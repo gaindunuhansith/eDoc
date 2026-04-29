@@ -2,7 +2,7 @@ package com.edoc.paymentservice.exception;
 
 import com.edoc.paymentservice.constant.AppMessages;
 import com.edoc.paymentservice.constant.ErrorCodes;
-import com.edoc.paymentservice.dto.ErrorResponse;
+import com.edoc.paymentservice.payload.response.ErrorResponse;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;

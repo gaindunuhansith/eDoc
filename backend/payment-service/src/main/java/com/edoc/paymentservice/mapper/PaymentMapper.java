@@ -1,10 +1,12 @@
 package com.edoc.paymentservice.mapper;
 
-import com.edoc.paymentservice.dto.PaymentDetailResponse;
-import com.edoc.paymentservice.dto.PaymentHistoryResponse;
-import com.edoc.paymentservice.dto.TransactionLogEntryResponse;
+import com.edoc.paymentservice.model.BillingDetails;
 import com.edoc.paymentservice.model.Payment;
 import com.edoc.paymentservice.model.PaymentTransactionLog;
+import com.edoc.paymentservice.payload.response.BillingResponse;
+import com.edoc.paymentservice.payload.response.PaymentDetailResponse;
+import com.edoc.paymentservice.payload.response.PaymentHistoryResponse;
+import com.edoc.paymentservice.payload.response.TransactionLogEntryResponse;
 import java.util.List;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -18,6 +20,12 @@ public interface PaymentMapper {
 
     List<TransactionLogEntryResponse> toTransactionLogEntryResponseList(List<PaymentTransactionLog> logs);
 
+    BillingResponse toBillingResponse(BillingDetails billingDetails);
+
     @Mapping(target = "transactionLogs", source = "logs")
-    PaymentDetailResponse toDetailResponse(Payment payment, List<PaymentTransactionLog> logs);
+    @Mapping(target = "billing", source = "billing")
+    @Mapping(target = "id", source = "payment.id")
+    @Mapping(target = "createdAt", source = "payment.createdAt")
+    PaymentDetailResponse toDetailResponse(Payment payment, List<PaymentTransactionLog> logs, BillingDetails billing);
 }
+

@@ -1,6 +1,6 @@
 package com.edoc.paymentservice.controller;
 
-import com.edoc.paymentservice.dto.PayHereWebhookDTO;
+import com.edoc.paymentservice.payload.PayHereWebhookDTO;
 import com.edoc.paymentservice.service.PaymentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

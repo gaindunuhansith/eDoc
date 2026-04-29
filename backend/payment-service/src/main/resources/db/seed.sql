@@ -1,4 +1,5 @@
 DELETE FROM payment_transaction_logs;
+DELETE FROM billing_details;
 DELETE FROM payments;
 
 INSERT INTO payments (
@@ -102,3 +103,83 @@ SELECT
     p.updated_at + INTERVAL '40 minutes'
 FROM payments p
 WHERE p.status = 'SUCCESS' AND p.appointment_id % 4 = 0;
+
+-- ─── Billing Details Seed ────────────────────────────────────────────────────
+INSERT INTO billing_details (
+    id,
+    payment_id,
+    full_name,
+    email,
+    phone,
+    address,
+    city,
+    country,
+    created_at
+)
+SELECT
+    (
+        substr(md5('billing-' || p.order_id), 1, 8) || '-' ||
+        substr(md5('billing-' || p.order_id), 9, 4) || '-' ||
+        substr(md5('billing-' || p.order_id), 13, 4) || '-' ||
+        substr(md5('billing-' || p.order_id), 17, 4) || '-' ||
+        substr(md5('billing-' || p.order_id), 21, 12)
+    )::uuid,
+    p.id,
+    (ARRAY[
+        'Amal Perera', 'Nimal Silva', 'Kamal Fernando', 'Saman Jayawardena',
+        'Ruwan Bandara', 'Chamara Wickramasinghe', 'Priya Gunawardena',
+        'Dilini Rajapaksa', 'Ishara Dissanayake', 'Tharaka Mendis',
+        'Buddhika Senanayake', 'Malinda Ranasinghe', 'Sachini Kumarasinghe',
+        'Udara Hettiarachchi', 'Nisansala Pathirana', 'Yasith Ekanayake',
+        'Chathura Liyanage', 'Sanduni Thilakasiri', 'Roshan Gamage',
+        'Amali Weerasinghe', 'Dimuth Ratnayake', 'Nadeesha Jayasuriya',
+        'Hiranya Munasinghe', 'Kasun Siriwardena', 'Vinodi Abeywickrama',
+        'Lasantha Peiris', 'Thilini Dassanayake', 'Eranga Samaraweera',
+        'Chamila Athukorala', 'Madushi Wijesinghe', 'Ranil Hettige',
+        'Gayani Sampath', 'Danushka Samarakoon', 'Samanthi Wickremaratne',
+        'Piyumi Udagedara', 'Harshana Rathnasiri', 'Malsha Alwis',
+        'Chanaka Vithanage', 'Hasini Kotuwegoda', 'Tharindu Nanayakkara'
+    ])[gs.rn],
+    lower(
+        regexp_replace(
+            (ARRAY[
+                'amal.perera', 'nimal.silva', 'kamal.fernando', 'saman.j',
+                'ruwan.bandara', 'chamara.w', 'priya.g',
+                'dilini.r', 'ishara.d', 'tharaka.m',
+                'buddhika.s', 'malinda.r', 'sachini.k',
+                'udara.h', 'nisansala.p', 'yasith.e',
+                'chathura.l', 'sanduni.t', 'roshan.g',
+                'amali.w', 'dimuth.r', 'nadeesha.j',
+                'hiranya.m', 'kasun.s', 'vinodi.a',
+                'lasantha.p', 'thilini.d', 'eranga.s',
+                'chamila.a', 'madushi.w', 'ranil.h',
+                'gayani.s', 'danushka.s', 'samanthi.w',
+                'piyumi.u', 'harshana.r', 'malsha.a',
+                'chanaka.v', 'hasini.k', 'tharindu.n'
+            ])[gs.rn] || '@gmail.com',
+            '\s', '', 'g'
+        )
+    ),
+    '+94' || LPAD((700000000 + (gs.rn * 7919) % 100000000)::text, 9, '0'),
+    (gs.rn || ' ' || (ARRAY[
+        'Galle Road', 'Kandy Road', 'Negombo Road', 'Maharagama Road',
+        'High Level Road', 'Baseline Road', 'Union Place', 'Duplication Road',
+        'Marine Drive', 'Rajagiriya Road'
+    ])[(gs.rn % 10) + 1]),
+    (ARRAY[
+        'Colombo', 'Kandy', 'Galle', 'Negombo', 'Matara',
+        'Kurunegala', 'Jaffna', 'Batticaloa', 'Ratnapura', 'Badulla',
+        'Anuradhapura', 'Polonnaruwa', 'Trincomalee', 'Hambantota', 'Ampara',
+        'Nuwara Eliya', 'Kegalle', 'Kalutara', 'Puttalam', 'Mannar',
+        'Colombo', 'Kandy', 'Galle', 'Negombo', 'Matara',
+        'Colombo', 'Kandy', 'Galle', 'Negombo', 'Matara',
+        'Colombo', 'Kandy', 'Galle', 'Negombo', 'Matara',
+        'Colombo', 'Kandy', 'Galle', 'Negombo', 'Matara'
+    ])[gs.rn],
+    'Sri Lanka',
+    p.created_at
+FROM payments p
+JOIN (
+    SELECT id, ROW_NUMBER() OVER (ORDER BY appointment_id) AS rn
+    FROM payments
+) gs ON gs.id = p.id;

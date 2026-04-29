@@ -1,8 +1,8 @@
-package com.edoc.paymentservice.service.bridge;
+package com.edoc.paymentservice.client.appointment.payload;
 
 import java.util.UUID;
 
-public record PaymentSuccessNotification(
+public record PaymentSuccessRequest(
         UUID paymentId,
         Long appointmentId,
         String status) {
