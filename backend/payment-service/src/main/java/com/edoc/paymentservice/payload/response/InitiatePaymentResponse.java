@@ -1,4 +1,4 @@
-package com.edoc.paymentservice.dto;
+package com.edoc.paymentservice.payload.response;
 
 import java.math.BigDecimal;
 

@@ -1,17 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarDays, Clock, Stethoscope, Video, Building2, XCircle } from "lucide-react";
+import { format } from "date-fns";
+import { 
+  CalendarDays, Clock, Building2, Video, 
+  XCircle, Trash2, Edit 
+} from "lucide-react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -19,26 +22,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
 
 import { useGetMyPatientProfile } from "@/api/patientApi";
-import { BookAppointmentDialog } from "./BookAppointmentDialog";
 import {
   useGetAppointmentsByPatient,
   useCancelAppointment,
+  useDeleteAppointment,
   type Appointment,
   type AppointmentStatus,
+  type PaymentStatus
 } from "@/api/appointmentApi";
 import { useGetMyFeedback } from "@/api/feedbackApi";
 import { MessageSquare, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { ModifyAppointmentDialog } from "./ModifyAppointmentDialog";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -47,8 +45,15 @@ const STATUS_BADGE: Record<AppointmentStatus, { label: string; className: string
   CONFIRMED: { label: "Confirmed", className: "bg-blue-100 text-blue-800 border-blue-200" },
   COMPLETED: { label: "Completed", className: "bg-green-100 text-green-800 border-green-200" },
   CANCELLED: { label: "Cancelled", className: "bg-red-100 text-red-800 border-red-200" },
-  REJECTED:  { label: "Rejected",  className: "bg-red-100 text-red-800 border-red-200" },
-  NO_SHOW:   { label: "No Show",   className: "bg-gray-100 text-gray-600 border-gray-200" },
+  REJECTED:  { label: "Rejected",  className: "bg-gray-200 text-gray-800 border-gray-300" },
+  NO_SHOW:   { label: "No Show",   className: "bg-orange-100 text-orange-800 border-orange-200" },
+};
+
+const PAYMENT_BADGE: Record<PaymentStatus, { label: string; className: string }> = {
+  NOT_REQUIRED: { label: "Not Req.", className: "bg-gray-100 text-gray-600 border-gray-200" },
+  PENDING:      { label: "Pay Pending", className: "bg-yellow-100 text-yellow-800 border-yellow-200" },
+  PAID:         { label: "Paid", className: "bg-green-100 text-green-800 border-green-200" },
+  REFUNDED:     { label: "Refunded", className: "bg-blue-100 text-blue-800 border-blue-200" },
 };
 
 type TabFilter = "ALL" | "UPCOMING" | "COMPLETED" | "CANCELLED";
@@ -58,28 +63,38 @@ const CANCELLED_STATUSES: AppointmentStatus[] = ["CANCELLED", "REJECTED", "NO_SH
 
 function filterAppointments(list: Appointment[], tab: TabFilter): Appointment[] {
   switch (tab) {
-    case "UPCOMING":   return list.filter((a) => UPCOMING_STATUSES.includes(a.status));
+    case "UPCOMING": {
+      const now = new Date();
+      now.setHours(0, 0, 0, 0); // start of today
+      return list.filter((a) => {
+        if (!UPCOMING_STATUSES.includes(a.status)) return false;
+        const apptDate = new Date(a.appointmentDate);
+        return apptDate >= now;
+      });
+    }
     case "COMPLETED":  return list.filter((a) => a.status === "COMPLETED");
     case "CANCELLED":  return list.filter((a) => CANCELLED_STATUSES.includes(a.status));
     default:           return list;
   }
 }
 
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+function formatDateDisplay(dateStr: string) {
+  try {
+    return format(new Date(dateStr), "EEEE, MMMM d yyyy");
+  } catch(e) {
+    return dateStr;
+  }
 }
 
 // ─── Loading Skeleton ─────────────────────────────────────────────────────────
 
-function TableSkeleton() {
+function CardsSkeleton() {
   return (
-    <div className="space-y-3">
-      {Array.from({ length: 4 }).map((_, i) => (
-        <Skeleton key={i} className="h-14 w-full rounded-lg" />
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <Card key={i} className="animate-pulse shadow-sm">
+          <CardContent className="h-56 bg-gray-50/70 p-4" />
+        </Card>
       ))}
     </div>
   );
@@ -87,321 +102,300 @@ function TableSkeleton() {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function AppointmentsPage() {
+export default function AppointmentsHistoryPage() {
+  const router = useRouter();
+
   const [tab, setTab] = useState<TabFilter>("ALL");
   const [cancelTarget, setCancelTarget] = useState<Appointment | null>(null);
-  const [bookingOpen, setBookingOpen] = useState(false);
-  const router = useRouter();
+  const [cancelReason, setCancelReason] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<Appointment | null>(null);
+  const [modifyTarget, setModifyTarget] = useState<Appointment | null>(null);
 
   const { data: patient, isLoading: patientLoading } = useGetMyPatientProfile();
   const patientId = patient?.id ? String(patient.id) : "";
 
-  const { data: appointments = [], isLoading: apptLoading } =
+  // Fetch all appointments
+  const { data: appointmentsRaw = [], isLoading: apptLoading } =
     useGetAppointmentsByPatient(patientId);
 
   const { data: feedbackData, isLoading: feedbackLoading, error: feedbackError } = useGetMyFeedback();
+  // Sort most recent first
+  const appointments = [...appointmentsRaw].sort((a, b) => {
+    return new Date(b.appointmentDate).getTime() - new Date(a.appointmentDate).getTime();
+  });
 
   const cancelMutation = useCancelAppointment();
+  const deleteMutation = useDeleteAppointment();
 
   const isLoading = patientLoading || apptLoading;
   const filtered = filterAppointments(appointments, tab);
 
-  const handleCancel = () => {
+  // -- Handlers --
+  const handleCancelConfirm = () => {
     if (!cancelTarget) return;
     cancelMutation.mutate(
-      { id: cancelTarget.id, reason: "Cancelled by patient" },
+      { id: cancelTarget.id, reason: cancelReason || "Cancelled by patient" },
       {
         onSuccess: () => {
-          toast.success("Appointment cancelled");
+          toast.success("Appointment cancelled successfully.");
           setCancelTarget(null);
+          setCancelReason("");
         },
-        onError: () => {
-          toast.error("Failed to cancel appointment");
+        onError: (err: any) => {
+          const msg = err.response?.data?.message || "Failed to cancel appointment";
+          toast.error(msg);
           setCancelTarget(null);
+          setCancelReason("");
         },
       }
     );
   };
 
-  const canCancel = (status: AppointmentStatus) =>
-    status === "PENDING" || status === "CONFIRMED";
-
-  // Check if feedback exists for an appointment
-  const checkFeedbackExists = (appointmentId: string) => {
-    if (feedbackLoading || feedbackError) return false; // Show button while loading or on error
-    if (!feedbackData) return false;
-    return feedbackData.some(feedback => feedback.appointmentId === Number(appointmentId));
+  const handleDeleteConfirm = () => {
+    if (!deleteTarget || !patientId) return;
+    deleteMutation.mutate(
+      { id: deleteTarget.id, patientId },
+      {
+        onSuccess: () => {
+          toast.success("Appointment permanently removed from history.");
+          setDeleteTarget(null);
+        },
+        onError: (err: any) => {
+          const msg = err.response?.data?.message || "Failed to remove appointment";
+          toast.error(msg);
+          setDeleteTarget(null);
+        },
+      }
+    );
   };
 
-  const handleLeaveFeedback = (appointment: Appointment) => {
-    // Validate appointment data
-    if (!appointment.id || !appointment.doctorId) {
-      toast.error("Invalid appointment data. Please refresh and try again.");
-      return;
-    }
-
-    // Check if feedback already exists (double-check)
-    if (checkFeedbackExists(appointment.id.toString())) {
-      toast.error("Feedback already exists for this appointment.");
-      return;
-    }
-
-    // Navigate to feedback creation with appointment data
-    router.push(`/patient/feedback/submit/${appointment.id}?doctorId=${appointment.doctorId}&doctorName=${appointment.doctorName || 'Doctor'}`);
+  const handleModify = (apptId: string) => {
+    // For modifying, we route to a dedicated "modify" wizard using the same flow.
+    // If not implemented, we would toast an info message here.
+    toast.success("Modify feature coming next!");
+    // Example: router.push(`/patient/appointments/book?edit=${apptId}`);
   };
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col md:flex-row items-md-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">My Appointments</h1>
-          <p className="text-gray-500 mt-1 text-sm">View and manage your appointments</p>
+          <h1 className="text-3xl font-bold text-gray-900">Appointment History</h1>
+          <p className="text-gray-500 mt-1 text-sm pt-1">
+            View and manage your past and upcoming consultations.
+          </p>
         </div>
         <Button
-          onClick={() => setBookingOpen(true)}
-          disabled={!patientId}
-          className="shrink-0"
+          onClick={() => router.push("/patient/appointments/book")}
+          className="shrink-0 font-medium"
         >
-          + Book Appointment
+          + Book New Appointment
         </Button>
       </div>
 
       {/* Tabs */}
       <Tabs value={tab} onValueChange={(v) => setTab(v as TabFilter)}>
-        <TabsList className="bg-gray-100">
-          <TabsTrigger value="ALL">All</TabsTrigger>
-          <TabsTrigger value="UPCOMING">Upcoming</TabsTrigger>
-          <TabsTrigger value="COMPLETED">Completed</TabsTrigger>
-          <TabsTrigger value="CANCELLED">Cancelled</TabsTrigger>
+        <TabsList className="bg-gray-100/80 p-1">
+          <TabsTrigger value="ALL" className="px-6 py-2">All</TabsTrigger>
+          <TabsTrigger value="UPCOMING" className="px-6 py-2">Upcoming</TabsTrigger>
+          <TabsTrigger value="COMPLETED" className="px-6 py-2">Completed</TabsTrigger>
+          <TabsTrigger value="CANCELLED" className="px-6 py-2">Cancelled</TabsTrigger>
         </TabsList>
       </Tabs>
 
-      {/* Feedback Summary */}
-      {filtered.some(appt => appt.status === "COMPLETED") && (
-        <Card className="bg-blue-50 border-blue-200">
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="h-4 w-4 text-blue-600" />
-                <span className="text-sm font-medium text-blue-900">Feedback Summary</span>
-              </div>
-              <div className="flex items-center gap-4 text-sm">
-                <span className="text-blue-700">
-                  {filtered.filter(appt => appt.status === "COMPLETED" && checkFeedbackExists(appt.id)).length} of{" "}
-                  {filtered.filter(appt => appt.status === "COMPLETED").length} completed appointments have feedback
-                </span>
-                {(() => {
-                  const completedCount = filtered.filter(appt => appt.status === "COMPLETED").length;
-                  const feedbackCount = filtered.filter(appt => appt.status === "COMPLETED" && checkFeedbackExists(appt.id)).length;
-                  const percentage = completedCount > 0 ? Math.round((feedbackCount / completedCount) * 100) : 0;
-                  return (
-                    <span className={`font-medium ${percentage === 100 ? 'text-green-600' : percentage >= 50 ? 'text-blue-600' : 'text-orange-600'}`}>
-                      {percentage}% completion rate
+      {/* Content Loading */}
+      {isLoading ? (
+        <CardsSkeleton />
+      ) : filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 bg-white border border-dashed rounded-2xl text-gray-400">
+          <CalendarDays className="h-16 w-16 mb-4 text-gray-300" />
+          <p className="font-semibold text-xl text-gray-600">No appointments found</p>
+          <p className="text-sm mt-2">
+            {tab === "ALL"
+              ? "You haven't booked any appointments yet."
+              : `No appointments match the '${tab}' filter.`}
+          </p>
+          {tab === "ALL" && (
+            <Button onClick={() => router.push("/patient/appointments/book")} variant="outline" className="mt-6 border-dashed">
+              Book your first consultation
+            </Button>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          {filtered.map((appt) => {
+            const statusBadge = STATUS_BADGE[appt.status];
+            const payStatus = appt.paymentStatus || "NOT_REQUIRED";
+            const paymentBadge = PAYMENT_BADGE[payStatus];
+
+            return (
+              <Card key={appt.id} className="hover:shadow-md transition-all flex flex-col border border-gray-200">
+                <CardHeader className="pb-3 border-b border-gray-100 p-5 bg-white relative">
+                  <div className="flex justify-between items-start mb-3">
+                    <Badge variant="outline" className={`px-2.5 py-0.5 rounded-full ${statusBadge.className}`}>
+                      {statusBadge.label}
+                    </Badge>
+                    <Badge variant="outline" className={`text-[10px] px-2 py-0.5 rounded-full ${paymentBadge.className}`}>
+                      {paymentBadge.label}
+                    </Badge>
+                  </div>
+                  <CardTitle className="text-lg flex flex-col gap-1">
+                    <span className="font-bold text-gray-900 text-xl tracking-tight">
+                      Dr. {appt.doctorName || "Unknown"}
                     </span>
-                  );
-                })()}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+                    <span className="text-sm font-medium text-primary">
+                      {appt.doctorSpecialty || "General"}
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+
+                <CardContent className="p-5 flex-1 space-y-4 text-sm text-gray-700 bg-white">
+                  <div className="flex gap-4">
+                    <div className="bg-primary/10 p-3 rounded-xl flex items-center justify-center shrink-0">
+                      <CalendarDays className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900 text-base">{formatDateDisplay(appt.appointmentDate)}</p>
+                      <p className="text-sm text-gray-500 mt-1 flex items-center gap-1.5 font-medium">
+                        <Clock className="w-4 h-4 text-gray-400" /> {appt.timeSlot}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2.5 py-2 px-3 bg-gray-50 rounded-lg">
+                    {appt.type === "VIDEO" ? (
+                      <Video className="w-4 h-4 text-purple-500 shrink-0" />
+                    ) : (
+                      <Building2 className="w-4 h-4 text-blue-500 shrink-0" />
+                    )}
+                    <span className="font-medium text-gray-700">{appt.type === "VIDEO" ? "Video Consultation" : "In-Person Visit"}</span>
+                  </div>
+
+                  {/* Doctor Notes Box */}
+                  {appt.status === "COMPLETED" && appt.doctorNotes && (
+                    <div className="mt-2 p-3.5 bg-green-50 border border-green-100 rounded-lg text-sm text-gray-700">
+                      <span className="block font-semibold mb-1.5 text-gray-900">Doctor's Evaluation:</span>
+                      <p className="line-clamp-3 leading-relaxed">{appt.doctorNotes}</p>
+                    </div>
+                  )}
+
+                  {/* Video Join Button */}
+                  {appt.status === "CONFIRMED" && appt.videoSessionLink && (
+                    <div className="pt-2">
+                       <Button 
+                         onClick={() => window.open(appt.videoSessionLink, "_blank")}
+                         className="w-full bg-indigo-600 hover:bg-indigo-700 shadow-sm"
+                       >
+                          <Video className="w-4 h-4 mr-2" /> Join Video Session
+                       </Button>
+                    </div>
+                  )}
+                </CardContent>
+
+                <CardFooter className="p-4 border-t bg-gray-50 flex gap-3 flex-wrap">
+                  {appt.status === "PENDING" && (
+                    <div className="grid grid-cols-2 gap-3 w-full">
+                      <Button 
+                        variant="outline" 
+                        className="w-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                        onClick={() => setCancelTarget(appt)}
+                      >
+                        <XCircle className="w-4 h-4 mr-2" /> Cancel
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        className="w-full border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                        onClick={() => setModifyTarget(appt)}
+                      >
+                        <Edit className="w-4 h-4 mr-2" /> Modify
+                      </Button>
+                    </div>
+                  )}
+
+                  {(appt.status === "COMPLETED" || appt.status === "CANCELLED" || appt.status === "REJECTED" || appt.status === "NO_SHOW") && (
+                     <Button 
+                       variant="ghost" 
+                       className="w-full text-gray-500 hover:text-red-600 hover:bg-red-50 border-transparent shadow-none"
+                       onClick={() => setDeleteTarget(appt)}
+                     >
+                       <Trash2 className="w-4 h-4 mr-2" /> Remove from history
+                     </Button>
+                  )}
+                </CardFooter>
+              </Card>
+            );
+          })}
+        </div>
       )}
 
-      {/* Table */}
-      <Card className="bg-white border border-gray-200 shadow-none">
-        <CardHeader className="pb-3 border-b border-gray-100">
-          <CardTitle className="text-base font-medium text-gray-700">
-            {filtered.length} appointment{filtered.length !== 1 ? "s" : ""}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {isLoading ? (
-            <div className="p-4">
-              <TableSkeleton />
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-              <CalendarDays className="h-10 w-10 mb-3 opacity-40" />
-              <p className="font-medium">No appointments found</p>
-              <p className="text-sm mt-1">
-                {tab === "ALL"
-                  ? "You have no appointments yet."
-                  : `No ${tab.toLowerCase()} appointments.`}
-              </p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-gray-50 hover:bg-gray-50">
-                  <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Doctor</TableHead>
-                  <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Date</TableHead>
-                  <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Time Slot</TableHead>
-                  <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Type</TableHead>
-                  <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Fee</TableHead>
-                  <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</TableHead>
-                  <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Feedback</TableHead>
-                  <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wide text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((appt) => {
-                  const badge = STATUS_BADGE[appt.status];
-                  return (
-                    <TableRow key={appt.id} className="hover:bg-gray-50/50">
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Stethoscope className="h-4 w-4 text-gray-400 shrink-0" />
-                          <div>
-                            <p className="font-medium text-gray-900 text-sm">
-                              {appt.doctorName ?? "—"}
-                            </p>
-                            {appt.doctorSpecialty && (
-                              <p className="text-xs text-gray-500">{appt.doctorSpecialty}</p>
-                            )}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1.5 text-sm text-gray-700">
-                          <CalendarDays className="h-3.5 w-3.5 text-gray-400" />
-                          {formatDate(appt.appointmentDate)}
-                        </div>
-                        <p className="text-xs text-gray-400 mt-0.5 capitalize">
-                          {appt.dayOfWeek.charAt(0) + appt.dayOfWeek.slice(1).toLowerCase()}
-                        </p>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1.5 text-sm text-gray-700">
-                          <Clock className="h-3.5 w-3.5 text-gray-400" />
-                          {appt.timeSlot}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1.5 text-sm text-gray-700">
-                          {appt.type === "VIDEO" ? (
-                            <Video className="h-3.5 w-3.5 text-purple-500" />
-                          ) : (
-                            <Building2 className="h-3.5 w-3.5 text-blue-500" />
-                          )}
-                          {appt.type === "VIDEO" ? "Video" : "In Person"}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm font-medium text-gray-800">
-                        {appt.consultationFee != null
-                          ? `LKR ${appt.consultationFee.toLocaleString()}`
-                          : "—"}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={`text-xs font-medium ${badge.className}`}
-                        >
-                          {badge.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {appt.status === "COMPLETED" ? (
-                          checkFeedbackExists(appt.id) ? (
-                            <div className="flex items-center gap-1 text-green-600">
-                              <MessageSquare className="h-3.5 w-3.5" />
-                              <span className="text-xs font-medium">Submitted</span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1 text-orange-600">
-                              <Star className="h-3.5 w-3.5" />
-                              <span className="text-xs font-medium">Pending</span>
-                            </div>
-                          )
-                        ) : (
-                          <span className="text-xs text-gray-400">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {appt.type === "VIDEO" && appt.status === "CONFIRMED" && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-violet-600 hover:text-violet-800 hover:bg-violet-50 h-8 px-3"
-                            onClick={() => router.push(`/patient/telemedicine/session/${appt.id}`)}
-                          >
-                            <Video className="h-3.5 w-3.5 mr-1" />
-                            Join Call
-                          </Button>
-                        )}
-                        {canCancel(appt.status) && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 px-3"
-                            onClick={() => setCancelTarget(appt)}
-                          >
-                            <XCircle className="h-3.5 w-3.5 mr-1" />
-                            Cancel
-                          </Button>
-                        )}
-                        {appt.status === "COMPLETED" && !checkFeedbackExists(appt.id) && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 h-8 px-3"
-                            onClick={() => handleLeaveFeedback(appt)}
-                          >
-                            <Star className="h-3.5 w-3.5 mr-1" />
-                            Leave Feedback
-                          </Button>
-                        )}
-                        {appt.status === "COMPLETED" && checkFeedbackExists(appt.id) && (
-                          <div className="flex items-center gap-1 text-green-600 text-sm">
-                            <MessageSquare className="h-3.5 w-3.5" />
-                            Feedback Submitted
-                          </div>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Book Appointment Dialog */}
-      <BookAppointmentDialog
-        patientId={patientId}
-        open={bookingOpen}
-        onOpenChange={setBookingOpen}
-      />
-
-      {/* Cancel Confirmation Dialog */}
+      {/* Cancel Dialog */}
       <AlertDialog open={!!cancelTarget} onOpenChange={(open) => !open && setCancelTarget(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="sm:max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancel Appointment</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to cancel your appointment with{" "}
-              <span className="font-medium text-gray-900">
-                {cancelTarget?.doctorName ?? "this doctor"}
-              </span>{" "}
-              on{" "}
-              <span className="font-medium text-gray-900">
-                {cancelTarget ? formatDate(cancelTarget.appointmentDate) : ""}
-              </span>
-              ? This action cannot be undone.
+            <AlertDialogTitle className="text-xl">Cancel Appointment</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-500 pt-2">
+              Are you sure you want to cancel your appointment with 
+              <span className="font-semibold text-gray-900 flex px-1"> Dr. {cancelTarget?.doctorName}?</span>
+              If you wish, please provide a reason for cancellation (optional).
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={cancelMutation.isPending}>Keep</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleCancel}
+          <div className="py-3">
+            <Textarea
+              className="w-full resize-none placeholder:text-gray-400"
+              placeholder="E.g. Not feeling well, unexpected schedule conflict..."
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
               disabled={cancelMutation.isPending}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              rows={4}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelMutation.isPending}>Close</AlertDialogCancel>
+            <Button 
+              variant="destructive" 
+              onClick={handleCancelConfirm}
+              disabled={cancelMutation.isPending}
             >
-              {cancelMutation.isPending ? "Cancelling…" : "Yes, Cancel"}
-            </AlertDialogAction>
+              {cancelMutation.isPending ? "Cancelling..." : "Confirm"}
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Delete/Remove Dialog */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent className="sm:max-w-md border-red-50">
+          <AlertDialogHeader>
+            <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+               <Trash2 className="w-6 h-6 text-red-600" />
+            </div>
+            <AlertDialogTitle className="text-center text-xl">Remove from History</AlertDialogTitle>
+            <AlertDialogDescription className="text-center text-gray-500 pt-2">
+              This will permanently delete this appointment record from your history.
+              Are you sure you want to proceed?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="sm:justify-center pt-4">
+            <AlertDialogCancel disabled={deleteMutation.isPending} className="w-full sm:w-auto">Keep It</AlertDialogCancel>
+            <Button 
+              variant="destructive" 
+              onClick={handleDeleteConfirm}
+              disabled={deleteMutation.isPending}
+              className="w-full sm:w-auto"
+            >
+              {deleteMutation.isPending ? "Removing..." : "Yes, Remove"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Modify Dialog */}
+      <ModifyAppointmentDialog 
+        appointment={modifyTarget}
+        open={!!modifyTarget}
+        onOpenChange={(open) => !open && setModifyTarget(null)}
+      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Check, ChevronRight } from "lucide-react";
 
@@ -12,17 +12,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-export default function PaymentSuccessPage() {
+function PaymentSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(true);
 
   const orderId = useMemo(() => searchParams.get("order_id") ?? "", [searchParams]);
 
-  const buildDashboardUrl = () =>
+  const buildDashboardUrl = useMemo(() => () =>
     orderId
       ? `/patient?payment=success&order_id=${encodeURIComponent(orderId)}`
-      : "/patient?payment=success";
+      : "/patient?payment=success",
+  [orderId]);
 
   const handleContinue = () => {
     router.replace(buildDashboardUrl());
@@ -34,7 +35,7 @@ export default function PaymentSuccessPage() {
     }, 1800);
 
     return () => window.clearTimeout(timer);
-  }, [router, orderId]);
+  }, [router, buildDashboardUrl]);
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6">
@@ -74,5 +75,13 @@ export default function PaymentSuccessPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense fallback={<div>Loading payment status...</div>}>
+      <PaymentSuccessContent />
+    </Suspense>
   );
 }
