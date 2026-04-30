@@ -2,7 +2,7 @@ package com.edoc.feedbackservice.service;
 
 import com.edoc.feedbackservice.client.AppointmentServiceClient;
 import com.edoc.feedbackservice.client.NotificationServiceClient;
-import com.edoc.feedbackservice.client.UserServiceClient;
+import com.edoc.feedbackservice.client.PatientServiceClient;
 import com.edoc.feedbackservice.dto.FeedbackRequestDTO;
 import com.edoc.feedbackservice.dto.FeedbackResponseDTO;
 import com.edoc.feedbackservice.entity.Feedback;
@@ -35,7 +35,7 @@ class FeedbackServiceTest {
     private NotificationServiceClient notificationServiceClient;
 
     @Mock
-    private UserServiceClient userServiceClient;
+    private PatientServiceClient patientServiceClient;
 
     @InjectMocks
     private FeedbackService feedbackService;
@@ -54,13 +54,21 @@ class FeedbackServiceTest {
         // Mock appointment validation
         AppointmentServiceClient.AppointmentDTO appointmentDTO = new AppointmentServiceClient.AppointmentDTO();
         appointmentDTO.setPatientId(1L);
+        appointmentDTO.setDoctorId(2L);
+        appointmentDTO.setStatus("COMPLETED");
         when(appointmentServiceClient.getAppointment(1L, "Bearer token")).thenReturn(appointmentDTO);
+
+        PatientServiceClient.PatientDTO patientDTO = new PatientServiceClient.PatientDTO();
+        patientDTO.setId(1L);
+        when(patientServiceClient.getMyPatientProfile("Bearer token")).thenReturn(patientDTO);
+
+        when(feedbackRepository.existsByPatientIdAndAppointmentId(1L, 1L)).thenReturn(false);
 
         when(feedbackMapper.toEntity(request, 1L)).thenReturn(feedback);
         when(feedbackRepository.save(feedback)).thenReturn(feedback);
         when(feedbackMapper.toResponseDTO(feedback)).thenReturn(response);
 
-        FeedbackResponseDTO result = feedbackService.submitFeedback(request, 1L, "Bearer token");
+        FeedbackResponseDTO result = feedbackService.submitFeedback(request, "Bearer token");
 
         assertNotNull(result);
         verify(feedbackRepository).save(feedback);

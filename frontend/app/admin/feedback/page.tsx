@@ -40,12 +40,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { useGetAllFeedback, useUpdateFeedbackStatus, type Feedback, type FeedbackStatus } from "@/api/feedbackApi";
-import { toast } from "sonner";
+import { useGetAllFeedback, type Feedback } from "@/api/feedbackApi";
 
 export default function AdminFeedbackPage() {
   const { data: feedbacks = [], isLoading } = useGetAllFeedback();
-  const updateStatus = useUpdateFeedbackStatus();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [ratingFilter, setRatingFilter] = useState("all");
@@ -86,16 +84,6 @@ export default function AdminFeedbackPage() {
   const uniqueDoctors = useMemo(() => {
     return Array.from(new Set(feedbacks.map(f => f.doctorName).filter(Boolean))) as string[];
   }, [feedbacks]);
-
-  const handleStatusChange = (feedbackId: number, newStatus: FeedbackStatus) => {
-    updateStatus.mutate(
-      { id: String(feedbackId), status: newStatus },
-      {
-        onSuccess: () => toast.success(`Feedback ${newStatus.toLowerCase()} successfully`),
-        onError: () => toast.error("Failed to update feedback status"),
-      }
-    );
-  };
 
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
@@ -342,26 +330,6 @@ export default function AdminFeedbackPage() {
                       >
                         <Star className="h-4 w-4" />
                       </Button>
-                      {feedback.status === "PENDING" && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleStatusChange(feedback.id, "APPROVED")}
-                            className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleStatusChange(feedback.id, "REJECTED")}
-                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <XCircle className="h-4 w-4" />
-                          </Button>
-                        </>
-                      )}
                     </div>
                   </TableCell>
                 </TableRow>

@@ -39,76 +39,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { useGetFeedbackByDoctor, type Feedback } from "@/api/feedbackApi";
-import { useUser } from "@/store/store";
-
-// Mock data for doctor feedback (feedback from patients)
-const mockFeedbacks = [
-  {
-    id: 1,
-    patientId: 1,
-    patientName: "John Doe",
-    appointmentId: 201,
-    rating: 5,
-    comment: "Dr. Smith was very professional and caring. Excellent service!",
-    timestamp: "2024-04-15T10:30:00Z",
-    status: "APPROVED",
-  },
-  {
-    id: 2,
-    patientId: 2,
-    patientName: "Jane Smith",
-    appointmentId: 202,
-    rating: 4,
-    comment: "Good consultation, but waiting time was a bit long.",
-    timestamp: "2024-04-12T14:15:00Z",
-    status: "APPROVED",
-  },
-  {
-    id: 3,
-    patientId: 3,
-    patientName: "Bob Johnson",
-    appointmentId: 203,
-    rating: 3,
-    comment: "Average experience. Could be better.",
-    timestamp: "2024-04-10T09:00:00Z",
-    status: "PENDING",
-  },
-  {
-    id: 4,
-    patientId: 4,
-    patientName: "Alice Brown",
-    appointmentId: 204,
-    rating: 5,
-    comment: "Outstanding care! Highly recommend.",
-    timestamp: "2024-04-08T11:45:00Z",
-    status: "APPROVED",
-  },
-  {
-    id: 5,
-    patientId: 5,
-    patientName: "Charlie Wilson",
-    appointmentId: 205,
-    rating: 2,
-    comment: "Not satisfied with the service.",
-    timestamp: "2024-04-05T16:30:00Z",
-    status: "REJECTED",
-  },
-  {
-    id: 6,
-    patientId: 6,
-    patientName: "Diana Davis",
-    appointmentId: 206,
-    rating: 4,
-    comment: "Very knowledgeable doctor. Explained everything clearly.",
-    timestamp: "2024-04-03T13:20:00Z",
-    status: "APPROVED",
-  },
-];
+import { useGetMyDoctorFeedback, type Feedback } from "@/api/feedbackApi";
 
 export default function DoctorFeedbackPage() {
-  const user = useUser();
-  const { data: feedbacks = [], isLoading } = useGetFeedbackByDoctor(user?.userId ?? "");
+  const { data: feedbacks = [], isLoading } = useGetMyDoctorFeedback();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [ratingFilter, setRatingFilter] = useState("all");
@@ -129,10 +63,6 @@ export default function DoctorFeedbackPage() {
     if (feedbacks.length === 0) return 0;
     return feedbacks.reduce((sum, f) => sum + f.rating, 0) / feedbacks.length;
   }, [feedbacks]);
-
-  const handleStatusChange = (_feedbackId: number, _newStatus: "APPROVED" | "REJECTED") => {
-    // Status changes are admin-only
-  };
 
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (

@@ -36,7 +36,7 @@ import {
   type Appointment,
   type AppointmentStatus,
 } from "@/api/appointmentApi";
-import { useGetFeedbackByAppointment, useGetFeedbackByPatient } from "@/api/feedbackApi";
+import { useGetMyFeedback } from "@/api/feedbackApi";
 import { MessageSquare, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -99,7 +99,7 @@ export default function AppointmentsPage() {
   const { data: appointments = [], isLoading: apptLoading } =
     useGetAppointmentsByPatient(patientId);
 
-  const { data: feedbackData, isLoading: feedbackLoading, error: feedbackError } = useGetFeedbackByPatient(patient?.id ? String(patient.id) : "");
+  const { data: feedbackData, isLoading: feedbackLoading, error: feedbackError } = useGetMyFeedback();
 
   const cancelMutation = useCancelAppointment();
 

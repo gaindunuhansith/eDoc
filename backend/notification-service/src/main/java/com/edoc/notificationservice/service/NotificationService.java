@@ -227,6 +227,7 @@ public class NotificationService {
             case APPOINTMENT_REJECTED -> "Appointment Rejected";
             case APPOINTMENT_CANCELLED -> "Appointment Cancelled";
             case APPOINTMENT_COMPLETED -> "Consultation Completed";
+            case TELEMEDICINE_SESSION_STARTED -> "Telemedicine Session Started";
             case FEEDBACK_RECEIVED -> "New Feedback Received";
             case PAYMENT_SUCCESS -> "Payment Confirmation";
         };
@@ -262,6 +263,11 @@ public class NotificationService {
                     + " (" + valueOrDefault(data, "dayOfWeek", "") + ")"
                     + " at " + valueOrDefault(data, "timeSlot", "the scheduled time")
                     + " has been completed.";
+                case TELEMEDICINE_SESSION_STARTED -> "Hello " + valueOrDefault(data, "recipientName", "there")
+                    + ", your telemedicine session with Dr. " + valueOrDefault(data, "doctorName", "your doctor")
+                    + " on " + valueOrDefault(data, "date", "today")
+                    + " at " + valueOrDefault(data, "timeSlot", "the scheduled time")
+                    + " has started. Please join now.";
             case FEEDBACK_RECEIVED -> "Dear Dr. " + valueOrDefault(data, "doctorName", "Doctor")
                     + ", you have received new feedback from a patient."
                     + " Rating: " + valueOrDefault(data, "rating", "N/A") + "/5."
