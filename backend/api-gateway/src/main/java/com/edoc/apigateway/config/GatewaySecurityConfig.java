@@ -19,11 +19,18 @@ import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
+import org.springframework.security.oauth2.server.resource.web.server.authentication.ServerBearerTokenAuthenticationConverter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
 
 @Configuration
 @EnableWebFluxSecurity
 public class GatewaySecurityConfig {
+
+
+    private static final ServerBearerTokenAuthenticationConverter TOKEN_CONVERTER =
+            new ServerBearerTokenAuthenticationConverter();
 
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http,
@@ -34,12 +41,28 @@ public class GatewaySecurityConfig {
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
                 .authorizeExchange(auth -> auth
                         .pathMatchers(HttpMethod.OPTIONS).permitAll()
-                        .pathMatchers("/api/v1/users/login", "/api/v1/users/register", "/api/v1/payments/webhook/notify").permitAll()
+                        .pathMatchers("/api/v1/users/login",
+                                      "/api/v1/users/register",
+                                      "/api/v1/payments/webhook/notify").permitAll()
                         .anyExchange().authenticated()
                 )
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtDecoder(jwtDecoder)));
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .bearerTokenConverter(GatewaySecurityConfig::skipPublicPaths)
+                        .jwt(jwt -> jwt.jwtDecoder(jwtDecoder)));
 
         return http.build();
+    }
+
+    private static Mono<org.springframework.security.core.Authentication> skipPublicPaths(ServerWebExchange exchange) {
+        String path = exchange.getRequest().getPath().value();
+        String method = exchange.getRequest().getMethod().name();
+        if ("OPTIONS".equals(method)
+                || path.equals("/api/v1/users/login")
+                || path.equals("/api/v1/users/register")
+                || path.equals("/api/v1/payments/webhook/notify")) {
+            return Mono.empty();
+        }
+        return TOKEN_CONVERTER.convert(exchange);
     }
 
         @Bean
