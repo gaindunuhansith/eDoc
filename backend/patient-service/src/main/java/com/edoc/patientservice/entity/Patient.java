@@ -32,9 +32,6 @@ public class Patient {
     @Column(name = "user_id", nullable = false, unique = true)
     private String userId;
 
-    @Column(length = 50)
-    private String phone;
-
     private Double height;
 
     private Double weight;

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   User,
@@ -43,7 +44,8 @@ import {
 
 import { useStore } from "@/store/store";
 import { useRegisterPatient, useGetMyPatientProfile, useUpdateMyPatientProfile, type PatientPayload, type Patient } from "@/api/patientApi";
-import { useGetFeedbackByPatient } from "@/api/feedbackApi";
+import { useGetMyFeedback } from "@/api/feedbackApi";
+import { useGetAppointmentsByPatient } from "@/api/appointmentApi";
 import { markProfileCreated } from "@/api/userApi";
 
 // ─── Edit Profile Dialog ─────────────────────────────────────────────────────
@@ -420,10 +422,12 @@ function ProfileCreationForm() {
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
 function PatientDashboardContent() {
+  const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
   const user = useStore((s) => s.user);
   const { data: profile, isLoading: profileLoading } = useGetMyPatientProfile();
-  const { data: feedbacks = [] } = useGetFeedbackByPatient(user?.userId || "");
+  const { data: feedbacks = [] } = useGetMyFeedback();
+  const { data: appointments = [] } = useGetAppointmentsByPatient(profile ? String(profile.id) : "");
 
   // Calculate feedback statistics
   const feedbackStats = React.useMemo(() => {
@@ -439,6 +443,19 @@ function PatientDashboardContent() {
       approvedFeedbacks,
     };
   }, [feedbacks]);
+
+  const upcomingTelemedicineAppointments = React.useMemo(() => {
+    return appointments
+      .filter((a) => a.type === "VIDEO" && a.status === "CONFIRMED")
+      .sort((a, b) => {
+        const aStart = a.timeSlot?.split("-")?.[0]?.trim() || "00:00";
+        const bStart = b.timeSlot?.split("-")?.[0]?.trim() || "00:00";
+        const aTime = new Date(`${a.appointmentDate}T${aStart}:00`).getTime();
+        const bTime = new Date(`${b.appointmentDate}T${bStart}:00`).getTime();
+        return aTime - bTime;
+      })
+      .slice(0, 4);
+  }, [appointments]);
 
   if (profileLoading) {
     return (
@@ -574,6 +591,39 @@ function PatientDashboardContent() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="border-border/60">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-muted-foreground" />
+            Upcoming Telemedicine Appointments
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {upcomingTelemedicineAppointments.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No upcoming telemedicine appointments.</p>
+          ) : (
+            <div className="space-y-3">
+              {upcomingTelemedicineAppointments.map((appt) => (
+                <div key={appt.id} className="rounded-md border border-border/60 p-3 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Dr. {appt.doctorName ?? "Doctor"}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {new Date(appt.appointmentDate).toLocaleDateString()} • {appt.timeSlot}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => router.push(`/patient/telemedicine/session/${appt.id}`)}
+                  >
+                    Join Session
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Edit dialog */}
       {profile && (

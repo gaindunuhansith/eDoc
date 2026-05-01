@@ -6,9 +6,6 @@ import java.time.LocalDate;
 // Payload for patient registration and profile updates.
 public class PatientRequestDTO {
 
-    @Size(max = 50)
-    private String phone;
-
     private LocalDate dateOfBirth;
 
     @Size(max = 500)
@@ -32,14 +29,6 @@ public class PatientRequestDTO {
     private Double height;
 
     private Double weight;
-
-    public String getPhone() {
-        return phone;
-    }
-
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
 
     public LocalDate getDateOfBirth() {
         return dateOfBirth;

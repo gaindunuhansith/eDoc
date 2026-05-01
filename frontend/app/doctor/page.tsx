@@ -3,6 +3,11 @@
 import { useState } from "react";
 import { useGetCurrentUser } from "@/api/userApi";
 import { useGetDoctorById, useUpdateDoctor } from "@/api/doctorApi";
+import { useGetAppointmentsByDoctor } from "@/api/appointmentApi";
+import { format, isToday } from "date-fns";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +24,15 @@ export default function DoctorDashboard() {
     isLoading: doctorLoading, 
     isError: doctorError 
   } = useGetDoctorById(user?.userId || "");
+
+  const {
+    data: appointments,
+    isLoading: appointmentsLoading,
+    isError: appointmentsError
+  } = useGetAppointmentsByDoctor(user?.userId || "");
+  
+  const todaysAppointments = appointments?.filter(app => isToday(new Date(app.appointmentDate))) || [];
+  const pendingRequestsCount = appointments?.filter(app => app.status === "PENDING").length || 0;
 
   const updateDoctorMutation = useUpdateDoctor();
   
@@ -199,45 +213,99 @@ export default function DoctorDashboard() {
                 <TabsTrigger value="settings" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Settings</TabsTrigger>
               </TabsList>
             <TabsContent value="overview" className="mt-6 animate-in slide-in-from-bottom-2">
-               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                 {/* Dashboard Stat Cards */}
-                 <Card className="hover:shadow-md transition-shadow">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                      <CardTitle className="text-sm font-medium text-muted-foreground">Total Patients</CardTitle>
-                      <Users className="w-4 h-4 text-blue-500" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                {/* Today's Appointments */}
+                <Card className="hover:shadow-md transition-shadow">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2 border-b mb-4">
+                    <CardTitle className="text-xl font-bold flex items-center justify-between w-full">
+                      Today's Appointments
+                      {appointmentsLoading ? (
+                        <Skeleton className="h-6 w-16" />
+                      ) : (
+                        <Badge variant="secondary" className="text-sm">
+                          {todaysAppointments.length} Total
+                        </Badge>
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {appointmentsLoading && (
+                      <>
+                        <Skeleton className="h-20 w-full mb-2" />
+                        <Skeleton className="h-20 w-full mb-2" />
+                      </>
+                    )}
+                    {appointmentsError && (
+                      <div className="text-red-500 text-sm py-4">
+                        Could not load appointments right now.
+                      </div>
+                    )}
+                    {!appointmentsLoading && !appointmentsError && todaysAppointments.length === 0 && (
+                      <p className="text-sm text-muted-foreground py-4">
+                        No appointments scheduled for today.
+                      </p>
+                    )}
+                    {!appointmentsLoading && todaysAppointments.map(app => (
+                      <div key={app.id} className="p-4 border rounded-md shadow-sm">
+                        <div className="font-semibold">{app.patientName || `Patient: ${app.patientId}`}</div>
+                        <div className="text-sm text-gray-600 mt-1 flex gap-2">
+                           <Calendar className="w-4 h-4"/> {app.timeSlot}
+                        </div>
+                        <div className="mt-2">
+                           <Badge variant="outline">{app.type}</Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+
+                {/* Dashboard Operations */}
+                <div className="space-y-6">
+                  {/* Pending Requests */}
+                  <Card className="hover:shadow-md transition-shadow">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-xl font-bold">Pending Requests</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-3xl font-bold">124</div>
-                      <p className="text-xs text-green-500 font-medium flex items-center mt-1">
-                        +12% from last month
-                      </p>
+                      {appointmentsLoading ? (
+                        <Skeleton className="h-8 w-32 mt-2" />
+                      ) : pendingRequestsCount > 0 ? (
+                        <Link href="/doctor/appointments">
+                          <Badge className="text-sm cursor-pointer hover:bg-orange-600 bg-orange-500 py-1.5 px-3">
+                            {pendingRequestsCount} Pending Request{pendingRequestsCount !== 1 ? 's' : ''}
+                          </Badge>
+                        </Link>
+                      ) : (
+                        <p className="text-sm text-green-600 font-medium">All caught up! No pending requests.</p>
+                      )}
                     </CardContent>
-                 </Card>
-                 <Card className="hover:shadow-md transition-shadow">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                      <CardTitle className="text-sm font-medium text-muted-foreground">Upcoming Appointments</CardTitle>
-                      <Calendar className="w-4 h-4 text-indigo-500" />
+                  </Card>
+
+                  {/* Quick Navigation Buttons */}
+                  <Card className="hover:shadow-md transition-shadow">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-xl font-bold">Quick Actions</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <div className="text-3xl font-bold">8</div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Scheduled for today
-                      </p>
+                    <CardContent className="grid grid-cols-1 gap-3">
+                      <Button asChild className="w-full justify-start gap-2" variant="outline">
+                        <Link href="#availability" onClick={() => document.querySelector<HTMLButtonElement>('[value="availability"]')?.click()}>
+                          <Calendar className="w-4 h-4" /> Manage Availability
+                        </Link>
+                      </Button>
+                      <Button asChild className="w-full justify-start gap-2" variant="outline">
+                        <Link href="/doctor/appointments">
+                          <HeartPulse className="w-4 h-4" /> Appointment Requests
+                        </Link>
+                      </Button>
+                      <Button asChild className="w-full justify-start gap-2" variant="outline">
+                        <Link href="/doctor/prescriptions">
+                          <FileText className="w-4 h-4" /> Prescriptions
+                        </Link>
+                      </Button>
                     </CardContent>
-                 </Card>
-                 <Card className="hover:shadow-md transition-shadow">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                      <CardTitle className="text-sm font-medium text-muted-foreground">Pending Reports</CardTitle>
-                      <FileText className="w-4 h-4 text-orange-500" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-3xl font-bold">3</div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Requires your attention
-                      </p>
-                    </CardContent>
-                 </Card>
-               </div>
+                  </Card>
+                </div>
+              </div>
             </TabsContent>
             
             <TabsContent value="patients" className="mt-6">

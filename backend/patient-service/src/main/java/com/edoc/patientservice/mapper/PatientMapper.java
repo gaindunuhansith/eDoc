@@ -16,7 +16,6 @@ public class PatientMapper {
     }
 
     public void applyUpdates(Patient patient, PatientRequestDTO request) {
-        patient.setPhone(request.getPhone());
         patient.setDateOfBirth(request.getDateOfBirth());
         patient.setAddress(request.getAddress());
         patient.setGender(request.getGender());
@@ -32,7 +31,6 @@ public class PatientMapper {
         PatientResponseDTO response = new PatientResponseDTO();
         response.setId(patient.getId());
         response.setUserId(patient.getUserId());
-        response.setPhone(patient.getPhone());
         response.setDateOfBirth(patient.getDateOfBirth());
         response.setAddress(patient.getAddress());
         response.setCreatedAt(patient.getCreatedAt());

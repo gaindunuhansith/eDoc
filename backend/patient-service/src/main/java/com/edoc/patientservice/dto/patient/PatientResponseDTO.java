@@ -9,7 +9,6 @@ public class PatientResponseDTO {
 
     private Long id;
     private String userId;
-    private String phone;
     private LocalDate dateOfBirth;
     private String address;
     private Instant createdAt;
@@ -40,14 +39,6 @@ public class PatientResponseDTO {
 
     public void setUserId(String userId) {
         this.userId = userId;
-    }
-
-    public String getPhone() {
-        return phone;
-    }
-
-    public void setPhone(String phone) {
-        this.phone = phone;
     }
 
     public LocalDate getDateOfBirth() {

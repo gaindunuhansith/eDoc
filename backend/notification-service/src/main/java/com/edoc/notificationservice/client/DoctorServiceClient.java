@@ -21,10 +21,11 @@ public class DoctorServiceClient {
         this.restClient = RestClient.builder().build();
     }
 
+    // Calls the internal endpoint added in Phase 1 to get the userId linked to this doctor.
     public DoctorContact getDoctorById(String doctorId) {
         try {
             return restClient.get()
-                    .uri(doctorServiceBaseUrl + "/api/v1/doctors/{id}", doctorId)
+                    .uri(doctorServiceBaseUrl + "/api/v1/doctors/internal/{id}", doctorId)
                     .retrieve()
                     .body(DoctorContact.class);
         } catch (RestClientException ex) {
@@ -33,5 +34,6 @@ public class DoctorServiceClient {
         }
     }
 
-    public record DoctorContact(String email, String phoneNumber) {}
+    // Only userId is needed — contact details are resolved via user-service.
+    public record DoctorContact(String userId) {}
 }

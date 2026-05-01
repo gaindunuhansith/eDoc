@@ -62,25 +62,32 @@ public class NotificationService {
         String inboxUserId = null; // JWT uid (UUID) for the patient inbox
 
         if (request.patientId() != null) {
-            Map<?, ?> patientData = patientServiceClient.getPatientById(request.patientId());
-            if (patientData != null) {
-                phone = patientData.get("phone") instanceof String s ? s : null;
-                Object userIdObj = patientData.get("userId");
-                if (userIdObj != null) {
-                    inboxUserId = userIdObj.toString();
-                    UserServiceClient.UserContact user = userServiceClient.getUserById(inboxUserId);
-                    if (user != null) email = user.email();
+            // Resolve userId from patient-service, then fetch contact info from user-service.
+            String resolvedUserId = patientServiceClient.getPatientUserId(request.patientId());
+            if (resolvedUserId != null && !resolvedUserId.isBlank()) {
+                inboxUserId = resolvedUserId;
+                UserServiceClient.UserContact user = userServiceClient.getUserById(inboxUserId);
+                if (user != null) {
+                    email = user.email();
+                    phone = user.phoneNumber();
                 }
             }
         } else if (request.doctorId() != null) {
+            // Resolve userId from doctor-service internal endpoint, then fetch contact info from user-service.
             DoctorServiceClient.DoctorContact doctor = doctorServiceClient.getDoctorById(request.doctorId());
-            if (doctor != null) {
-                email = doctor.email();
-                phone = doctor.phoneNumber();
+            if (doctor != null && doctor.userId() != null && !doctor.userId().isBlank()) {
+                UserServiceClient.UserContact user = userServiceClient.getUserById(doctor.userId());
+                if (user != null) {
+                    email = user.email();
+                    phone = user.phoneNumber();
+                }
             }
         } else if (request.userId() != null) {
             UserServiceClient.UserContact user = userServiceClient.getUserById(request.userId().toString());
-            if (user != null) email = user.email();
+            if (user != null) {
+                email = user.email();
+                phone = user.phoneNumber();
+            }
         }
 
         if ((email == null || email.isBlank()) && (phone == null || phone.isBlank()) && inboxUserId == null) {
@@ -227,6 +234,7 @@ public class NotificationService {
             case APPOINTMENT_REJECTED -> "Appointment Rejected";
             case APPOINTMENT_CANCELLED -> "Appointment Cancelled";
             case APPOINTMENT_COMPLETED -> "Consultation Completed";
+            case TELEMEDICINE_SESSION_STARTED -> "Telemedicine Session Started";
             case FEEDBACK_RECEIVED -> "New Feedback Received";
             case PAYMENT_SUCCESS -> "Payment Confirmation";
         };
@@ -262,6 +270,11 @@ public class NotificationService {
                     + " (" + valueOrDefault(data, "dayOfWeek", "") + ")"
                     + " at " + valueOrDefault(data, "timeSlot", "the scheduled time")
                     + " has been completed.";
+                case TELEMEDICINE_SESSION_STARTED -> "Hello " + valueOrDefault(data, "recipientName", "there")
+                    + ", your telemedicine session with Dr. " + valueOrDefault(data, "doctorName", "your doctor")
+                    + " on " + valueOrDefault(data, "date", "today")
+                    + " at " + valueOrDefault(data, "timeSlot", "the scheduled time")
+                    + " has started. Please join now.";
             case FEEDBACK_RECEIVED -> "Dear Dr. " + valueOrDefault(data, "doctorName", "Doctor")
                     + ", you have received new feedback from a patient."
                     + " Rating: " + valueOrDefault(data, "rating", "N/A") + "/5."

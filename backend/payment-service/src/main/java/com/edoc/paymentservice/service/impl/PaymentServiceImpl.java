@@ -1,230 +1,243 @@
 package com.edoc.paymentservice.service.impl;
 
-import com.edoc.paymentservice.config.PayHereProperties;
-import com.edoc.paymentservice.dto.CheckoutPayloadResponse;
-import com.edoc.paymentservice.exception.InvalidNotificationSignatureException;
-import com.edoc.paymentservice.exception.PaymentNotFoundException;
+import com.edoc.paymentservice.constant.AppMessages;
+import com.edoc.paymentservice.constant.PaymentConstants;
+import com.edoc.paymentservice.payload.request.InitiatePaymentRequest;
+import com.edoc.paymentservice.payload.response.InitiatePaymentResponse;
+import com.edoc.paymentservice.payload.PayHereWebhookDTO;
+import com.edoc.paymentservice.payload.response.PaymentDetailResponse;
+import com.edoc.paymentservice.payload.response.PaymentHistoryResponse;
+import com.edoc.paymentservice.exception.PaymentSecurityException;
 import com.edoc.paymentservice.mapper.PaymentMapper;
-import com.edoc.paymentservice.model.CustomerData;
+import com.edoc.paymentservice.model.BillingDetails;
 import com.edoc.paymentservice.model.Payment;
-import com.edoc.paymentservice.model.PaymentLog;
-import com.edoc.paymentservice.model.enums.PaymentStatus;
-import com.edoc.paymentservice.repository.PaymentLogRepository;
+import com.edoc.paymentservice.model.PaymentTransactionLog;
+import com.edoc.paymentservice.repository.BillingDetailsRepository;
 import com.edoc.paymentservice.repository.PaymentRepository;
-import com.edoc.paymentservice.service.IPaymentService;
+import com.edoc.paymentservice.repository.TransactionLogRepository;
+import com.edoc.paymentservice.service.PaymentService;
+import com.edoc.paymentservice.client.appointment.AppointmentClient;
+import com.edoc.paymentservice.client.notification.NotificationClient;
+import com.edoc.paymentservice.type.PaymentStatus;
+import com.edoc.paymentservice.util.HashUtil;
+import com.edoc.paymentservice.util.SecurityUtil;
+import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.edoc.paymentservice.service.PayHereSignatureService;
-import com.edoc.paymentservice.util.HashUtils;
-import com.edoc.paymentservice.util.JsonUtils;
-import com.edoc.paymentservice.util.ValidationUtils;
-
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.HashMap;
-import java.util.List;
-import java.util.LinkedHashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
-import java.util.regex.Pattern;
-
+@Slf4j
 @Service
 @RequiredArgsConstructor
-public class PaymentServiceImpl implements IPaymentService {
-
-    private static final Logger log = LoggerFactory.getLogger(PaymentServiceImpl.class);
-    private static final Pattern CURRENCY_CODE_PATTERN = Pattern.compile("^[A-Za-z]{3}$");
-    private static final String MD5SIG_PARAM = "md5sig";
+public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository paymentRepository;
-    private final PaymentLogRepository paymentLogRepository;
+    private final TransactionLogRepository transactionLogRepository;
+    private final BillingDetailsRepository billingDetailsRepository;
+    private final AppointmentClient appointmentClient;
+    private final NotificationClient notificationClient;
     private final PaymentMapper paymentMapper;
-    private final PayHereProperties payHereProperties;
-    private final PayHereSignatureService payHereSignatureService;
+
+    @Value("${payhere.merchant-id}")
+    private String merchantId;
+
+    @Value("${payhere.merchant-secret}")
+    private String merchantSecret;
+
+    @Value("${payhere.checkout-url}")
+    private String checkoutUrl;
+
+    @Value("${payhere.notify-url}")
+    private String notifyUrl;
 
     @Override
     @Transactional
-    public Payment createPayment(UUID appointmentId, UUID userId, BigDecimal amount, String currency) {
-        validateCreatePaymentInput(appointmentId, userId, amount, currency);
+    public InitiatePaymentResponse initiatePayment(InitiatePaymentRequest request, Long userId) {
+        SecurityUtil.populateMdc(null, userId);
+
+        Payment existing = paymentRepository.findByAppointmentId(request.appointmentId()).orElse(null);
+        if (existing != null) {
+            if (existing.getStatus() == PaymentStatus.PENDING) {
+                log.debug("Returning existing pending payment for appointmentId={}", request.appointmentId());
+                return buildInitiateResponse(existing);
+            }
+            if (existing.getStatus() == PaymentStatus.SUCCESS) {
+                log.warn("Payment already completed for appointmentId={}", request.appointmentId());
+                throw new IllegalStateException(AppMessages.PAYMENT_ALREADY_COMPLETED);
+            }
+        }
 
         Payment payment = Payment.builder()
-            .appointmentId(appointmentId)
-            .userId(userId)
-            .amount(amount)
-            .currency(currency.trim().toUpperCase(Locale.ROOT))
-            .payhereOrderId(UUID.randomUUID().toString())
-            .status(PaymentStatus.PENDING)
-            .build();
+                .appointmentId(request.appointmentId())
+                .userId(userId)
+                .amount(request.amount())
+                .currency(request.currency())
+                .status(PaymentStatus.PENDING)
+                .orderId(UUID.randomUUID().toString())
+                .build();
 
-        return paymentRepository.save(payment);
+        Payment saved = paymentRepository.save(payment);
+
+        if (!billingDetailsRepository.existsByPaymentId(saved.getId())) {
+            billingDetailsRepository.save(BillingDetails.builder()
+                    .paymentId(saved.getId())
+                    .fullName(request.billing().fullName())
+                    .email(request.billing().email())
+                    .phone(request.billing().phone())
+                    .address(request.billing().address())
+                    .city(request.billing().city())
+                    .country(request.billing().country())
+                    .build());
+        }
+
+        SecurityUtil.populateMdc(saved.getOrderId(), userId);
+        log.info("Payment initiated: appointmentId={}, orderId={}, amount={}", request.appointmentId(), saved.getOrderId(), request.amount());
+
+        transactionLogRepository.save(PaymentTransactionLog.builder()
+                .payment(saved)
+                .event(PaymentConstants.EVENT_PAYMENT_INITIATED)
+                .rawPayload("{\"orderId\":\"" + saved.getOrderId() + "\",\"status\":\"PENDING\"}")
+                .build());
+
+        return buildInitiateResponse(saved);
     }
 
     @Override
-    public String generatePayHereHash(String orderId, BigDecimal amount, String currency) {
-        if (orderId == null || orderId.isBlank()) {
-            throw new IllegalArgumentException("orderId is required");
-        }
-        if (amount == null || amount.signum() <= 0) {
-            throw new IllegalArgumentException("amount must be greater than zero");
-        }
-        if (currency == null || currency.isBlank()) {
-            throw new IllegalArgumentException("currency is required");
-        }
-
-        String normalizedCurrency = currency.trim().toUpperCase(Locale.ROOT);
-        String formattedAmount = amount.setScale(2, RoundingMode.HALF_UP).toPlainString();
-        String hashedSecret = HashUtils.md5Upper(payHereProperties.merchantSecret());
-
-        return HashUtils.md5Upper(payHereProperties.merchantId() + orderId.trim() + formattedAmount + normalizedCurrency + hashedSecret);
-    }
-
-    @Override
-    public Map<String, String> initiatePayment(UUID paymentId, CustomerData customerData) {
-        Payment payment = getPaymentById(paymentId);
-
-        if (payment.getStatus() != PaymentStatus.PENDING) {
-            throw new IllegalArgumentException("Only pending payments can be initiated");
-        }
-
-        String hash = generatePayHereHash(payment.getPayhereOrderId(), payment.getAmount(), payment.getCurrency());
-        CheckoutPayloadResponse checkoutPayloadResponse = paymentMapper.toCheckoutResponse(
-                payment,
-                customerData,
-                hash,
-                payHereProperties
-        );
-
-        log.info("Prepared checkout payload for paymentId={} orderId={}", payment.getId(), payment.getPayhereOrderId());
-
-        return new LinkedHashMap<>(checkoutPayloadResponse.getFields());
+    public Payment getPaymentByAppointmentId(Long appointmentId) {
+        return paymentRepository.findByAppointmentId(appointmentId)
+                .orElseThrow(() -> new IllegalArgumentException("Payment not found for appointment"));
     }
 
     @Override
     @Transactional
-    public void handleNotification(Map<String, String> params) {
-        Objects.requireNonNull(params, "params must not be null");
-        log.info("Received PayHere notify callback");
-        log.debug("PayHere notify payload={}", sanitizeNotifyParams(params));
+    public void processWebhook(PayHereWebhookDTO webhook) {
+        boolean validSignature = HashUtil.verifyWebhookSignature(
+                webhook.getMerchantId(),
+                webhook.getOrderId(),
+                webhook.getPayhereAmount(),
+                webhook.getPayhereCurrency(),
+                webhook.getStatusCode(),
+                merchantSecret,
+                webhook.getMd5sig());
 
-        String merchantId = ValidationUtils.requireParam(params, "merchant_id");
-        String orderId = ValidationUtils.requireParam(params, "order_id");
-        String payhereAmount = ValidationUtils.requireParam(params, "payhere_amount");
-        String payhereCurrency = ValidationUtils.requireParam(params, "payhere_currency");
-        String statusCode = ValidationUtils.requireParam(params, "status_code");
-        String md5sig = ValidationUtils.requireParam(params, MD5SIG_PARAM);
-
-        if (!payHereProperties.merchantId().equals(merchantId)) {
-            log.warn("Rejected notify callback due to merchant mismatch orderId={} receivedMerchantId={} configuredMerchantId={}",
-                    orderId, merchantId, payHereProperties.merchantId());
-            throw new InvalidNotificationSignatureException("merchant_id does not match configured merchant");
+        if (!validSignature) {
+            throw new PaymentSecurityException(AppMessages.INVALID_SIGNATURE);
         }
 
-        // PayHere spec: md5sig = MD5(merchant_id + order_id + payhere_amount + payhere_currency + status_code + UPPER(MD5(secret)))
-        String localSignature = payHereSignatureService.generate(orderId, payhereAmount, payhereCurrency, statusCode);
-        if (!localSignature.equalsIgnoreCase(md5sig)) {
-            log.warn("Rejected notify callback due to invalid signature orderId={} statusCode={}", orderId, statusCode);
-            log.debug("Signature mismatch details orderId={} localSignature={} remoteSignature={}",
-                    orderId, localSignature, md5sig);
-            throw new InvalidNotificationSignatureException("Invalid PayHere notification signature");
-        }
-        log.info("PayHere signature verification passed orderId={} statusCode={}", orderId, statusCode);
-
-        Payment payment = paymentRepository.findByPayhereOrderId(orderId)
-                .orElseThrow(() -> {
-                    log.warn("Payment not found for verified callback orderId={}", orderId);
-                    return new PaymentNotFoundException("Payment not found for order_id: " + orderId);
-                });
-
-        validateNotificationBusinessData(payment, payhereAmount, payhereCurrency, orderId);
-
-        PaymentStatus incomingStatus = PaymentStatus.fromPayHereCode(statusCode);
-        if (payment.getStatus().canTransitionTo(incomingStatus)) {
-            payment.setStatus(incomingStatus);
-            paymentRepository.save(payment);
-            log.info("Updated payment status paymentId={} orderId={} status={}", payment.getId(), orderId, incomingStatus);
-        } else {
-            log.info("Ignored out-of-order payment update paymentId={} orderId={} currentStatus={} incomingStatus={}",
-                    payment.getId(), orderId, payment.getStatus(), incomingStatus);
+        if (webhook.getPaymentId() != null
+                && paymentRepository.findByPayhereId(webhook.getPaymentId()).isPresent()) {
+            log.info("Ignoring duplicate webhook for orderId={}, paymentId={}", webhook.getOrderId(), webhook.getPaymentId());
+            return;
         }
 
-        PaymentLog paymentLog = PaymentLog.builder()
-                .paymentId(payment.getId())
-                .eventType("WEBHOOK_RECEIVED")
-                .rawResponse(JsonUtils.toJson(params))
-                .build();
-        paymentLogRepository.save(paymentLog);
-        log.info("Stored callback payload for paymentId={} orderId={}", payment.getId(), orderId);
+        Payment payment = paymentRepository.findByOrderId(webhook.getOrderId())
+                .orElseThrow(() -> new IllegalArgumentException("Payment not found for order"));
+
+        payment.setPayhereId(webhook.getPaymentId());
+        payment.setStatus(resolveStatus(webhook.getStatusCode()));
+        Payment saved = paymentRepository.save(payment);
+
+        String rawPayload = "{\"orderId\":\"" + webhook.getOrderId()
+                + "\",\"paymentId\":\"" + webhook.getPaymentId()
+                + "\",\"statusCode\":\"" + webhook.getStatusCode() + "\"}";
+
+        transactionLogRepository.save(PaymentTransactionLog.builder()
+                .payment(saved)
+                .event(PaymentConstants.EVENT_WEBHOOK_RECEIVED)
+                .rawPayload(rawPayload)
+                .build());
+
+        if (saved.getStatus() == PaymentStatus.SUCCESS) {
+            appointmentClient.notifyPaymentSuccess(saved);
+            notificationClient.notifyPaymentSuccess(saved);
+        }
+        log.info("Webhook processed: orderId={}, status={}", webhook.getOrderId(), saved.getStatus());
     }
 
     @Override
-    public Payment getPaymentById(UUID paymentId) {
-        if (paymentId == null) {
-            throw new IllegalArgumentException("paymentId is required");
-        }
+    public Payment getPaymentByOrderId(String orderId) {
+        return paymentRepository.findByOrderId(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Payment not found for order"));
+    }
 
+    @Override
+    public Payment getPaymentEntityById(UUID paymentId) {
         return paymentRepository.findById(paymentId)
-                .orElseThrow(() -> new PaymentNotFoundException("Payment not found for id: " + paymentId));
+                .orElseThrow(() -> new IllegalArgumentException(AppMessages.PAYMENT_NOT_FOUND));
     }
 
     @Override
-    public List<Payment> getAllPayments() {
-        return paymentRepository.findAll();
+    public Page<PaymentHistoryResponse> getPaymentHistory(Long userId, Pageable pageable) {
+        log.debug("Fetching payment history for userId={}", userId);
+        return paymentRepository.findByUserId(userId, pageable).map(paymentMapper::toHistoryResponse);
     }
 
-    private void validateCreatePaymentInput(UUID appointmentId, UUID userId, BigDecimal amount, String currency) {
-        if (appointmentId == null) {
-            throw new IllegalArgumentException("appointmentId is required");
-        }
-        if (userId == null) {
-            throw new IllegalArgumentException("userId is required");
-        }
-        if (amount == null || amount.signum() <= 0) {
-            throw new IllegalArgumentException("amount must be greater than zero");
-        }
-        if (currency == null || currency.isBlank()) {
-            throw new IllegalArgumentException("currency is required");
-        }
-        if (!CURRENCY_CODE_PATTERN.matcher(currency.trim()).matches()) {
-            throw new IllegalArgumentException("currency must be a valid 3-letter ISO code");
-        }
+    @Override
+    public PaymentDetailResponse getPaymentById(UUID paymentId) {
+        log.debug("Fetching payment detail for paymentId={}", paymentId);
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new IllegalArgumentException(AppMessages.PAYMENT_NOT_FOUND));
+        List<PaymentTransactionLog> logs = transactionLogRepository.findByPayment_IdOrderByCreatedAtDesc(paymentId);
+        BillingDetails billing = billingDetailsRepository.findByPaymentId(paymentId).orElse(null);
+        return paymentMapper.toDetailResponse(payment, logs, billing);
     }
 
-    private void validateNotificationBusinessData(Payment payment, String payhereAmount, String payhereCurrency, String orderId) {
-        String expectedCurrency = payment.getCurrency() == null ? "" : payment.getCurrency().trim().toUpperCase(Locale.ROOT);
-        String incomingCurrency = payhereCurrency.trim().toUpperCase(Locale.ROOT);
-        if (!expectedCurrency.equals(incomingCurrency)) {
-            log.warn("Rejected notify callback due to currency mismatch paymentId={} orderId={} expectedCurrency={} incomingCurrency={}",
-                    payment.getId(), orderId, expectedCurrency, incomingCurrency);
-            throw new IllegalArgumentException("Payment currency does not match callback currency");
-        }
-
-        BigDecimal incomingAmount;
-        try {
-            incomingAmount = new BigDecimal(payhereAmount);
-        } catch (NumberFormatException ex) {
-            log.warn("Rejected notify callback due to invalid amount format paymentId={} orderId={} amount={}",
-                    payment.getId(), orderId, payhereAmount);
-            throw new IllegalArgumentException("Invalid payhere_amount format");
-        }
-
-        if (payment.getAmount() == null || incomingAmount.compareTo(payment.getAmount()) != 0) {
-            log.warn("Rejected notify callback due to amount mismatch paymentId={} orderId={} expectedAmount={} incomingAmount={}",
-                    payment.getId(), orderId, payment.getAmount(), incomingAmount);
-            throw new IllegalArgumentException("Payment amount does not match callback amount");
-        }
+    @Override
+    public Page<PaymentHistoryResponse> getAllPayments(Pageable pageable) {
+        return paymentRepository.findAll(pageable).map(paymentMapper::toHistoryResponse);
     }
 
-    private Map<String, String> sanitizeNotifyParams(Map<String, String> params) {
-        Map<String, String> sanitized = new HashMap<>(params);
-        sanitized.computeIfPresent(MD5SIG_PARAM, (key, value) -> "[REDACTED]");
-        return sanitized;
+    @Override
+    public Page<PaymentHistoryResponse> getPaymentsByUser(Long userId, Pageable pageable) {
+        return paymentRepository.findByUserId(userId, pageable).map(paymentMapper::toHistoryResponse);
     }
 
-    
+    @Override
+    public Page<PaymentHistoryResponse> getPaymentsByStatus(PaymentStatus status, Pageable pageable) {
+        return paymentRepository.findByStatus(status, pageable).map(paymentMapper::toHistoryResponse);
+    }
+
+    @Override
+    @Transactional
+    public void flagForReconciliation(UUID paymentId) {
+        log.info("Flagging payment for reconciliation: paymentId={}", paymentId);
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new IllegalArgumentException(AppMessages.PAYMENT_NOT_FOUND));
+        transactionLogRepository.save(PaymentTransactionLog.builder()
+                .payment(payment)
+                .event(PaymentConstants.EVENT_RECONCILE_FLAGGED)
+                .rawPayload("{\"paymentId\":\"" + payment.getId() + "\",\"reason\":\"MANUAL_RECONCILIATION\"}")
+                .build());
+    }
+
+    private PaymentStatus resolveStatus(String statusCode) {
+        return switch (statusCode) {
+            case PaymentConstants.STATUS_SUCCESS -> PaymentStatus.SUCCESS;
+            case PaymentConstants.STATUS_PENDING -> PaymentStatus.PENDING;
+            default -> PaymentStatus.FAILED;
+        };
+    }
+
+    private InitiatePaymentResponse buildInitiateResponse(Payment payment) {
+        String hash = HashUtil.generateInitiationHash(
+                merchantId,
+                payment.getOrderId(),
+                payment.getAmount(),
+                payment.getCurrency().name(),
+                merchantSecret);
+
+        return new InitiatePaymentResponse(
+                payment.getOrderId(),
+                merchantId,
+                payment.getAmount(),
+                payment.getCurrency().name(),
+                hash,
+                checkoutUrl,
+                notifyUrl);
+    }
 }

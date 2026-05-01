@@ -6,12 +6,10 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Plus,
   Edit,
   Trash2,
   Star,
   Filter,
-  Loader2,
   MessageSquare,
   CheckCircle2
 } from "lucide-react";
@@ -42,15 +40,13 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { FeedbackErrorBoundary } from "@/components/feedback/error-boundary";
 import { useUser } from "@/store/store";
 import {
-  useGetFeedbackByPatient,
-  useSubmitFeedback,
+  useGetMyFeedback,
   useUpdateFeedback,
   useDeleteFeedback,
   isFeedbackEditable,
@@ -62,8 +58,6 @@ import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 
 interface FeedbackFormData {
-  appointmentId?: number;
-  doctorId?: number;
   rating: number;
   comment: string;
 }
@@ -82,7 +76,6 @@ function PatientFeedbackContent() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [ratingFilter, setRatingFilter] = useState("all");
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingFeedback, setEditingFeedback] = useState<Feedback | null>(null);
   const [formData, setFormData] = useState<FeedbackFormData>({
     rating: 5,
@@ -90,8 +83,7 @@ function PatientFeedbackContent() {
   });
 
   // API hooks
-  const { data: feedbacks = [], isLoading, error } = useGetFeedbackByPatient(user?.userId || "");
-  const submitFeedbackMutation = useSubmitFeedback();
+  const { data: feedbacks = [], isLoading, error } = useGetMyFeedback();
   const updateFeedbackMutation = useUpdateFeedback();
   const deleteFeedbackMutation = useDeleteFeedback();
 
@@ -105,38 +97,6 @@ function PatientFeedbackContent() {
       return matchesSearch && matchesStatus && matchesRating;
     });
   }, [feedbacks, searchTerm, statusFilter, ratingFilter]);
-
-  const handleCreate = () => {
-    if (!formData.appointmentId || !formData.doctorId) {
-      toast.error("Please select an appointment to provide feedback for.");
-      return;
-    }
-
-    if (formData.rating < 1 || formData.rating > 5) {
-      toast.error("Please provide a rating between 1 and 5 stars.");
-      return;
-    }
-
-    submitFeedbackMutation.mutate(
-      {
-        appointmentId: formData.appointmentId,
-        doctorId: formData.doctorId,
-        rating: formData.rating,
-        comment: formData.comment || undefined,
-      },
-      {
-        onSuccess: () => {
-          toast.success("Feedback submitted successfully!");
-          setFormData({ rating: 5, comment: "" });
-          setIsCreateDialogOpen(false);
-        },
-        onError: (error: any) => {
-          toast.error(error?.message || "Failed to submit feedback. Please try again.");
-          console.error("Submit feedback error:", error);
-        },
-      }
-    );
-  };
 
   const handleUpdate = () => {
     if (!editingFeedback) return;
@@ -282,86 +242,9 @@ function PatientFeedbackContent() {
           <h1 className="text-3xl font-bold text-foreground tracking-tight">My Feedback</h1>
           <p className="text-muted-foreground mt-1">Manage your feedback history</p>
         </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-primary hover:bg-primary/90">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Feedback
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Add New Feedback</DialogTitle>
-              <DialogDescription>
-                Share your experience with a recent appointment.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="appointmentId" className="text-right">
-                  Appointment ID
-                </Label>
-                <Input
-                  id="appointmentId"
-                  type="number"
-                  value={formData.appointmentId || ""}
-                  onChange={(e) => setFormData({ ...formData, appointmentId: Number(e.target.value) })}
-                  className="col-span-3"
-                  placeholder="Enter appointment ID"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="doctorId" className="text-right">
-                  Doctor ID
-                </Label>
-                <Input
-                  id="doctorId"
-                  type="number"
-                  value={formData.doctorId || ""}
-                  onChange={(e) => setFormData({ ...formData, doctorId: Number(e.target.value) })}
-                  className="col-span-3"
-                  placeholder="Enter doctor ID"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="rating" className="text-right">
-                  Rating
-                </Label>
-                <div className="col-span-3 flex gap-1">
-                  {renderStars(formData.rating, true, (rating) => setFormData({ ...formData, rating }))}
-                </div>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="comment" className="text-right">
-                  Comment
-                </Label>
-                <Textarea
-                  id="comment"
-                  value={formData.comment}
-                  onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
-                  className="col-span-3"
-                  placeholder="Share your thoughts..."
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                type="submit"
-                onClick={handleCreate}
-                disabled={submitFeedbackMutation.isPending}
-              >
-                {submitFeedbackMutation.isPending ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  "Submit Feedback"
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => router.push("/patient/appointments")} className="bg-primary hover:bg-primary/90">
+          Leave Feedback
+        </Button>
       </div>
 
       <div className="flex flex-col space-y-6 w-full">

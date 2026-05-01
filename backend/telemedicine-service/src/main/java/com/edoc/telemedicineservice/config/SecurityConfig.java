@@ -49,7 +49,12 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .anyRequest().permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/v1/telemedicine/sessions").hasAnyRole("DOCTOR", "ADMIN")
+                    .requestMatchers(HttpMethod.PUT, "/api/v1/telemedicine/sessions/*/start").hasAnyRole("DOCTOR", "ADMIN")
+                    .requestMatchers(HttpMethod.PUT, "/api/v1/telemedicine/sessions/*/complete").hasAnyRole("DOCTOR", "ADMIN")
+                    .requestMatchers(HttpMethod.DELETE, "/api/v1/telemedicine/sessions/*").hasAnyRole("DOCTOR", "ADMIN")
+                    .requestMatchers(HttpMethod.GET, "/api/v1/telemedicine/**").hasAnyRole("DOCTOR", "PATIENT", "ADMIN")
+                    .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthConverter))
