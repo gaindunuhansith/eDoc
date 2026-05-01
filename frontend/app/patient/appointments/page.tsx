@@ -35,7 +35,6 @@ import {
 } from "@/api/appointmentApi";
 import { useGetMyFeedback } from "@/api/feedbackApi";
 import { MessageSquare, Star } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { ModifyAppointmentDialog } from "./ModifyAppointmentDialog";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
