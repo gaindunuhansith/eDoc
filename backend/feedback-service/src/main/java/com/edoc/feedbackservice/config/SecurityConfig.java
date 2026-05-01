@@ -16,6 +16,7 @@ import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpMethod;
+import org.springframework.util.StringUtils;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -85,6 +86,7 @@ public class SecurityConfig {
         } else {
             rsaPublicKey = parsePublicKey(readResource(publicKeyLocation, resourceLoader));
         }
+
         return NimbusJwtDecoder.withPublicKey(rsaPublicKey).build();
     }
 
