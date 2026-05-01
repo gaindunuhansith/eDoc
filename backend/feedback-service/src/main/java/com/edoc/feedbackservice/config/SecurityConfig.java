@@ -25,12 +25,12 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.util.StringUtils;
 
 @Configuration
 @EnableWebSecurity
@@ -86,9 +86,8 @@ public class SecurityConfig {
         } else {
             rsaPublicKey = parsePublicKey(readResource(publicKeyLocation, resourceLoader));
         }
-        return NimbusJwtDecoder.withPublicKey(rsaPublicKey)
-                .signatureAlgorithm(SignatureAlgorithm.RS256)
-                .build();
+
+        return NimbusJwtDecoder.withPublicKey(rsaPublicKey).build();
     }
 
     private String readResource(String path, ResourceLoader resourceLoader) {
