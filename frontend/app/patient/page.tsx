@@ -180,7 +180,7 @@ function ProfileCreationForm() {
   const updateUser = useStore((s) => s.updateUser);
 
   const [form, setForm] = useState<PatientPayload>({
-    phone: "",
+    phone: user?.phoneNumber ?? "",
     dateOfBirth: "",
     address: "",
     gender: "",
@@ -200,8 +200,8 @@ function ProfileCreationForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.phone || !form.dateOfBirth || !form.gender) {
-      toast.error("Phone, date of birth and gender are required.");
+    if (!form.dateOfBirth || !form.gender) {
+      toast.error("Date of birth and gender are required.");
       return;
     }
 
@@ -242,19 +242,6 @@ function ProfileCreationForm() {
             </CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="phone">
-                Phone Number <span className="text-rose-500">*</span>
-              </Label>
-              <Input
-                id="phone"
-                placeholder="+94 77 123 4567"
-                value={form.phone}
-                onChange={(e) => set("phone", e.target.value)}
-                className="border-border/60"
-              />
-            </div>
-
             <div className="space-y-1.5">
               <Label htmlFor="dob">
                 Date of Birth <span className="text-rose-500">*</span>
