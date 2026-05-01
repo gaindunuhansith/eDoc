@@ -11,6 +11,11 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          public-key-location: ${JWT_PUBLIC_KEY_LOCATION:classpath:public.pem}
 
 # Service URLs - following patient service pattern
 appointment:
@@ -34,4 +39,5 @@ server:
 
 jwt:
   public-key-path: ${JWT_PUBLIC_KEY_PATH:secrets/public.pem}
+  public-key-base64: ${JWT_PUBLIC_KEY_BASE64:}
 
