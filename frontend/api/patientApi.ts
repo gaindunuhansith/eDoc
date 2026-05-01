@@ -65,7 +65,16 @@ export const useRegisterPatient = () => {
 export const useGetMyPatientProfile = () =>
   useQuery({
     queryKey: queryKeys.patient.me(),
-    queryFn: () => fetchMyPatientProfile().then((r) => r.data),
+    queryFn: async () => {
+      try {
+        const res = await fetchMyPatientProfile();
+        return res.data;
+      } catch (err: any) {
+        // Axios interceptor attaches .status to the thrown Error
+        if (err?.status === 404) return null;
+        throw err;
+      }
+    },
     retry: false,
   });
 
