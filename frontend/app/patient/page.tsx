@@ -678,8 +678,13 @@ function PatientDashboardContent() {
 
 export default function PatientDashboard() {
   const isProfileCreated = useStore((s) => s.user?.isProfileCreated);
+  const { data: existingProfile, isLoading } = useGetMyPatientProfile();
 
-  if (!isProfileCreated) {
+  if (isLoading) {
+    return <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">Loading...</div>;
+  }
+
+  if (!isProfileCreated && !existingProfile) {
     return <ProfileCreationForm />;
   }
 
