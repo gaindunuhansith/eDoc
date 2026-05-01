@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS billing_details;
 DROP TABLE IF EXISTS payment_transaction_logs;
 DROP TABLE IF EXISTS payments;
 
