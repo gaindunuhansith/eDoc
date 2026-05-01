@@ -107,8 +107,11 @@ export const useLogin = () => {
   });
 };
 
-export const useRegister = () =>
-  useMutation({ mutationFn: registerUser });
+export const useRegister = () => {
+  return useMutation({
+    mutationFn: registerUser,
+  });
+};
 
 export const useLogout = () => {
   const qc = useQueryClient();

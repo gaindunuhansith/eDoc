@@ -53,8 +53,9 @@ import { markProfileCreated } from "@/api/userApi";
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
 
 function EditProfileDialog({ open, onClose, current }: { open: boolean; onClose: () => void; current: Patient }) {
+  const userPhone = useStore((s) => s.user?.phoneNumber);
   const [form, setForm] = useState<PatientPayload>({
-    phone: current.phone ?? "",
+    phone: current.phone ?? userPhone ?? "",
     dateOfBirth: current.dateOfBirth ?? "",
     address: current.address ?? "",
     gender: current.gender ?? "",
@@ -73,8 +74,8 @@ function EditProfileDialog({ open, onClose, current }: { open: boolean; onClose:
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.phone || !form.dateOfBirth || !form.gender) {
-      toast.error("Phone, date of birth and gender are required.");
+    if (!form.dateOfBirth || !form.gender) {
+      toast.error("Date of birth and gender are required.");
       return;
     }
     updatePatient.mutate(form, {
@@ -100,7 +101,7 @@ function EditProfileDialog({ open, onClose, current }: { open: boolean; onClose:
             <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Personal Details</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label htmlFor="ep-phone">Phone <span className="text-rose-500">*</span></Label>
+                <Label htmlFor="ep-phone">Phone</Label>
                 <Input id="ep-phone" placeholder="+94 77 123 4567" value={form.phone} onChange={(e) => set("phone", e.target.value)} />
               </div>
               <div className="space-y-1.5">
@@ -192,6 +193,7 @@ function ProfileCreationForm() {
     weight: undefined,
   });
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const registerPatient = useRegisterPatient();
 
   const set = (field: keyof PatientPayload, value: string | number | undefined) =>
@@ -205,6 +207,7 @@ function ProfileCreationForm() {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       await registerPatient.mutateAsync(form);
 
@@ -218,6 +221,8 @@ function ProfileCreationForm() {
       const msg =
         err instanceof Error ? err.message : "Failed to create profile.";
       toast.error(msg);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -395,10 +400,10 @@ function ProfileCreationForm() {
         <div className="flex justify-end">
           <Button
             type="submit"
-            disabled={registerPatient.isPending}
+            disabled={isSubmitting}
             className="min-w-[160px]"
           >
-            {registerPatient.isPending ? "Saving..." : "Create Profile"}
+            {isSubmitting ? "Saving..." : "Create Profile"}
           </Button>
         </div>
       </form>
@@ -665,13 +670,17 @@ function PatientDashboardContent() {
 
 export default function PatientDashboard() {
   const isProfileCreated = useStore((s) => s.user?.isProfileCreated);
-  const { data: existingProfile, isLoading } = useGetMyPatientProfile();
+  const { data: existingProfile, isLoading, isError } = useGetMyPatientProfile();
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">Loading...</div>;
   }
 
-  if (!isProfileCreated && !existingProfile) {
+  // New patient: no patient profile in the service (404 returns null)
+  // Also fall through to the form if there was a non-404 fetch error so the
+  // user can still complete their profile — the gate uses store flag as the
+  // primary signal and the fetch result as confirmation.
+  if (!isProfileCreated && (existingProfile === null || isError)) {
     return <ProfileCreationForm />;
   }
 
