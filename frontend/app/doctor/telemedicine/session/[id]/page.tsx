@@ -6,8 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { WaitingRoom, VideoCall } from "@/components/telemedicine";
-import { Video, ArrowLeft, AlertCircle, Play, Square } from "lucide-react";
-import { useTelemedicineSession, useStartSession, useEndSession, useGetSessionToken } from "@/api/telemedicineApi";
+import { Video, ArrowLeft, AlertCircle, Play, Square, FileText, ClipboardList, Clock } from "lucide-react";
+import { useTelemedicineSession, useStartSession, useEndSession } from "@/api/telemedicineApi";
+import { useGetAppointmentsByPatient } from "@/api/appointmentApi";
+import { useGetPrescriptionsByAppointment } from "@/api/doctorApi";
 import { toast } from "sonner";
 
 export default function DoctorTelemedicineSessionPage() {
@@ -16,9 +18,16 @@ export default function DoctorTelemedicineSessionPage() {
   const appointmentId = params.id as string;
 
   const { session, token, isLoading, error } = useTelemedicineSession(appointmentId);
+  const { data: patientHistory = [] } = useGetAppointmentsByPatient(session?.patientId ?? "");
+  const { data: sessionPrescriptions = [] } = useGetPrescriptionsByAppointment(appointmentId);
   const startSessionMutation = useStartSession();
   const endSessionMutation = useEndSession();
   const [currentStep, setCurrentStep] = useState<"waiting" | "calling">("waiting");
+
+  const historyItems = patientHistory
+    .filter((a) => a.id !== appointmentId)
+    .sort((a, b) => new Date(b.appointmentDate).getTime() - new Date(a.appointmentDate).getTime())
+    .slice(0, 5);
 
   useEffect(() => {
     if (session?.status === "ACTIVE") {
@@ -200,6 +209,71 @@ export default function DoctorTelemedicineSessionPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Patient Context For Doctor */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="bg-white border border-gray-200 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-gray-900 flex items-center gap-2">
+              <ClipboardList className="h-4 w-4 text-blue-600" />
+              Patient Appointment History
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {historyItems.length === 0 ? (
+              <p className="text-sm text-gray-600">No previous appointments found.</p>
+            ) : (
+              <div className="space-y-3">
+                {historyItems.map((item) => (
+                  <div key={item.id} className="rounded-md border border-gray-200 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-medium text-gray-900">
+                        {new Date(item.appointmentDate).toLocaleDateString()} • {item.timeSlot}
+                      </p>
+                      <Badge variant="outline" className="text-xs">
+                        {item.status}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-gray-600 mt-1">
+                      {item.reasonForVisit || "No reason recorded"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white border border-gray-200 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-gray-900 flex items-center gap-2">
+              <FileText className="h-4 w-4 text-green-600" />
+              Session Medical Details
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="rounded-md border border-gray-200 p-3">
+              <p className="text-xs text-gray-600">Current consultation reason</p>
+              <p className="text-sm text-gray-900 mt-1">{session.notes || "No notes provided"}</p>
+            </div>
+            <div className="rounded-md border border-gray-200 p-3">
+              <p className="text-xs text-gray-600">Session duration</p>
+              <p className="text-sm text-gray-900 mt-1 flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5" />
+                {session.duration} minutes
+              </p>
+            </div>
+            <div className="rounded-md border border-gray-200 p-3">
+              <p className="text-xs text-gray-600">Prescriptions for this appointment</p>
+              <p className="text-sm text-gray-900 mt-1">
+                {sessionPrescriptions.length > 0
+                  ? `${sessionPrescriptions.length} prescription(s) available`
+                  : "No prescription issued yet"}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Waiting Room or Join Call */}
       {session.status === "SCHEDULED" && (

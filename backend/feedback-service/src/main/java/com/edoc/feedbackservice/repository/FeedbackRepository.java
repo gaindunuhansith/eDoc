@@ -13,4 +13,6 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
     List<Feedback> findByPatientId(Long patientId);
 
     List<Feedback> findByAppointmentId(Long appointmentId);
+
+    boolean existsByPatientIdAndAppointmentId(Long patientId, Long appointmentId);
 }

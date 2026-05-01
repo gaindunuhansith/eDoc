@@ -58,10 +58,13 @@ public class AppointmentServiceClient {
     public static class AppointmentDTO {
         private String id;
         private String patientId;
+        private String patientName;
         private String doctorId;
         private String doctorName;
-        private String patientEmail;
-        private String doctorEmail;
+        private String doctorSpecialty;
+        private String appointmentDate;
+        private String timeSlot;
+        private String reasonForVisit;
         private AppointmentStatus status;
 
         public String getId() { return id; }
@@ -70,17 +73,26 @@ public class AppointmentServiceClient {
         public String getPatientId() { return patientId; }
         public void setPatientId(String patientId) { this.patientId = patientId; }
 
+        public String getPatientName() { return patientName; }
+        public void setPatientName(String patientName) { this.patientName = patientName; }
+
         public String getDoctorId() { return doctorId; }
         public void setDoctorId(String doctorId) { this.doctorId = doctorId; }
 
         public String getDoctorName() { return doctorName; }
         public void setDoctorName(String doctorName) { this.doctorName = doctorName; }
 
-        public String getPatientEmail() { return patientEmail; }
-        public void setPatientEmail(String patientEmail) { this.patientEmail = patientEmail; }
+        public String getDoctorSpecialty() { return doctorSpecialty; }
+        public void setDoctorSpecialty(String doctorSpecialty) { this.doctorSpecialty = doctorSpecialty; }
 
-        public String getDoctorEmail() { return doctorEmail; }
-        public void setDoctorEmail(String doctorEmail) { this.doctorEmail = doctorEmail; }
+        public String getAppointmentDate() { return appointmentDate; }
+        public void setAppointmentDate(String appointmentDate) { this.appointmentDate = appointmentDate; }
+
+        public String getTimeSlot() { return timeSlot; }
+        public void setTimeSlot(String timeSlot) { this.timeSlot = timeSlot; }
+
+        public String getReasonForVisit() { return reasonForVisit; }
+        public void setReasonForVisit(String reasonForVisit) { this.reasonForVisit = reasonForVisit; }
 
         public AppointmentStatus getStatus() { return status; }
         public void setStatus(AppointmentStatus status) { this.status = status; }

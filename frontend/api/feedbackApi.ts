@@ -65,8 +65,14 @@ export const fetchAllFeedback = () =>
 export const fetchFeedbackById = (id: string) =>
   apiClient.get<Feedback>(FEEDBACK_ENDPOINTS.GET_BY_ID(id));
 
+export const fetchMyFeedback = () =>
+  apiClient.get<Feedback[]>(FEEDBACK_ENDPOINTS.BY_PATIENT_ME);
+
 export const fetchFeedbackByPatient = (patientId: string) =>
   apiClient.get<Feedback[]>(FEEDBACK_ENDPOINTS.BY_PATIENT(patientId));
+
+export const fetchMyDoctorFeedback = () =>
+  apiClient.get<Feedback[]>(FEEDBACK_ENDPOINTS.BY_DOCTOR_ME);
 
 export const fetchFeedbackByDoctor = (doctorId: string) =>
   apiClient.get<Feedback[]>(FEEDBACK_ENDPOINTS.BY_DOCTOR(doctorId));
@@ -76,9 +82,6 @@ export const fetchFeedbackByAppointment = (appointmentId: string) =>
 
 export const updateFeedback = (id: string, payload: UpdateFeedbackPayload) =>
   apiClient.put<Feedback>(FEEDBACK_ENDPOINTS.UPDATE(id), payload);
-
-export const updateFeedbackStatus = (id: string, status: FeedbackStatus) =>
-  apiClient.patch<Feedback>(FEEDBACK_ENDPOINTS.UPDATE_STATUS(id), null, { params: { status } });
 
 export const deleteFeedback = (id: string) =>
   apiClient.delete(FEEDBACK_ENDPOINTS.DELETE(id));
@@ -93,7 +96,9 @@ export const useSubmitFeedback = () => {
     mutationFn: submitFeedback,
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: queryKeys.feedback.byPatient(String(data.data.patientId)) });
+      qc.invalidateQueries({ queryKey: queryKeys.feedback.byPatient("me") });
       qc.invalidateQueries({ queryKey: queryKeys.feedback.byDoctor(String(data.data.doctorId)) });
+      qc.invalidateQueries({ queryKey: queryKeys.feedback.byDoctor("me") });
     },
     onError: (error: any) => {
       // Enhanced error handling
@@ -141,11 +146,23 @@ export const useGetFeedbackByPatient = (patientId: string) =>
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
+export const useGetMyFeedback = () =>
+  useQuery({
+    queryKey: queryKeys.feedback.byPatient("me"),
+    queryFn: () => fetchMyFeedback().then((r) => r.data),
+  });
+
 export const useGetFeedbackByDoctor = (doctorId: string) =>
   useQuery({
     queryKey: queryKeys.feedback.byDoctor(doctorId),
     queryFn: () => fetchFeedbackByDoctor(doctorId).then((r) => r.data),
     enabled: !!doctorId,
+  });
+
+export const useGetMyDoctorFeedback = () =>
+  useQuery({
+    queryKey: queryKeys.feedback.byDoctor("me"),
+    queryFn: () => fetchMyDoctorFeedback().then((r) => r.data),
   });
 
 export const useGetFeedbackByAppointment = (appointmentId: string) =>
@@ -155,17 +172,6 @@ export const useGetFeedbackByAppointment = (appointmentId: string) =>
     enabled: !!appointmentId,
   });
 
-export const useUpdateFeedbackStatus = () => {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: FeedbackStatus }) =>
-      updateFeedbackStatus(id, status),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.feedback.lists() });
-    },
-  });
-};
-
 export const useUpdateFeedback = () => {
   const qc = useQueryClient();
   return useMutation({
@@ -174,7 +180,9 @@ export const useUpdateFeedback = () => {
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: queryKeys.feedback.detail(data.data.id.toString()) });
       qc.invalidateQueries({ queryKey: queryKeys.feedback.byPatient(String(data.data.patientId)) });
+      qc.invalidateQueries({ queryKey: queryKeys.feedback.byPatient("me") });
       qc.invalidateQueries({ queryKey: queryKeys.feedback.byDoctor(String(data.data.doctorId)) });
+      qc.invalidateQueries({ queryKey: queryKeys.feedback.byDoctor("me") });
     },
     onError: (error: any) => {
       if (error?.response?.status === 404) {
@@ -196,6 +204,8 @@ export const useDeleteFeedback = () => {
     mutationFn: deleteFeedback,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.feedback.all });
+      qc.invalidateQueries({ queryKey: queryKeys.feedback.byPatient("me") });
+      qc.invalidateQueries({ queryKey: queryKeys.feedback.byDoctor("me") });
     },
     onError: (error: any) => {
       if (error?.response?.status === 404) {

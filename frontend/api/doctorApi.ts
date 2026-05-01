@@ -138,6 +138,9 @@ export const fetchPrescriptionsByPatient = (patientId: string) =>
 export const fetchPrescriptionById = (id: string) =>
   apiClient.get<Prescription>(DOCTOR_ENDPOINTS.PRESCRIPTION_BY_ID(id));
 
+export const fetchPrescriptionsByAppointment = (appointmentId: string) =>
+  apiClient.get<Prescription[]>(DOCTOR_ENDPOINTS.PRESCRIPTIONS_BY_APPOINTMENT(appointmentId));
+
 export const createPrescription = ({ doctorId, payload }: { doctorId: string; payload: CreatePrescriptionPayload }) =>
   apiClient.post<Prescription>(DOCTOR_ENDPOINTS.CREATE_PRESCRIPTION(doctorId), payload);
 
@@ -233,6 +236,13 @@ export const useGetPrescriptionById = (id: string) =>
     queryKey: queryKeys.doctor.prescriptions.detail(id),
     queryFn: () => fetchPrescriptionById(id).then((r) => r.data),
     enabled: !!id,
+  });
+
+export const useGetPrescriptionsByAppointment = (appointmentId: string) =>
+  useQuery({
+    queryKey: [...queryKeys.doctor.prescriptions.all, "appointment", appointmentId],
+    queryFn: () => fetchPrescriptionsByAppointment(appointmentId).then((r) => r.data),
+    enabled: !!appointmentId,
   });
 
 export const verifyDoctor = (id: string) =>

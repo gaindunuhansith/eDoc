@@ -7,6 +7,8 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
@@ -29,6 +31,21 @@ public class VideoSession {
     @Column(nullable = false)
     private String patientId;
 
+    private String patientName;
+
+    private String doctorName;
+
+    private String doctorSpecialty;
+
+    private LocalDateTime scheduledAt;
+
+    private Integer duration;
+
+    private String roomName;
+
+    @Column(length = 1000)
+    private String notes;
+
     private String twilioRoomSid;
 
     @Enumerated(EnumType.STRING)
@@ -37,6 +54,8 @@ public class VideoSession {
 
     private LocalDateTime startTime;
     private LocalDateTime endTime;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     public VideoSession() {
     }
@@ -70,4 +89,43 @@ public class VideoSession {
 
     public LocalDateTime getEndTime() { return endTime; }
     public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
+
+    public String getPatientName() { return patientName; }
+    public void setPatientName(String patientName) { this.patientName = patientName; }
+
+    public String getDoctorName() { return doctorName; }
+    public void setDoctorName(String doctorName) { this.doctorName = doctorName; }
+
+    public String getDoctorSpecialty() { return doctorSpecialty; }
+    public void setDoctorSpecialty(String doctorSpecialty) { this.doctorSpecialty = doctorSpecialty; }
+
+    public LocalDateTime getScheduledAt() { return scheduledAt; }
+    public void setScheduledAt(LocalDateTime scheduledAt) { this.scheduledAt = scheduledAt; }
+
+    public Integer getDuration() { return duration; }
+    public void setDuration(Integer duration) { this.duration = duration; }
+
+    public String getRoomName() { return roomName; }
+    public void setRoomName(String roomName) { this.roomName = roomName; }
+
+    public String getNotes() { return notes; }
+    public void setNotes(String notes) { this.notes = notes; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+    @PrePersist
+    protected void onCreate() {
+        LocalDateTime now = LocalDateTime.now();
+        this.createdAt = now;
+        this.updatedAt = now;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }

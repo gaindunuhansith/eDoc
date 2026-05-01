@@ -49,7 +49,15 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .anyRequest().permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/v1/feedback/submit").hasRole("PATIENT")
+                    .requestMatchers(HttpMethod.PUT, "/api/v1/feedback/update/**").hasRole("PATIENT")
+                    .requestMatchers(HttpMethod.DELETE, "/api/v1/feedback/delete/**").hasRole("PATIENT")
+                    .requestMatchers(HttpMethod.GET, "/api/v1/feedback/patient/me").hasRole("PATIENT")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/feedback/doctor/me").hasRole("DOCTOR")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/feedback/patient/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/feedback/doctor/**").hasRole("ADMIN")
+                    .requestMatchers(HttpMethod.GET, "/api/v1/feedback/all").hasRole("ADMIN")
+                    .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthConverter))

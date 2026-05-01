@@ -33,6 +33,9 @@ import {
   type AppointmentStatus,
   type PaymentStatus
 } from "@/api/appointmentApi";
+import { useGetMyFeedback } from "@/api/feedbackApi";
+import { MessageSquare, Star } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { ModifyAppointmentDialog } from "./ModifyAppointmentDialog";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -115,6 +118,7 @@ export default function AppointmentsHistoryPage() {
   const { data: appointmentsRaw = [], isLoading: apptLoading } =
     useGetAppointmentsByPatient(patientId);
 
+  const { data: feedbackData, isLoading: feedbackLoading, error: feedbackError } = useGetMyFeedback();
   // Sort most recent first
   const appointments = [...appointmentsRaw].sort((a, b) => {
     return new Date(b.appointmentDate).getTime() - new Date(a.appointmentDate).getTime();

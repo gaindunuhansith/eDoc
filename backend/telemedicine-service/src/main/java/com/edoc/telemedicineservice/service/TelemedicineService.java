@@ -2,6 +2,7 @@ package com.edoc.telemedicineservice.service;
 
 import com.edoc.telemedicineservice.client.AppointmentServiceClient;
 import com.edoc.telemedicineservice.client.NotificationServiceClient;
+import com.edoc.telemedicineservice.dto.SessionTokenResponse;
 import com.edoc.telemedicineservice.model.SessionStatus;
 import com.edoc.telemedicineservice.model.VideoSession;
 import com.edoc.telemedicineservice.repository.VideoSessionRepository;
@@ -10,10 +11,16 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
+import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Service
@@ -37,10 +44,16 @@ public class TelemedicineService {
         this.messagingTemplate = messagingTemplate;
     }
 
-    public VideoSession createSession(String appointmentId, String doctorId, String patientId, String authorizationHeader) {
+    public VideoSession createSession(String appointmentId,
+                                      String doctorId,
+                                      String patientId,
+                                      String authorizationHeader,
+                                      String requesterRole,
+                                      String requesterId) {
         validateRequired("appointmentId", appointmentId);
         validateRequired("doctorId", doctorId);
         validateRequired("patientId", patientId);
+        requireDoctorOrAdmin(requesterRole, requesterId, doctorId);
 
         AppointmentServiceClient.AppointmentDTO appointment = appointmentClient.getAppointment(appointmentId, authorizationHeader);
         if (appointment.getStatus() != AppointmentServiceClient.AppointmentStatus.CONFIRMED) {
@@ -60,39 +73,65 @@ public class TelemedicineService {
         String roomSid = twilioService.createRoom(roomName);
 
         VideoSession session = new VideoSession(appointmentId, doctorId, patientId);
+        session.setRoomName(roomName);
         session.setTwilioRoomSid(roomSid);
         session.setStatus(SessionStatus.SCHEDULED);
+        session.setPatientName(appointment.getPatientName());
+        session.setDoctorName(appointment.getDoctorName());
+        session.setDoctorSpecialty(appointment.getDoctorSpecialty());
+        session.setScheduledAt(parseScheduledAt(appointment.getAppointmentDate(), appointment.getTimeSlot()));
+        session.setDuration(parseDurationMinutes(appointment.getTimeSlot()));
+        session.setNotes(appointment.getReasonForVisit());
 
         return sessionRepository.save(session);
     }
 
-    public VideoSession getSession(String appointmentId) {
+    public VideoSession getSession(String appointmentId, String requesterRole, String requesterId) {
         validateRequired("appointmentId", appointmentId);
-        return findByAppointmentIdOrThrow(appointmentId);
+        VideoSession session = findByAppointmentIdOrThrow(appointmentId);
+        requireParticipantOrAdmin(session, requesterRole, requesterId);
+        return session;
     }
 
-    public java.util.List<VideoSession> getAllSessions(String authorizationHeader) {
-        // For now, return all sessions. In a production system, you would filter by user role/permissions
-        // based on the authorization header (doctor sees their sessions, patient sees their sessions, admin sees all)
-        return sessionRepository.findAll();
+    public List<VideoSession> getAllSessions(String requesterRole, String requesterId) {
+        validateRequired("requesterRole", requesterRole);
+        validateRequired("requesterId", requesterId);
+
+        return switch (normalizeRole(requesterRole)) {
+            case "ADMIN" -> sessionRepository.findAll();
+            case "DOCTOR" -> sessionRepository.findByDoctorId(requesterId);
+            case "PATIENT" -> sessionRepository.findByPatientId(requesterId);
+            default -> throw new ResponseStatusException(FORBIDDEN, "Unsupported role for telemedicine sessions");
+        };
     }
 
-    public String generateJoinToken(String appointmentId, String userId) {
+    public SessionTokenResponse generateJoinToken(String appointmentId, String requesterRole, String requesterId) {
         validateRequired("appointmentId", appointmentId);
-        validateRequired("userId", userId);
+        validateRequired("requesterRole", requesterRole);
+        validateRequired("requesterId", requesterId);
 
         VideoSession session = findByAppointmentIdOrThrow(appointmentId);
+        requireParticipantOrAdmin(session, requesterRole, requesterId);
 
         if (session.getStatus() == SessionStatus.CANCELLED || session.getStatus() == SessionStatus.ENDED) {
             throw new ResponseStatusException(BAD_REQUEST, "Session is not active.");
         }
 
-        String roomName = "appointment-" + appointmentId;
-        return twilioService.generateToken(roomName, userId);
+        String roomName = (session.getRoomName() == null || session.getRoomName().isBlank())
+                ? "appointment-" + appointmentId
+                : session.getRoomName();
+        String token = twilioService.generateToken(roomName, requesterId);
+        return new SessionTokenResponse(token, roomName, LocalDateTime.now().plusHours(1));
     }
 
-    public VideoSession startSession(String appointmentId, String authorizationHeader) {
+    public VideoSession startSession(String appointmentId, String authorizationHeader, String requesterRole, String requesterId) {
         VideoSession session = findByAppointmentIdOrThrow(appointmentId);
+        requireDoctorOrAdmin(requesterRole, requesterId, session.getDoctorId());
+
+        if (session.getStatus() == SessionStatus.ENDED || session.getStatus() == SessionStatus.CANCELLED) {
+            throw new ResponseStatusException(BAD_REQUEST, "Session cannot be started in current state");
+        }
+
         session.setStatus(SessionStatus.ACTIVE);
         session.setStartTime(LocalDateTime.now());
 
@@ -104,27 +143,28 @@ public class TelemedicineService {
 
         try {
             AppointmentServiceClient.AppointmentDTO appointment = appointmentClient.getAppointment(appointmentId, authorizationHeader);
-            String doctorMessage = "Your telemedicine session with " + appointment.getDoctorName() + " has started.";
-            String patientMessage = "Your telemedicine session has started. Please join the video call.";
-
-            notificationClient.sendEmail(appointment.getPatientEmail(),
-                "Telemedicine Session Started", patientMessage, authorizationHeader);
-            notificationClient.sendEmail(appointment.getDoctorEmail(),
-                "Telemedicine Session Started", doctorMessage, authorizationHeader);
-
-
-            notificationClient.sendSms(appointment.getPatientEmail(), patientMessage, authorizationHeader);
-            notificationClient.sendSms(appointment.getDoctorEmail(), doctorMessage, authorizationHeader);
+            notificationClient.sendSessionStartedToPatient(
+                    appointment.getPatientId(),
+                    appointment.getDoctorName(),
+                    appointment.getAppointmentDate(),
+                    appointment.getTimeSlot(),
+                    authorizationHeader
+            );
         } catch (Exception ex) {
-
             System.err.println("Failed to send session start notifications: " + ex.getMessage());
         }
 
         return savedSession;
     }
 
-    public VideoSession endSession(String appointmentId, String authorizationHeader) {
+    public VideoSession endSession(String appointmentId, String authorizationHeader, String requesterRole, String requesterId) {
         VideoSession session = findByAppointmentIdOrThrow(appointmentId);
+        requireDoctorOrAdmin(requesterRole, requesterId, session.getDoctorId());
+
+        if (session.getStatus() == SessionStatus.ENDED || session.getStatus() == SessionStatus.CANCELLED) {
+            throw new ResponseStatusException(BAD_REQUEST, "Session cannot be ended in current state");
+        }
+
         session.setStatus(SessionStatus.ENDED);
         session.setEndTime(LocalDateTime.now());
 
@@ -143,27 +183,12 @@ public class TelemedicineService {
             System.err.println("Failed to update appointment status: " + ex.getMessage());
         }
 
-
-        try {
-            AppointmentServiceClient.AppointmentDTO appointment = appointmentClient.getAppointment(appointmentId, authorizationHeader);
-            String completionMessage = "Your telemedicine session has been completed. Thank you for using eDoc.";
-
-            notificationClient.sendEmail(appointment.getPatientEmail(),
-                "Telemedicine Session Completed", completionMessage, authorizationHeader);
-            notificationClient.sendEmail(appointment.getDoctorEmail(),
-                "Telemedicine Session Completed", completionMessage, authorizationHeader);
-
-            notificationClient.sendSms(appointment.getPatientEmail(), completionMessage, authorizationHeader);
-            notificationClient.sendSms(appointment.getDoctorEmail(), completionMessage, authorizationHeader);
-        } catch (Exception ex) {
-            System.err.println("Failed to send session completion notifications: " + ex.getMessage());
-        }
-
         return savedSession;
     }
 
-    public void deleteSession(String appointmentId) {
+    public void deleteSession(String appointmentId, String requesterRole, String requesterId) {
         VideoSession session = findByAppointmentIdOrThrow(appointmentId);
+        requireDoctorOrAdmin(requesterRole, requesterId, session.getDoctorId());
         sessionRepository.delete(session);
     }
 
@@ -179,6 +204,78 @@ public class TelemedicineService {
     private void validateRequired(String fieldName, String value) {
         if (value == null || value.isBlank()) {
             throw new ResponseStatusException(BAD_REQUEST, fieldName + " is required");
+        }
+    }
+
+    private void requireParticipantOrAdmin(VideoSession session, String requesterRole, String requesterId) {
+        String role = normalizeRole(requesterRole);
+        if ("ADMIN".equals(role)) {
+            return;
+        }
+
+        boolean allowed = ("DOCTOR".equals(role) && requesterId.equals(session.getDoctorId()))
+                || ("PATIENT".equals(role) && requesterId.equals(session.getPatientId()));
+
+        if (!allowed) {
+            throw new ResponseStatusException(FORBIDDEN, "You are not authorized for this telemedicine session");
+        }
+    }
+
+    private void requireDoctorOrAdmin(String requesterRole, String requesterId, String doctorId) {
+        String role = normalizeRole(requesterRole);
+        if ("ADMIN".equals(role)) {
+            return;
+        }
+
+        if (!"DOCTOR".equals(role) || !requesterId.equals(doctorId)) {
+            throw new ResponseStatusException(FORBIDDEN, "Only the assigned doctor can perform this action");
+        }
+    }
+
+    private String normalizeRole(String role) {
+        if (role == null || role.isBlank()) {
+            throw new ResponseStatusException(FORBIDDEN, "Role is required");
+        }
+        return role.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private LocalDateTime parseScheduledAt(String appointmentDate, String timeSlot) {
+        try {
+            if (appointmentDate == null || appointmentDate.isBlank()) {
+                return LocalDateTime.now();
+            }
+
+            LocalTime startTime = LocalTime.of(9, 0);
+            if (timeSlot != null && !timeSlot.isBlank()) {
+                String[] parts = timeSlot.split("-");
+                if (parts.length > 0) {
+                    startTime = LocalTime.parse(parts[0].trim());
+                }
+            }
+
+            return LocalDateTime.parse(appointmentDate.trim() + "T" + startTime);
+        } catch (DateTimeParseException ex) {
+            return LocalDateTime.now();
+        }
+    }
+
+    private int parseDurationMinutes(String timeSlot) {
+        if (timeSlot == null || timeSlot.isBlank()) {
+            return 30;
+        }
+
+        try {
+            String[] parts = timeSlot.split("-");
+            if (parts.length != 2) {
+                return 30;
+            }
+
+            LocalTime start = LocalTime.parse(parts[0].trim());
+            LocalTime end = LocalTime.parse(parts[1].trim());
+            long minutes = Duration.between(start, end).toMinutes();
+            return minutes > 0 ? (int) minutes : 30;
+        } catch (DateTimeParseException ex) {
+            return 30;
         }
     }
 }
