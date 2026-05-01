@@ -8,6 +8,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -21,7 +22,14 @@ import java.util.UUID;
 
 @Data
 @Entity
-@Table(name = "users")
+@Table(name = "users", indexes = {
+    @Index(name = "idx_users_user_id", columnList = "user_id"),
+    @Index(name = "idx_users_email", columnList = "email"),
+    @Index(name = "idx_users_role", columnList = "role"),
+    @Index(name = "idx_users_is_active", columnList = "is_active"),
+    @Index(name = "idx_users_is_deleted", columnList = "is_deleted"),
+    @Index(name = "idx_users_created_at", columnList = "created_at")
+})
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -55,12 +63,23 @@ public class User {
     @Builder.Default
     private boolean isProfileCreated = false;
 
+    @Column(name = "is_active", nullable = false)
+    @Builder.Default
+    private boolean isActive = true;
+
+    @Column(name = "is_deleted", nullable = false)
+    @Builder.Default
+    private boolean isDeleted = false;
+
     @Column(name = "created_at", nullable = false)
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
     @PrePersist
     void prePersist() {
@@ -71,10 +90,16 @@ public class User {
             createdAt = LocalDateTime.now();
         }
         updatedAt = createdAt;
+        if (isDeleted && deletedAt == null) {
+            deletedAt = createdAt;
+        }
     }
 
     @PreUpdate
     void preUpdate() {
         updatedAt = LocalDateTime.now();
+        if (isDeleted && deletedAt == null) {
+            deletedAt = updatedAt;
+        }
     }
 }

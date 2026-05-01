@@ -9,6 +9,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -23,6 +24,7 @@ public class GlobalExceptionHandler {
     private static final String CODE_UNAUTHORIZED = "UNAUTHORIZED";
     private static final String CODE_FORBIDDEN = "FORBIDDEN";
     private static final String CODE_BAD_REQUEST = "BAD_REQUEST";
+    private static final String CODE_NOT_FOUND = "NOT_FOUND";
     private static final String CODE_INTERNAL_ERROR = "INTERNAL_SERVER_ERROR";
 
     @ExceptionHandler(UserNotFoundException.class)
@@ -67,6 +69,12 @@ public class GlobalExceptionHandler {
 
         log.warn("Bad request: {}", message);
         return error(HttpStatus.BAD_REQUEST, CODE_BAD_REQUEST, message);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<Map<String, String>> handleNoResourceFound(NoResourceFoundException ex) {
+        log.debug("No resource found: {}", ex.getResourcePath());
+        return error(HttpStatus.NOT_FOUND, CODE_NOT_FOUND, "Resource not found");
     }
 
     @ExceptionHandler(Exception.class)

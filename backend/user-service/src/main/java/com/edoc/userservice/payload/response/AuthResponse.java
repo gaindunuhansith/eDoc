@@ -1,4 +1,4 @@
-package com.edoc.userservice.dto;
+package com.edoc.userservice.payload.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

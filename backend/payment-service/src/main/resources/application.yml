@@ -53,3 +53,7 @@ logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] [orderId=%X{orderId}] [userId=%X{userId}] %logger{36} - %msg%n"
 
+jwt:
+  public-key-path: ${JWT_PUBLIC_KEY_PATH:secrets/public.pem}
+  public-key-base64: ${JWT_PUBLIC_KEY_BASE64:}
+  private-key-base64: ${JWT_PRIVATE_KEY_BASE64:}

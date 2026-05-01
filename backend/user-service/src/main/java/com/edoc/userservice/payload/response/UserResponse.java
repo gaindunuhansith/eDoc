@@ -1,4 +1,4 @@
-package com.edoc.userservice.dto;
+package com.edoc.userservice.payload.response;
 
 import com.edoc.userservice.model.enums.UserRole;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -22,6 +22,11 @@ public class UserResponse {
     private UserRole role;
     @JsonProperty("isProfileCreated")
     private boolean isProfileCreated;
+    @JsonProperty("isActive")
+    private boolean isActive;
+    @JsonProperty("isDeleted")
+    private boolean isDeleted;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private LocalDateTime deletedAt;
 }
