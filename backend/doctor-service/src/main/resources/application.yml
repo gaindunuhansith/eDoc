@@ -8,9 +8,15 @@ spring:
     mongodb:
       uri: ${MONGO_URI}
       database: edoc_doctor_db
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          public-key-location: ${JWT_PUBLIC_KEY_LOCATION:classpath:public.pem}
 
 jwt:
   public-key-path: ${JWT_PUBLIC_KEY_PATH:secrets/public.pem}
+  public-key-base64: ${JWT_PUBLIC_KEY_BASE64:}
 
 patient:
   service:
