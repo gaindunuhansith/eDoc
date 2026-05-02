@@ -84,7 +84,8 @@ export const queryKeys = {
 
   payment: {
     all: ["payment"] as const,
-    lists: () => ["payment", "list"] as const,
+    lists: (page?: number, size?: number) => ["payment", "list", page, size] as const,
+    history: (page?: number, size?: number) => ["payment", "history", page, size] as const,
     detail: (id: string) => ["payment", "detail", id] as const,
     byPatient: (patientId: string) =>
       ["payment", "patient", patientId] as const,
