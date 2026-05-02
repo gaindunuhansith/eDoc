@@ -313,6 +313,19 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<UserResponse> getUsersByIds(List<String> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        return userIds.stream()
+                .map(uid -> userRepository.findByUserId(uid).orElse(null))
+                .filter(u -> u != null)
+                .map(userMapper::toResponse)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public User findByEmailForAuthentication(String email) {
         if (email == null || email.isBlank()) {
             throw new IllegalArgumentException("email is required");

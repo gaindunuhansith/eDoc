@@ -271,7 +271,7 @@ public class NotificationService {
                     + " (" + valueOrDefault(data, "dayOfWeek", "") + ")"
                     + " at " + valueOrDefault(data, "timeSlot", "the scheduled time")
                     + " has been completed.";
-                case TELEMEDICINE_SESSION_STARTED -> "Hello " + valueOrDefault(data, "recipientName", "there")
+            case TELEMEDICINE_SESSION_STARTED -> "Hello " + valueOrDefault(data, "recipientName", "there")
                     + ", your telemedicine session with Dr. " + valueOrDefault(data, "doctorName", "your doctor")
                     + " on " + valueOrDefault(data, "date", "today")
                     + " at " + valueOrDefault(data, "timeSlot", "the scheduled time")

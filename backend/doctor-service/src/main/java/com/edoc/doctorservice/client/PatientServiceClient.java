@@ -4,8 +4,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.util.List;
 import java.util.Map;
@@ -35,6 +37,24 @@ public class PatientServiceClient {
             throw new RuntimeException(
                     "Could not fetch patient reports. Patient service may be down."
             );
+        }
+    }
+
+    // Download the actual file bytes of a report (for doctor access)
+    public ResponseEntity<byte[]> getPatientReportFile(String patientId, Long reportId) {
+        try {
+            return webClientBuilder.build()
+                    .get()
+                    .uri(patientServiceUrl + "/api/v1/internal/patients/" + patientId + "/reports/" + reportId + "/file")
+                    .retrieve()
+                    .toEntity(byte[].class)
+                    .block();
+        } catch (WebClientResponseException e) {
+            log.error("Error fetching report file for patient {} report {}: {}", patientId, reportId, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error fetching report file for patient {} report {}", patientId, reportId, e);
+            throw new RuntimeException("Could not fetch report file. Patient service may be down.");
         }
     }
 

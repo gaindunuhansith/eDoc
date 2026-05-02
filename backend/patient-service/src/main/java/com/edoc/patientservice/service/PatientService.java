@@ -1,5 +1,6 @@
 package com.edoc.patientservice.service;
 
+import com.edoc.patientservice.client.UserServiceClient;
 import com.edoc.patientservice.dto.patient.PatientRequestDTO;
 import com.edoc.patientservice.dto.patient.PatientResponseDTO;
 import com.edoc.patientservice.dto.patient.PatientStatusResponseDTO;
@@ -10,6 +11,7 @@ import com.edoc.patientservice.mapper.PatientMapper;
 import com.edoc.patientservice.repository.PatientRepository;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -22,10 +24,14 @@ public class PatientService {
 
     private final PatientRepository patientRepository;
     private final PatientMapper patientMapper;
+    private final UserServiceClient userServiceClient;
 
-    public PatientService(PatientRepository patientRepository, PatientMapper patientMapper) {
+    public PatientService(PatientRepository patientRepository,
+                          PatientMapper patientMapper,
+                          UserServiceClient userServiceClient) {
         this.patientRepository = patientRepository;
         this.patientMapper = patientMapper;
+        this.userServiceClient = userServiceClient;
     }
 
     public PatientResponseDTO registerPatient(PatientRequestDTO request, String userId) {
@@ -83,10 +89,35 @@ public class PatientService {
     // ─── Admin operations ─────────────────────────────────────────────────────
 
     @Transactional(readOnly = true)
-    public List<PatientResponseDTO> getAllPatients() {
-        return patientRepository.findAll().stream()
+    public List<PatientResponseDTO> getAllPatients(String authHeader) {
+        List<PatientResponseDTO> patients = patientRepository.findAll().stream()
                 .map(patientMapper::toResponse)
                 .collect(Collectors.toList());
+
+        // Enrich with names from user-service (best-effort — missing entries are silently skipped).
+        List<String> userIds = patients.stream().map(PatientResponseDTO::getUserId).collect(Collectors.toList());
+        Map<String, UserServiceClient.UserSummary> summaries = userServiceClient.getUserSummaries(userIds, authHeader);
+        patients.forEach(p -> {
+            UserServiceClient.UserSummary summary = summaries.get(p.getUserId());
+            if (summary != null) {
+                p.setUserName(summary.name());
+                p.setUserEmail(summary.email());
+            }
+        });
+        return patients;
+    }
+
+    @Transactional(readOnly = true)
+    public PatientResponseDTO getAdminPatient(Long id, String authHeader) {
+        PatientResponseDTO dto = patientMapper.toResponse(findPatientOrThrow(id));
+        Map<String, UserServiceClient.UserSummary> summaries =
+                userServiceClient.getUserSummaries(List.of(dto.getUserId()), authHeader);
+        UserServiceClient.UserSummary summary = summaries.get(dto.getUserId());
+        if (summary != null) {
+            dto.setUserName(summary.name());
+            dto.setUserEmail(summary.email());
+        }
+        return dto;
     }
 
     public PatientResponseDTO changePatientStatusAdmin(Long id, PatientStatusUpdateRequestDTO request) {

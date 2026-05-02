@@ -3,6 +3,7 @@ package com.edoc.patientservice.controller;
 import com.edoc.patientservice.dto.patient.PatientResponseDTO;
 import com.edoc.patientservice.dto.patient.PatientStatusUpdateRequestDTO;
 import com.edoc.patientservice.service.PatientService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,14 +25,14 @@ public class AdminPatientController {
 
     @GetMapping("/all")
     // List every patient profile. Secured to ADMIN role in SecurityConfig.
-    public List<PatientResponseDTO> getAllPatients() {
-        return patientService.getAllPatients();
+    public List<PatientResponseDTO> getAllPatients(HttpServletRequest request) {
+        return patientService.getAllPatients(request.getHeader("Authorization"));
     }
 
     @GetMapping("/{id}")
     // Fetch a single patient by internal patient id.
-    public PatientResponseDTO getPatient(@PathVariable Long id) {
-        return patientService.getPatient(id);
+    public PatientResponseDTO getPatient(@PathVariable Long id, HttpServletRequest request) {
+        return patientService.getAdminPatient(id, request.getHeader("Authorization"));
     }
 
     @PatchMapping("/{id}/status")

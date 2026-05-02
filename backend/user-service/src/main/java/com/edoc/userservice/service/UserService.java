@@ -33,6 +33,8 @@ public interface UserService {
 
     UserResponse restoreUser(String userId);
 
+    List<UserResponse> getUsersByIds(List<String> userIds);
+
     boolean isOwner(String userId);
 
     /**
