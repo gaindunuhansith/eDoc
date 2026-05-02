@@ -5,6 +5,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 // Payload to change patient account status with optional audit actor and reason.
+// actedBy should be the acting party's internal patient-service Long id.
+// For self-service endpoints (PATCH /patients/me/status) the service ignores this field
+// and derives the actor from the authenticated JWT — do not pass it from the client.
 public class PatientStatusUpdateRequestDTO {
 
     @NotNull

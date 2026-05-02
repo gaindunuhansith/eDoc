@@ -24,6 +24,9 @@ public class PatientResponseDTO {
     private Instant deactivatedAt;
     private Long deactivatedBy;
     private String deactivationReason;
+    // Enriched from user-service — may be null when called from non-admin endpoints.
+    private String userName;
+    private String userEmail;
 
     public Long getId() {
         return id;
@@ -159,5 +162,21 @@ public class PatientResponseDTO {
 
     public void setDeactivationReason(String deactivationReason) {
         this.deactivationReason = deactivationReason;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
+    public String getUserEmail() {
+        return userEmail;
+    }
+
+    public void setUserEmail(String userEmail) {
+        this.userEmail = userEmail;
     }
 }

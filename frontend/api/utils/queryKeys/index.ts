@@ -16,6 +16,8 @@ export const queryKeys = {
     reports: () => ["patient", "reports"] as const,
     report: (id: number) => ["patient", "report", id] as const,
     prescriptions: () => ["patient", "prescriptions"] as const,
+    adminList: () => ["patient", "admin", "list"] as const,
+    adminDetail: (id: number) => ["patient", "admin", "detail", id] as const,
   },
 
   doctor: {

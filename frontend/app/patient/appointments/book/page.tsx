@@ -40,6 +40,7 @@ import {
 } from "@/api/doctorApi";
 import { useGetMyPatientProfile } from "@/api/patientApi";
 import { useCreateAppointment, type AppointmentType } from "@/api/appointmentApi";
+import { useGetCurrentUser } from "@/api/userApi";
 
 const DAY_NAMES = [
   "SUNDAY",
@@ -100,6 +101,7 @@ export default function BookAppointmentWizard() {
   const router = useRouter();
 
   const { data: patient, isLoading: patientLoading } = useGetMyPatientProfile();
+  const { data: currentUser } = useGetCurrentUser();
 
   // Wizard state
   const [step, setStep] = useState(1);
@@ -134,10 +136,12 @@ export default function BookAppointmentWizard() {
 
     const dayOfWeek = toDayName(date);
     const formattedDate = format(date, "yyyy-MM-dd");
+    const patientName = currentUser?.name?.trim() || undefined;
 
     createMutation.mutate(
       {
         patientId: String(patient.id),
+        patientName,
         doctorId: selectedDoctor.id,
         appointmentDate: formattedDate,
         timeSlot: timeSlot,

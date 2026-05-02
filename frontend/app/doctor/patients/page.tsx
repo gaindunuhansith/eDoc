@@ -29,7 +29,7 @@ import {
   fetchPrescriptionsByPatient, 
   type Prescription 
 } from "@/api/doctorApi";
-import { getReportDownloadUrl } from "@/api/patientApi"; 
+import { DOCTOR_ENDPOINTS } from "@/api/utils/endpoints";
 
 function formatDate(s: string) {
   return new Date(s).toLocaleDateString("en-US", {
@@ -339,7 +339,7 @@ function PatientsContent() {
                                className="shrink-0 gap-1.5"
                                asChild
                             >
-                               <a href={getReportDownloadUrl(report.id)} target="_blank" rel="noopener noreferrer">
+                               <a href={DOCTOR_ENDPOINTS.GET_PATIENT_REPORT_FILE(doctor!.id, activePatientId, report.id)} target="_blank" rel="noopener noreferrer">
                                   <Download className="w-3.5 h-3.5" />
                                   View
                                </a>

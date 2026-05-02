@@ -52,6 +52,9 @@ public class Patient {
     @Column(name = "deactivated_at")
     private Instant deactivatedAt;
 
+    // Stores the internal patient-service Long id of the actor who triggered the status change.
+    // Set to the patient's own id for self-service deactivation; null for admin-initiated changes
+    // (admins have no patient-service record).
     @Column(name = "deactivated_by")
     private Long deactivatedBy;
 
