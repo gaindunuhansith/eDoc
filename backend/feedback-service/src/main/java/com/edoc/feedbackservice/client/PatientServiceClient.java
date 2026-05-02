@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class PatientServiceClient {
@@ -29,13 +30,13 @@ public class PatientServiceClient {
         } catch (RestClientResponseException ex) {
             if (ex.getStatusCode() == HttpStatus.NOT_FOUND) {
                 System.out.println("Patient profile not found for authenticated user");
-            } else {
-                System.err.println("Error calling patient service: " + ex.getMessage());
+                return null;
             }
+            System.err.println("Error calling patient service: " + ex.getMessage());
             throw ex;
         } catch (Exception ex) {
             System.err.println("Unexpected error calling patient service: " + ex.getMessage());
-            throw new RuntimeException("Unable to resolve current patient profile");
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Patient service is unavailable");
         }
     }
 
