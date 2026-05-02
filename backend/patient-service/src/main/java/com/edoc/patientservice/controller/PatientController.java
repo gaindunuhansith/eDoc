@@ -34,25 +34,25 @@ public class PatientController {
     @ResponseStatus(HttpStatus.CREATED)
     // Register a new patient profile linked to the authenticated user-service account.
     public PatientResponseDTO registerPatient(@Valid @RequestBody PatientRequestDTO request) {
-        return patientService.registerPatient(request, currentPatientProvider.getCurrentPatientId());
+        return patientService.registerPatient(request, currentPatientProvider.getCurrentUserId());
     }
 
     @GetMapping("/patients/me")
     // Read the current patient's profile using the authenticated user-service identity.
     public PatientResponseDTO getCurrentPatient() {
-        return patientService.getPatientByUserId(currentPatientProvider.getCurrentPatientId());
+        return patientService.getPatientByUserId(currentPatientProvider.getCurrentUserId());
     }
 
     @PutMapping("/patients/me")
     // Update the current patient's profile.
     public PatientResponseDTO updateCurrentPatient(@Valid @RequestBody PatientRequestDTO request) {
-        return patientService.updatePatientByUserId(currentPatientProvider.getCurrentPatientId(), request);
+        return patientService.updatePatientByUserId(currentPatientProvider.getCurrentUserId(), request);
     }
 
     @PatchMapping("/patients/me/status")
     // Change the current patient's account status and keep deactivation audit data.
     public PatientResponseDTO updateCurrentPatientStatus(@Valid @RequestBody PatientStatusUpdateRequestDTO request) {
-        return patientService.changePatientStatusByUserId(currentPatientProvider.getCurrentPatientId(), request);
+        return patientService.changePatientStatusByUserId(currentPatientProvider.getCurrentUserId(), request);
     }
 
     @GetMapping("/internal/patients/{id}")

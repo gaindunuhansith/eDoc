@@ -1,0 +1,43 @@
+package com.edoc.patientservice.controller;
+
+import com.edoc.patientservice.dto.patient.PatientResponseDTO;
+import com.edoc.patientservice.dto.patient.PatientStatusUpdateRequestDTO;
+import com.edoc.patientservice.service.PatientService;
+import jakarta.validation.Valid;
+import java.util.List;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/v1/patients/admin")
+public class AdminPatientController {
+
+    private final PatientService patientService;
+
+    public AdminPatientController(PatientService patientService) {
+        this.patientService = patientService;
+    }
+
+    @GetMapping("/all")
+    // List every patient profile. Secured to ADMIN role in SecurityConfig.
+    public List<PatientResponseDTO> getAllPatients() {
+        return patientService.getAllPatients();
+    }
+
+    @GetMapping("/{id}")
+    // Fetch a single patient by internal patient id.
+    public PatientResponseDTO getPatient(@PathVariable Long id) {
+        return patientService.getPatient(id);
+    }
+
+    @PatchMapping("/{id}/status")
+    // Change a patient's status on behalf of an admin. actedBy is derived server-side (null for admin actors).
+    public PatientResponseDTO changePatientStatus(@PathVariable Long id,
+                                                  @Valid @RequestBody PatientStatusUpdateRequestDTO request) {
+        return patientService.changePatientStatusAdmin(id, request);
+    }
+}
