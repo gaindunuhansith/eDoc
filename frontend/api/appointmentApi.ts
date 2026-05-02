@@ -49,6 +49,7 @@ export interface CreateAppointmentPayload {
   patientId: string;
   patientName?: string;
   doctorId: string;
+  doctorName?: string;
   appointmentDate: string;   // "YYYY-MM-DD"
   timeSlot: string;          // "09:00-09:30"
   dayOfWeek: string;         // "MONDAY"

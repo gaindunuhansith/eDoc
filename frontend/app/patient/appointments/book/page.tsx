@@ -137,12 +137,14 @@ export default function BookAppointmentWizard() {
     const dayOfWeek = toDayName(date);
     const formattedDate = format(date, "yyyy-MM-dd");
     const patientName = currentUser?.name?.trim() || undefined;
+    const doctorName = `Dr. ${selectedDoctor.firstName} ${selectedDoctor.lastName}`;
 
     createMutation.mutate(
       {
         patientId: String(patient.id),
         patientName,
         doctorId: selectedDoctor.id,
+        doctorName,
         appointmentDate: formattedDate,
         timeSlot: timeSlot,
         dayOfWeek: dayOfWeek,

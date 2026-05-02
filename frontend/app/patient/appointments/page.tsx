@@ -113,7 +113,7 @@ export default function AppointmentsHistoryPage() {
   const { data: patient, isLoading: patientLoading } = useGetMyPatientProfile();
   const patientId = patient?.id ? String(patient.id) : "";
 
-  // Fetch all appointments
+  // Fetch patient appointments only
   const { data: appointmentsRaw = [], isLoading: apptLoading } =
     useGetAppointmentsByPatient(patientId);
 
@@ -127,7 +127,10 @@ export default function AppointmentsHistoryPage() {
   const deleteMutation = useDeleteAppointment();
 
   const isLoading = patientLoading || apptLoading;
-  const filtered = filterAppointments(appointments, tab);
+  const patientAppointments = appointments.filter(
+    (appointment) => String(appointment.patientId) === patientId
+  );
+  const filtered = filterAppointments(patientAppointments, tab);
 
   // -- Handlers --
   const handleCancelConfirm = () => {

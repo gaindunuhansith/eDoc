@@ -89,12 +89,14 @@ function BookingSheet({
   const handleBook = () => {
     if (!canSubmit) return;
     const patientName = currentUser?.name?.trim() || user?.name?.trim() || undefined;
+    const doctorName = `Dr. ${doctor!.firstName} ${doctor!.lastName}`;   // change this to remove duplicate DR signs
 
     createMutation.mutate(
       {
         patientId,
         patientName,
         doctorId: doctor!.id,
+        doctorName,
         appointmentDate: getNextDateForDay(selectedDay!),
         timeSlot: selectedSlot!,
         dayOfWeek: selectedDay!,
@@ -276,7 +278,7 @@ function DoctorCard({
         {/* Header */}
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center shrink-0">
+            <div className="h-12 w-12 rounded-full bg-linear-to-br from-blue-100 to-indigo-100 flex items-center justify-center shrink-0">
               <Stethoscope className="h-6 w-6 text-blue-600" />
             </div>
             <div>

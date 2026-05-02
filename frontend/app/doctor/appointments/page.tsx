@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   CalendarDays,
   Clock,
@@ -153,6 +154,7 @@ function VideoLinkDialog({ open, onClose, onConfirm, isPending }: any) {
 // --- Main Page ------------------------------------------------------------------
 
 export default function DoctorAppointmentsHub() {
+  const router = useRouter();
   const user = useUser();
   const doctorId = user?.userId || "";
 
@@ -219,6 +221,11 @@ export default function DoctorAppointmentsHub() {
     );
   };
 
+  const handleCreatePrescription = (patientId?: string, appointmentId?: string) => {
+    if (!patientId || !appointmentId) return;
+    router.push(`/doctor/prescriptions/create/${patientId}/${appointmentId}`);
+  };
+
   const filteredAllAppointments = allAppointments.filter((app: any) => allTab === "ALL" || app.status === allTab).sort((a: any,b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return (
@@ -229,7 +236,7 @@ export default function DoctorAppointmentsHub() {
       </div>
 
       <Tabs value={topTab} onValueChange={setTopTab}>
-        <TabsList className="grid w-[400px] grid-cols-2 mb-6">
+        <TabsList className="grid w-100 grid-cols-2 mb-6">
           <TabsTrigger value="REQUESTS">Incoming Requests</TabsTrigger>
           <TabsTrigger value="ALL_APPS">All Appointments</TabsTrigger>
         </TabsList>
@@ -374,6 +381,20 @@ export default function DoctorAppointmentsHub() {
                           )}
                           <Button size="sm" className="bg-blue-600 hover:bg-blue-700 shadow-sm" onClick={() => setCompleteId(appt.id)}>
                             <CheckCircle2 className="h-4 w-4 mr-2" /> Mark as Completed
+                          </Button>
+                        </div>
+                      )}
+
+                      {appt.status === "COMPLETED" && (
+                        <div className="flex flex-wrap gap-3 pt-3 border-t mt-4">
+                          <Button
+                            size="sm"
+                            className="bg-emerald-600 hover:bg-emerald-700 shadow-sm"
+                            onClick={() => handleCreatePrescription(appt.patientId, appt.id)}
+                            disabled={!appt.patientId || !appt.id}
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Create Prescription
                           </Button>
                         </div>
                       )}

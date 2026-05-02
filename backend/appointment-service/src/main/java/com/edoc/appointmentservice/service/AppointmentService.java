@@ -72,10 +72,19 @@ public class AppointmentService {
         appointment.setPaymentStatus(Appointment.PaymentStatus.NOT_REQUIRED);
 
         // Step 5: Snapshot doctor details into the appointment
+        if (request.getDoctorName() != null && !request.getDoctorName().isBlank()) {
+            // Use the doctor name from the request if provided
+            appointment.setDoctorName(request.getDoctorName().trim());
+        } else if (doctorData != null) {
+            // Fall back to building from doctor service response
+            Object firstName = doctorData.get("firstName");
+            Object lastName = doctorData.get("lastName");
+            if (firstName != null && lastName != null) {
+                appointment.setDoctorName(firstName.toString() + " " + lastName.toString());
+            }
+        }
+        // Snapshot other doctor details
         if (doctorData != null) {
-            appointment.setDoctorName(
-                    doctorData.get("firstName") + " " + doctorData.get("lastName")
-            );
             appointment.setDoctorSpecialty((String) doctorData.get("specialty"));
             appointment.setDoctorHospital((String) doctorData.get("hospital"));
             Object fee = doctorData.get("consultationFee");
