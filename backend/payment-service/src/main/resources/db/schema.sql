@@ -5,7 +5,7 @@ DROP TABLE IF EXISTS payments;
 CREATE TABLE IF NOT EXISTS payments (
     id UUID PRIMARY KEY,
     appointment_id BIGINT NOT NULL UNIQUE,
-    user_id BIGINT NOT NULL,
+    user_id VARCHAR(50) NOT NULL,
     amount NUMERIC(12, 2) NOT NULL,
     currency VARCHAR(3) NOT NULL CHECK (currency IN ('LKR', 'USD')),
     status VARCHAR(16) NOT NULL CHECK (status IN ('PENDING', 'SUCCESS', 'FAILED')),

@@ -1,6 +1,37 @@
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Payment Service Seed Data
+-- ─────────────────────────────────────────────────────────────────────────────
+--
+-- user_id (BIGINT) maps to the numeric suffix of the user-service patient
+-- user_ids.  Only the 13 active, non-deleted patients are represented:
+--
+--   user_id 'USR-PAT-03' → Vimukthi Rathnasiri    vimukthi.rathnasiri@edoc.com   0733300003
+--   user_id 'USR-PAT-04' → Wasantha Alwis         wasantha.alwis@edoc.com        0744400004
+--   user_id 'USR-PAT-05' → Yasiru Vithanage       yasiru.vithanage@edoc.com      0755500005
+--   user_id 'USR-PAT-06' → Amali Udagedara        amali.udagedara@edoc.com       0766600006
+--   user_id 'USR-PAT-07' → Binara Harshana        binara.harshana@edoc.com       0777700007
+--   user_id 'USR-PAT-08' → Chamila Sampath        chamila.sampath@edoc.com       0788800008
+--   user_id 'USR-PAT-09' → Danushka Samarakoon    danushka.samarakoon@edoc.com   0711900009
+--   user_id 'USR-PAT-10' → Erandi Wickremaratne   erandi.wickremaratne@edoc.com  0722000010
+--   user_id 'USR-PAT-11' → Farhan Saleem          farhan.saleem@edoc.com         0733100011
+--   user_id 'USR-PAT-12' → Gimhan Perera          gimhan.perera@edoc.com         0744200012
+--   user_id 'USR-PAT-13' → Hasitha Jayasena       hasitha.jayasena@edoc.com      0755300013
+--   user_id 'USR-PAT-14' → Indika Kumara          indika.kumara@edoc.com         0766400014
+--   user_id 'USR-PAT-15' → Janani Thilakarathne   janani.thilakarathne@edoc.com  0777500015
+--
+-- USR-PAT-01 (is_active=false) and USR-PAT-02 (is_deleted=true) are excluded.
+--
+-- appointment_id (BIGINT) represents IDs from appointment-service.
+-- Appointments 1001–1040 are used; each is unique per payment.
+-- ─────────────────────────────────────────────────────────────────────────────
+
 DELETE FROM payment_transaction_logs;
 DELETE FROM billing_details;
 DELETE FROM payments;
+
+-- ─── Payments ────────────────────────────────────────────────────────────────
+-- 40 payments spread across the 13 active patients (cycling user_id 3–15).
+-- Status distribution: ~28 SUCCESS, ~7 PENDING, ~5 FAILED.
 
 INSERT INTO payments (
     id,
@@ -16,170 +47,223 @@ INSERT INTO payments (
 )
 SELECT
     (
-        substr(md5('payment-' || gs::text), 1, 8) || '-' ||
-        substr(md5('payment-' || gs::text), 9, 4) || '-' ||
-        substr(md5('payment-' || gs::text), 13, 4) || '-' ||
-        substr(md5('payment-' || gs::text), 17, 4) || '-' ||
-        substr(md5('payment-' || gs::text), 21, 12)
-    )::uuid,
-    1000 + gs,
-    200 + (gs % 9),
-    ROUND((75 + gs * 4.25)::numeric, 2),
-    CASE WHEN gs % 2 = 0 THEN 'LKR' ELSE 'USD' END,
+        substr(md5('pmt-' || gs), 1, 8)  || '-' ||
+        substr(md5('pmt-' || gs), 9, 4)  || '-' ||
+        substr(md5('pmt-' || gs), 13, 4) || '-' ||
+        substr(md5('pmt-' || gs), 17, 4) || '-' ||
+        substr(md5('pmt-' || gs), 21, 12)
+    )::uuid                                                       AS id,
+
+    1000 + gs                                                     AS appointment_id,
+    'USR-PAT-' || LPAD((3 + ((gs - 1) % 13))::text, 2, '0')       AS user_id,
+
+    -- Alternate LKR (in-person/procedure) and USD (telemedicine) amounts
     CASE
-        WHEN gs % 5 = 0 THEN 'FAILED'
-        WHEN gs % 3 = 0 THEN 'PENDING'
-        ELSE 'SUCCESS'
-    END,
-    'ORD-' || LPAD(gs::text, 6, '0'),
-    CASE WHEN gs % 3 = 0 THEN NULL ELSE 'PH-' || LPAD((100000 + gs)::text, 8, '0') END,
-    NOW() - (gs * INTERVAL '3 hours'),
-    NOW() - (gs * INTERVAL '2 hours')
+        WHEN gs % 2 = 0 THEN ROUND((1800.00 + gs * 213.50)::numeric, 2)
+        ELSE                 ROUND((  45.00 + gs *   3.25)::numeric, 2)
+    END                                                           AS amount,
+
+    CASE WHEN gs % 2 = 0 THEN 'LKR' ELSE 'USD' END              AS currency,
+
+    CASE
+        WHEN gs % 7 = 0 THEN 'FAILED'
+        WHEN gs % 5 = 0 THEN 'PENDING'
+        ELSE                 'SUCCESS'
+    END                                                           AS status,
+
+    'ORD-2026-' || LPAD(gs::text, 5, '0')                       AS order_id,
+
+    -- PayHere only assigns an ID after a successful or failed webhook; PENDING has none
+    CASE
+        WHEN gs % 7 = 0 OR gs % 5 = 0 THEN NULL
+        ELSE 'PH-' || LPAD((200000 + gs * 7)::text, 9, '0')
+    END                                                           AS payhere_id,
+
+    NOW() - ((41 - gs) * INTERVAL '2 days')                     AS created_at,
+    NOW() - ((41 - gs) * INTERVAL '2 days') + INTERVAL '8 minutes' AS updated_at
+
 FROM generate_series(1, 40) AS gs;
 
-INSERT INTO payment_transaction_logs (
-    id,
-    payment_id,
-    event,
-    raw_payload,
-    created_at
-)
+-- ─── Transaction Logs ─────────────────────────────────────────────────────────
+-- Each payment receives a full lifecycle log sequence.
+-- PENDING payments stop after GATEWAY_REDIRECT (still waiting on user).
+-- SUCCESS payments: INITIATED → REDIRECT → WEBHOOK_RECEIVED → REST_NOTIFY_SENT
+-- FAILED  payments: INITIATED → REDIRECT → WEBHOOK_RECEIVED → REST_NOTIFY_FAILED
+
+-- Log 1: PAYMENT_INITIATED – always present at payment creation time
+INSERT INTO payment_transaction_logs (id, payment_id, event, raw_payload, created_at)
 SELECT
     (
-        substr(md5('log-' || p.order_id || '-' || seq::text), 1, 8) || '-' ||
-        substr(md5('log-' || p.order_id || '-' || seq::text), 9, 4) || '-' ||
-        substr(md5('log-' || p.order_id || '-' || seq::text), 13, 4) || '-' ||
-        substr(md5('log-' || p.order_id || '-' || seq::text), 17, 4) || '-' ||
-        substr(md5('log-' || p.order_id || '-' || seq::text), 21, 12)
+        substr(md5('tl1-' || p.order_id), 1, 8)  || '-' ||
+        substr(md5('tl1-' || p.order_id), 9, 4)  || '-' ||
+        substr(md5('tl1-' || p.order_id), 13, 4) || '-' ||
+        substr(md5('tl1-' || p.order_id), 17, 4) || '-' ||
+        substr(md5('tl1-' || p.order_id), 21, 12)
     )::uuid,
     p.id,
-    CASE
-        WHEN seq = 1 THEN 'PAYMENT_INITIATED'
-        WHEN seq = 2 THEN 'WEBHOOK_RECEIVED'
-        WHEN p.status = 'SUCCESS' THEN 'REST_NOTIFY_SENT'
-        WHEN p.status = 'FAILED' THEN 'REST_NOTIFY_FAILED'
-        ELSE 'RECONCILE_FLAGGED'
-    END,
+    'PAYMENT_INITIATED',
     jsonb_build_object(
-        'orderId', p.order_id,
+        'orderId',       p.order_id,
         'appointmentId', p.appointment_id,
-        'status', p.status,
-        'sequence', seq,
-        'channel', CASE WHEN seq = 3 THEN 'bridge' ELSE 'gateway' END,
-        'note', CASE
-            WHEN p.status = 'SUCCESS' AND seq = 3 THEN 'Notification delivered'
-            WHEN p.status = 'FAILED' AND seq = 3 THEN 'Appointment service unavailable'
-            WHEN p.status = 'PENDING' AND seq = 3 THEN 'Queued for reconciliation'
-            ELSE 'Lifecycle event'
-        END
+        'userId',        p.user_id,
+        'amount',        p.amount,
+        'currency',      p.currency
     ),
-    p.created_at + (seq * INTERVAL '7 minutes')
-FROM payments p
-CROSS JOIN generate_series(1, 3) AS seq;
+    p.created_at
+FROM payments p;
 
-INSERT INTO payment_transaction_logs (
-    id,
-    payment_id,
-    event,
-    raw_payload,
-    created_at
-)
+-- Log 2: GATEWAY_REDIRECT – user browser sent to PayHere checkout page
+INSERT INTO payment_transaction_logs (id, payment_id, event, raw_payload, created_at)
 SELECT
     (
-        substr(md5('retry-' || p.order_id), 1, 8) || '-' ||
-        substr(md5('retry-' || p.order_id), 9, 4) || '-' ||
-        substr(md5('retry-' || p.order_id), 13, 4) || '-' ||
-        substr(md5('retry-' || p.order_id), 17, 4) || '-' ||
-        substr(md5('retry-' || p.order_id), 21, 12)
+        substr(md5('tl2-' || p.order_id), 1, 8)  || '-' ||
+        substr(md5('tl2-' || p.order_id), 9, 4)  || '-' ||
+        substr(md5('tl2-' || p.order_id), 13, 4) || '-' ||
+        substr(md5('tl2-' || p.order_id), 17, 4) || '-' ||
+        substr(md5('tl2-' || p.order_id), 21, 12)
+    )::uuid,
+    p.id,
+    'GATEWAY_REDIRECT',
+    jsonb_build_object(
+        'orderId',   p.order_id,
+        'gateway',   'payhere.lk',
+        'returnUrl', 'https://app.edoc.lk/payments/return',
+        'cancelUrl', 'https://app.edoc.lk/payments/cancel'
+    ),
+    p.created_at + INTERVAL '20 seconds'
+FROM payments p;
+
+-- Log 3: WEBHOOK_RECEIVED – PayHere posts back for SUCCESS and FAILED payments
+INSERT INTO payment_transaction_logs (id, payment_id, event, raw_payload, created_at)
+SELECT
+    (
+        substr(md5('tl3-' || p.order_id), 1, 8)  || '-' ||
+        substr(md5('tl3-' || p.order_id), 9, 4)  || '-' ||
+        substr(md5('tl3-' || p.order_id), 13, 4) || '-' ||
+        substr(md5('tl3-' || p.order_id), 17, 4) || '-' ||
+        substr(md5('tl3-' || p.order_id), 21, 12)
+    )::uuid,
+    p.id,
+    'WEBHOOK_RECEIVED',
+    CASE p.status
+        WHEN 'SUCCESS' THEN jsonb_build_object(
+            'merchant_id',      'TestMerchant001',
+            'order_id',         p.order_id,
+            'payment_id',       p.payhere_id,
+            'status_code',      2,
+            'status_message',   'Successfully Completed',
+            'payhere_amount',   p.amount,
+            'payhere_currency', p.currency,
+            'method', (ARRAY['VISA', 'MASTER', 'AMEX', 'eZCash'])
+                          [(p.appointment_id % 4 + 1)::int]
+        )
+        ELSE jsonb_build_object(
+            'merchant_id',      'TestMerchant001',
+            'order_id',         p.order_id,
+            'status_code',      -1,
+            'status_message',   'Payment was cancelled',
+            'payhere_amount',   p.amount,
+            'payhere_currency', p.currency
+        )
+    END,
+    p.updated_at - INTERVAL '2 minutes'
+FROM payments p
+WHERE p.status IN ('SUCCESS', 'FAILED');
+
+-- Log 4: REST_NOTIFY_SENT – appointment-service notified after SUCCESS
+INSERT INTO payment_transaction_logs (id, payment_id, event, raw_payload, created_at)
+SELECT
+    (
+        substr(md5('tl4-' || p.order_id), 1, 8)  || '-' ||
+        substr(md5('tl4-' || p.order_id), 9, 4)  || '-' ||
+        substr(md5('tl4-' || p.order_id), 13, 4) || '-' ||
+        substr(md5('tl4-' || p.order_id), 17, 4) || '-' ||
+        substr(md5('tl4-' || p.order_id), 21, 12)
+    )::uuid,
+    p.id,
+    'REST_NOTIFY_SENT',
+    jsonb_build_object(
+        'orderId',         p.order_id,
+        'appointmentId',   p.appointment_id,
+        'notifiedService', 'appointment-service',
+        'httpStatus',      200,
+        'attempt',         1
+    ),
+    p.updated_at
+FROM payments p
+WHERE p.status = 'SUCCESS';
+
+-- Log 5: REST_NOTIFY_FAILED – appointment-service unreachable on FAILED payments
+INSERT INTO payment_transaction_logs (id, payment_id, event, raw_payload, created_at)
+SELECT
+    (
+        substr(md5('tl5-' || p.order_id), 1, 8)  || '-' ||
+        substr(md5('tl5-' || p.order_id), 9, 4)  || '-' ||
+        substr(md5('tl5-' || p.order_id), 13, 4) || '-' ||
+        substr(md5('tl5-' || p.order_id), 17, 4) || '-' ||
+        substr(md5('tl5-' || p.order_id), 21, 12)
     )::uuid,
     p.id,
     'REST_NOTIFY_FAILED',
     jsonb_build_object(
-        'orderId', p.order_id,
-        'attempt', 2,
-        'reason', 'timeout',
-        'retryable', true
+        'orderId',         p.order_id,
+        'appointmentId',   p.appointment_id,
+        'notifiedService', 'appointment-service',
+        'httpStatus',      503,
+        'reason',          'service_unavailable',
+        'retryable',       true,
+        'attempt',         1
     ),
-    p.updated_at + INTERVAL '40 minutes'
+    p.updated_at
 FROM payments p
-WHERE p.status = 'SUCCESS' AND p.appointment_id % 4 = 0;
+WHERE p.status = 'FAILED';
 
--- ─── Billing Details Seed ────────────────────────────────────────────────────
+-- ─── Billing Details ──────────────────────────────────────────────────────────
+-- The CTE mirrors the exact names, emails and phone numbers from the
+-- user-service seed for USR-PAT-03 through USR-PAT-15.
+-- Joined to payments on user_id so every billing row is tied to the
+-- correct patient identity.
+
+WITH patients (user_id, full_name, email, phone, city) AS (
+    VALUES
+    ('USR-PAT-03', 'Vimukthi Rathnasiri',  'vimukthi.rathnasiri@edoc.com',  '0733300003', 'Colombo'),
+    ('USR-PAT-04', 'Wasantha Alwis',       'wasantha.alwis@edoc.com',       '0744400004', 'Kandy'),
+    ('USR-PAT-05', 'Yasiru Vithanage',     'yasiru.vithanage@edoc.com',     '0755500005', 'Galle'),
+    ('USR-PAT-06', 'Amali Udagedara',      'amali.udagedara@edoc.com',      '0766600006', 'Negombo'),
+    ('USR-PAT-07', 'Binara Harshana',      'binara.harshana@edoc.com',      '0777700007', 'Matara'),
+    ('USR-PAT-08', 'Chamila Sampath',      'chamila.sampath@edoc.com',      '0788800008', 'Kurunegala'),
+    ('USR-PAT-09', 'Danushka Samarakoon',  'danushka.samarakoon@edoc.com',  '0711900009', 'Jaffna'),
+    ('USR-PAT-10', 'Erandi Wickremaratne', 'erandi.wickremaratne@edoc.com', '0722000010', 'Batticaloa'),
+    ('USR-PAT-11', 'Farhan Saleem',        'farhan.saleem@edoc.com',        '0733100011', 'Ratnapura'),
+    ('USR-PAT-12', 'Gimhan Perera',        'gimhan.perera@edoc.com',        '0744200012', 'Badulla'),
+    ('USR-PAT-13', 'Hasitha Jayasena',     'hasitha.jayasena@edoc.com',     '0755300013', 'Anuradhapura'),
+    ('USR-PAT-14', 'Indika Kumara',        'indika.kumara@edoc.com',        '0766400014', 'Nuwara Eliya'),
+    ('USR-PAT-15', 'Janani Thilakarathne', 'janani.thilakarathne@edoc.com', '0777500015', 'Colombo')
+)
 INSERT INTO billing_details (
-    id,
-    payment_id,
-    full_name,
-    email,
-    phone,
-    address,
-    city,
-    country,
-    created_at
+    id, payment_id, full_name, email, phone, address, city, country, created_at
 )
 SELECT
     (
-        substr(md5('billing-' || p.order_id), 1, 8) || '-' ||
-        substr(md5('billing-' || p.order_id), 9, 4) || '-' ||
-        substr(md5('billing-' || p.order_id), 13, 4) || '-' ||
-        substr(md5('billing-' || p.order_id), 17, 4) || '-' ||
-        substr(md5('billing-' || p.order_id), 21, 12)
+        substr(md5('bill-' || p.order_id), 1, 8)  || '-' ||
+        substr(md5('bill-' || p.order_id), 9, 4)  || '-' ||
+        substr(md5('bill-' || p.order_id), 13, 4) || '-' ||
+        substr(md5('bill-' || p.order_id), 17, 4) || '-' ||
+        substr(md5('bill-' || p.order_id), 21, 12)
     )::uuid,
     p.id,
-    (ARRAY[
-        'Amal Perera', 'Nimal Silva', 'Kamal Fernando', 'Saman Jayawardena',
-        'Ruwan Bandara', 'Chamara Wickramasinghe', 'Priya Gunawardena',
-        'Dilini Rajapaksa', 'Ishara Dissanayake', 'Tharaka Mendis',
-        'Buddhika Senanayake', 'Malinda Ranasinghe', 'Sachini Kumarasinghe',
-        'Udara Hettiarachchi', 'Nisansala Pathirana', 'Yasith Ekanayake',
-        'Chathura Liyanage', 'Sanduni Thilakasiri', 'Roshan Gamage',
-        'Amali Weerasinghe', 'Dimuth Ratnayake', 'Nadeesha Jayasuriya',
-        'Hiranya Munasinghe', 'Kasun Siriwardena', 'Vinodi Abeywickrama',
-        'Lasantha Peiris', 'Thilini Dassanayake', 'Eranga Samaraweera',
-        'Chamila Athukorala', 'Madushi Wijesinghe', 'Ranil Hettige',
-        'Gayani Sampath', 'Danushka Samarakoon', 'Samanthi Wickremaratne',
-        'Piyumi Udagedara', 'Harshana Rathnasiri', 'Malsha Alwis',
-        'Chanaka Vithanage', 'Hasini Kotuwegoda', 'Tharindu Nanayakkara'
-    ])[gs.rn],
-    lower(
-        regexp_replace(
-            (ARRAY[
-                'amal.perera', 'nimal.silva', 'kamal.fernando', 'saman.j',
-                'ruwan.bandara', 'chamara.w', 'priya.g',
-                'dilini.r', 'ishara.d', 'tharaka.m',
-                'buddhika.s', 'malinda.r', 'sachini.k',
-                'udara.h', 'nisansala.p', 'yasith.e',
-                'chathura.l', 'sanduni.t', 'roshan.g',
-                'amali.w', 'dimuth.r', 'nadeesha.j',
-                'hiranya.m', 'kasun.s', 'vinodi.a',
-                'lasantha.p', 'thilini.d', 'eranga.s',
-                'chamila.a', 'madushi.w', 'ranil.h',
-                'gayani.s', 'danushka.s', 'samanthi.w',
-                'piyumi.u', 'harshana.r', 'malsha.a',
-                'chanaka.v', 'hasini.k', 'tharindu.n'
-            ])[gs.rn] || '@gmail.com',
-            '\s', '', 'g'
-        )
+    pt.full_name,
+    pt.email,
+    pt.phone,
+    ((p.appointment_id - 1000)::text || ' ' ||
+        (ARRAY[
+            'Galle Road',       'Kandy Road',      'Negombo Road',    'High Level Road',
+            'Baseline Road',    'Union Place',      'Marine Drive',    'Rajagiriya Road',
+            'Duplication Road', 'Maharagama Road'
+        ])[(p.appointment_id % 10 + 1)::int]
     ),
-    '+94' || LPAD((700000000 + (gs.rn * 7919) % 100000000)::text, 9, '0'),
-    (gs.rn || ' ' || (ARRAY[
-        'Galle Road', 'Kandy Road', 'Negombo Road', 'Maharagama Road',
-        'High Level Road', 'Baseline Road', 'Union Place', 'Duplication Road',
-        'Marine Drive', 'Rajagiriya Road'
-    ])[(gs.rn % 10) + 1]),
-    (ARRAY[
-        'Colombo', 'Kandy', 'Galle', 'Negombo', 'Matara',
-        'Kurunegala', 'Jaffna', 'Batticaloa', 'Ratnapura', 'Badulla',
-        'Anuradhapura', 'Polonnaruwa', 'Trincomalee', 'Hambantota', 'Ampara',
-        'Nuwara Eliya', 'Kegalle', 'Kalutara', 'Puttalam', 'Mannar',
-        'Colombo', 'Kandy', 'Galle', 'Negombo', 'Matara',
-        'Colombo', 'Kandy', 'Galle', 'Negombo', 'Matara',
-        'Colombo', 'Kandy', 'Galle', 'Negombo', 'Matara',
-        'Colombo', 'Kandy', 'Galle', 'Negombo', 'Matara'
-    ])[gs.rn],
+    pt.city,
     'Sri Lanka',
     p.created_at
 FROM payments p
-JOIN (
-    SELECT id, ROW_NUMBER() OVER (ORDER BY appointment_id) AS rn
-    FROM payments
-) gs ON gs.id = p.id;
+JOIN patients pt ON pt.user_id = p.user_id;
