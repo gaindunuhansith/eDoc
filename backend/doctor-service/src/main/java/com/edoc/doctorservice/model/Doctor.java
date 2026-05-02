@@ -3,6 +3,7 @@ package com.edoc.doctorservice.model;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -36,7 +37,9 @@ public class Doctor {
     private String profileImageUrl;
     private double consultationFee;
 
+    @JsonProperty("isVerified")
     private boolean isVerified;        // Admin must verify the doctor first
+    @JsonProperty("isAvailable")
     private boolean isAvailable;       // Is the doctor currently active on platform
 
     private String role = "DOCTOR";    // Always "DOCTOR" for this service
