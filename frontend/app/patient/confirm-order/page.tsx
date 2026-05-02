@@ -149,6 +149,18 @@ export default function ConfirmOrderPage() {
       toast.error("User ID is required before confirming payment.");
       return;
     }
+    if (!firstName.trim()) {
+      toast.error("First name is required.");
+      return;
+    }
+    if (!lastName.trim()) {
+      toast.error("Last name is required.");
+      return;
+    }
+    if (!email.trim()) {
+      toast.error("Email is required.");
+      return;
+    }
     if (!amount || amount <= 0) {
       toast.error("Payment amount is missing. Please retry from appointment booking.");
       return;
@@ -178,17 +190,29 @@ export default function ConfirmOrderPage() {
         metadata: resolveMetadata(),
       });
 
-      const checkoutPayload =
-        checkout && typeof checkout === "object" && "data" in checkout
-          ? (checkout as { data?: { actionUrl?: string; fields?: Record<string, string> } }).data
-          : checkout;
-
-      if (checkoutPayload?.actionUrl && checkoutPayload?.fields) {
-        submitCheckoutForm(checkoutPayload.actionUrl, checkoutPayload.fields);
+      if (checkout?.checkoutUrl) {
+        submitCheckoutForm(checkout.checkoutUrl, {
+          merchant_id:  checkout.merchantId,
+          return_url:   `${window.location.origin}/payments/success`,
+          cancel_url:   `${window.location.origin}/patient/payments`,
+          notify_url:   checkout.notifyUrl,
+          order_id:     checkout.orderId,
+          items:        `Appointment ${resolvedAppointmentId}`,
+          currency:     checkout.currency,
+          amount:       String(checkout.amount),
+          first_name:   firstName.trim(),
+          last_name:    lastName.trim(),
+          email:        email.trim(),
+          phone:        phone.trim(),
+          address:      address.trim(),
+          city:         city.trim(),
+          country:      country.trim() || "Sri Lanka",
+          hash:         checkout.hash,
+        });
         return;
       }
 
-      setSuccessOpen(true);
+      toast.error("Unexpected response from payment service. Please try again.");
     } catch {
       toast.error("Payment initiation failed. Please check details and retry.");
     }

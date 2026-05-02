@@ -1,12 +1,14 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { 
   Search, 
   ChevronLeft,
   ChevronRight,
   Loader2,
   AlertCircle,
+  CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,6 +59,7 @@ const statusClass: Record<PaymentStatus, string> = {
 };
 
 export default function PaymentsPage() {
+  const router = useRouter();
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -144,7 +147,7 @@ export default function PaymentsPage() {
                 <TableHead className="text-muted-foreground font-medium py-4">Payment Date</TableHead>
                 <TableHead className="text-muted-foreground font-medium py-4">Amount</TableHead>
                 <TableHead className="text-muted-foreground font-medium py-4 hidden md:table-cell">Receipt #</TableHead>
-                <TableHead className="text-muted-foreground font-medium py-4 w-28">Status</TableHead>
+                <TableHead className="text-muted-foreground font-medium py-4">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -198,15 +201,31 @@ export default function PaymentsPage() {
                     {tx.id}
                   </TableCell>
                   <TableCell className="py-4">
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        "font-medium pointer-events-none capitalize shadow-sm",
-                        statusClass[tx.status]
+                    <div className="flex flex-col items-start gap-2">
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "font-medium pointer-events-none capitalize shadow-sm",
+                          statusClass[tx.status]
+                        )}
+                      >
+                        {statusLabel[tx.status]}
+                      </Badge>
+                      {tx.status === "PENDING" && tx.appointmentId && (
+                        <Button
+                          size="sm"
+                          className="h-7 px-3 text-xs gap-1.5"
+                          onClick={() =>
+                            router.push(
+                              `/patient/confirm-order?appointmentId=${tx.appointmentId}&amount=${tx.amount}&currency=${tx.currency}`
+                            )
+                          }
+                        >
+                          <CreditCard className="w-3 h-3" />
+                          Complete Payment
+                        </Button>
                       )}
-                    >
-                      {statusLabel[tx.status]}
-                    </Badge>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
