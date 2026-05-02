@@ -26,7 +26,7 @@ public class DoctorController {
     public ResponseEntity<Doctor> registerDoctor(
             @Valid @RequestBody DoctorRegistrationRequest request,
             @AuthenticationPrincipal Jwt jwt) {
-        String userId = jwt.getClaim("uid");
+        String userId = jwt.getClaim("userId");
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(doctorService.registerDoctor(request, userId));
     }
