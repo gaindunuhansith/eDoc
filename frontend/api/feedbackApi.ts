@@ -149,7 +149,17 @@ export const useGetFeedbackByPatient = (patientId: string) =>
 export const useGetMyFeedback = () =>
   useQuery({
     queryKey: queryKeys.feedback.byPatient("me"),
-    queryFn: () => fetchMyFeedback().then((r) => r.data),
+    queryFn: async () => {
+      try {
+        const res = await fetchMyFeedback();
+        return res.data;
+      } catch (err: any) {
+        // Patient profile not found or service unavailable — treat as empty list
+        if (err?.status === 401 || err?.status === 404 || err?.status >= 500) return [];
+        throw err;
+      }
+    },
+    retry: false,
   });
 
 export const useGetFeedbackByDoctor = (doctorId: string) =>

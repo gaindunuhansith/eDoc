@@ -19,16 +19,15 @@ public class DoctorServiceClient {
 
     private final WebClient.Builder webClientBuilder;
 
-    // Get doctor details by ID from doctor-service
-    // Returns a Map because we don't want to duplicate the Doctor model here
+    // Get doctor details by ID from doctor-service via internal (no-auth) endpoint
     public Map<?, ?> getDoctorById(String doctorId) {
         try {
             return webClientBuilder.build()
                     .get()
-                    .uri(doctorServiceUrl + "/api/v1/doctors/" + doctorId)
+                    .uri(doctorServiceUrl + "/api/v1/doctors/internal/" + doctorId)
                     .retrieve()
                     .bodyToMono(Map.class)
-                    .block(); // block() makes it synchronous - simpler for now
+                    .block();
         } catch (Exception e) {
             log.error("Error fetching doctor with id: {}", doctorId, e);
             throw new RuntimeException("Could not fetch doctor details. Doctor service may be down.");
