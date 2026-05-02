@@ -9,6 +9,8 @@ import com.edoc.patientservice.entity.PatientStatus;
 import com.edoc.patientservice.mapper.PatientMapper;
 import com.edoc.patientservice.repository.PatientRepository;
 import java.time.Instant;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -68,13 +70,29 @@ public class PatientService {
 
     public PatientResponseDTO changePatientStatusByUserId(String userId, PatientStatusUpdateRequestDTO request) {
         Patient patient = findByUserIdOrThrow(userId);
-        Long actorId = request.getActedBy();
+        // Actor is the patient themselves — derive from the resolved entity, never trust the request body.
+        Long actorId = patient.getId();
         return applyStatusChange(patient, request, actorId);
     }
 
     public PatientResponseDTO changePatientStatus(Long id, PatientStatusUpdateRequestDTO request, Long actorId) {
         Patient patient = findPatientOrThrow(id);
         return applyStatusChange(patient, request, actorId);
+    }
+
+    // ─── Admin operations ─────────────────────────────────────────────────────
+
+    @Transactional(readOnly = true)
+    public List<PatientResponseDTO> getAllPatients() {
+        return patientRepository.findAll().stream()
+                .map(patientMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    public PatientResponseDTO changePatientStatusAdmin(Long id, PatientStatusUpdateRequestDTO request) {
+        Patient patient = findPatientOrThrow(id);
+        // Admin actors do not have a patient-service record — actorId is null for admin-initiated changes.
+        return applyStatusChange(patient, request, null);
     }
 
     private PatientResponseDTO applyStatusChange(Patient patient, PatientStatusUpdateRequestDTO request, Long actorId) {

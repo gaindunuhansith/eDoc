@@ -31,7 +31,7 @@ public class MedicalHistoryController {
     @GetMapping("/patients/me/history")
     // List medical history entries for the authenticated patient.
     public List<MedicalHistoryResponseDTO> getMyHistory() {
-        return medicalHistoryService.getHistoryForPatient(currentPatientProvider.getCurrentPatientId());
+        return medicalHistoryService.getHistoryForPatient(currentPatientProvider.getCurrentUserId());
     }
 
     @PostMapping("/internal/patients/{id}/history")

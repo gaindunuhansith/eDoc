@@ -46,31 +46,31 @@ public class MedicalReportController {
                                                  @RequestParam(value = "notes", required = false) String notes,
                                                  @RequestPart(value = "metadata", required = false) String metadataJson) {
         MedicalReportRequestDTO dto = buildMetadata(reportName, notes, metadataJson);
-        return medicalReportService.uploadReport(currentPatientProvider.getCurrentPatientId(), file, dto);
+        return medicalReportService.uploadReport(currentPatientProvider.getCurrentUserId(), file, dto);
     }
 
     @GetMapping("/patients/me/reports")
     // List all reports for the authenticated patient.
     public List<MedicalReportResponseDTO> getMyReports() {
-        return medicalReportService.getReportsForPatient(currentPatientProvider.getCurrentPatientId());
+        return medicalReportService.getReportsForPatient(currentPatientProvider.getCurrentUserId());
     }
 
     @GetMapping("/patients/me/reports/{id}")
     // Get a single report by id for the authenticated patient.
     public MedicalReportResponseDTO getMyReport(@PathVariable Long id) {
-        return medicalReportService.getReportForPatient(currentPatientProvider.getCurrentPatientId(), id);
+        return medicalReportService.getReportForPatient(currentPatientProvider.getCurrentUserId(), id);
     }
 
     @GetMapping("/patients/me/reports/{id}/file")
     // Download the original report file for the authenticated patient.
     public ResponseEntity<Resource> downloadMyReport(@PathVariable Long id) {
-        return medicalReportService.getReportFileForPatient(currentPatientProvider.getCurrentPatientId(), id);
+        return medicalReportService.getReportFileForPatient(currentPatientProvider.getCurrentUserId(), id);
     }
 
     @GetMapping("/patients/me/reports/{id}/download")
     // Alias of /file to keep client URLs flexible without duplicating logic.
     public ResponseEntity<Resource> downloadMyReportAlias(@PathVariable Long id) {
-        return medicalReportService.getReportFileForPatient(currentPatientProvider.getCurrentPatientId(), id);
+        return medicalReportService.getReportFileForPatient(currentPatientProvider.getCurrentUserId(), id);
     }
 
     @GetMapping("/internal/patients/{id}/reports")

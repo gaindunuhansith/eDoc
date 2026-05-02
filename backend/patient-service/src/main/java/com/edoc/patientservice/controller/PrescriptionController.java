@@ -25,7 +25,7 @@ public class PrescriptionController {
     @GetMapping("/patients/me/prescriptions")
     // Patient-facing endpoint aggregating prescriptions from doctor-service.
     public List<PrescriptionResponseDTO> getMyPrescriptions() {
-        return prescriptionService.getPrescriptionsForPatient(currentPatientProvider.getCurrentPatientId());
+        return prescriptionService.getPrescriptionsForPatient(currentPatientProvider.getCurrentUserId());
     }
 
     @GetMapping("/internal/patients/{id}/prescriptions")

@@ -52,7 +52,13 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/v1/patients/register").permitAll()
-                        .requestMatchers("/api/v1/internal/**").permitAll()
+                        // Admin-only patient management surface.
+                        .requestMatchers("/api/v1/patients/admin/**").hasRole("ADMIN")
+                        // Read-only internal lookups are safe to leave open for service-to-service calls.
+                        .requestMatchers(HttpMethod.GET, "/api/v1/internal/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/internal/**").permitAll()
+                        // Write operations on internal endpoints require a valid service JWT.
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/internal/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
