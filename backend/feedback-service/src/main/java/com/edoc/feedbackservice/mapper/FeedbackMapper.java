@@ -15,6 +15,8 @@ public class FeedbackMapper {
         feedback.setAppointmentId(dto.getAppointmentId());
         feedback.setRating(dto.getRating());
         feedback.setComment(dto.getComment());
+        feedback.setPatientName(dto.getPatientName());
+        feedback.setDoctorName(dto.getDoctorName());
         feedback.setTimestamp(java.time.LocalDateTime.now());
         feedback.setEditableUntil(java.time.LocalDateTime.now().plusHours(24));
         feedback.setStatus(Feedback.FeedbackStatus.PENDING);
@@ -33,6 +35,8 @@ public class FeedbackMapper {
                 feedback.getStatus().name()
         );
         dto.setEditableUntil(feedback.getEditableUntil());
+        dto.setPatientName(feedback.getPatientName());
+        dto.setDoctorName(feedback.getDoctorName());
         return dto;
     }
 }

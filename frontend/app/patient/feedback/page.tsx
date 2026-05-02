@@ -11,12 +11,11 @@ import {
   Star,
   Filter,
   MessageSquare,
-  CheckCircle2
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableHeader,
@@ -74,7 +73,6 @@ function PatientFeedbackContent() {
   const user = useUser();
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [ratingFilter, setRatingFilter] = useState("all");
   const [editingFeedback, setEditingFeedback] = useState<Feedback | null>(null);
   const [formData, setFormData] = useState<FeedbackFormData>({
@@ -92,11 +90,10 @@ function PatientFeedbackContent() {
       const matchesSearch = feedback.comment?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            feedback.doctorName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            feedback.rating.toString().includes(searchTerm);
-      const matchesStatus = statusFilter === "all" || feedback.status === statusFilter;
       const matchesRating = ratingFilter === "all" || feedback.rating.toString() === ratingFilter;
-      return matchesSearch && matchesStatus && matchesRating;
+      return matchesSearch && matchesRating;
     });
-  }, [feedbacks, searchTerm, statusFilter, ratingFilter]);
+  }, [feedbacks, searchTerm, ratingFilter]);
 
   const handleUpdate = () => {
     if (!editingFeedback) return;
@@ -164,18 +161,6 @@ function PatientFeedbackContent() {
     ));
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "APPROVED":
-        return "bg-green-100 text-green-800 border-green-200";
-      case "REJECTED":
-        return "bg-red-100 text-red-800 border-red-200";
-      default:
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
-    }
-  };
-
-  // Loading state
   if (isLoading) {
     return (
       <div className="w-full h-full p-6 lg:p-10 space-y-8">
@@ -259,17 +244,6 @@ function PatientFeedbackContent() {
                 className="pl-9 border-border/60 bg-background hover:border-border transition-colors h-10"
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[140px] border-border/60 bg-background hover:bg-muted/50 transition-colors h-10">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="PENDING">Pending</SelectItem>
-                <SelectItem value="APPROVED">Approved</SelectItem>
-                <SelectItem value="REJECTED">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
             <Select value={ratingFilter} onValueChange={setRatingFilter}>
               <SelectTrigger className="w-[140px] border-border/60 bg-background hover:bg-muted/50 transition-colors h-10">
                 <SelectValue placeholder="Rating" />
@@ -296,7 +270,6 @@ function PatientFeedbackContent() {
                 <TableHead className="text-muted-foreground font-medium py-4">Rating</TableHead>
                 <TableHead className="text-muted-foreground font-medium py-4">Comment</TableHead>
                 <TableHead className="text-muted-foreground font-medium py-4">Date</TableHead>
-                <TableHead className="text-muted-foreground font-medium py-4">Status</TableHead>
                 <TableHead className="text-muted-foreground font-medium py-4 w-32">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -324,14 +297,6 @@ function PatientFeedbackContent() {
                   </TableCell>
                   <TableCell className="py-4 text-sm text-muted-foreground">
                     {new Date(feedback.createdAt || feedback.timestamp).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell className="py-4">
-                    <Badge
-                      variant="outline"
-                      className={cn("font-medium capitalize", getStatusColor(feedback.status))}
-                    >
-                      {feedback.status.toLowerCase()}
-                    </Badge>
                   </TableCell>
                   <TableCell className="py-4">
                     <div className="flex flex-col gap-1">
@@ -471,20 +436,6 @@ function PatientFeedbackContent() {
                     </p>
                   </div>
                   <Star className="h-8 w-8 text-yellow-500" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border border-gray-200">
-              <CardContent className="pt-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Approved Reviews</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {feedbacks.filter(f => f.status === 'APPROVED').length}
-                    </p>
-                  </div>
-                  <CheckCircle2 className="h-8 w-8 text-green-500" />
                 </div>
               </CardContent>
             </Card>

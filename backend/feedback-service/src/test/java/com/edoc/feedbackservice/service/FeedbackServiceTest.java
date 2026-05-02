@@ -47,22 +47,22 @@ class FeedbackServiceTest {
 
     @Test
     void submitFeedback_shouldSaveAndReturnResponse() {
-        FeedbackRequestDTO request = new FeedbackRequestDTO(1L, 2L, 5, "Good");
+        FeedbackRequestDTO request = new FeedbackRequestDTO("1", "2", 5, "Good");
         Feedback feedback = new Feedback();
         FeedbackResponseDTO response = new FeedbackResponseDTO();
 
         // Mock appointment validation
         AppointmentServiceClient.AppointmentDTO appointmentDTO = new AppointmentServiceClient.AppointmentDTO();
-        appointmentDTO.setPatientId(1L);
-        appointmentDTO.setDoctorId(2L);
+        appointmentDTO.setPatientId("1");
+        appointmentDTO.setDoctorId("2");
         appointmentDTO.setStatus("COMPLETED");
-        when(appointmentServiceClient.getAppointment(1L, "Bearer token")).thenReturn(appointmentDTO);
+        when(appointmentServiceClient.getAppointment("1", "Bearer token")).thenReturn(appointmentDTO);
 
         PatientServiceClient.PatientDTO patientDTO = new PatientServiceClient.PatientDTO();
         patientDTO.setId(1L);
         when(patientServiceClient.getMyPatientProfile("Bearer token")).thenReturn(patientDTO);
 
-        when(feedbackRepository.existsByPatientIdAndAppointmentId(1L, 1L)).thenReturn(false);
+        when(feedbackRepository.existsByPatientIdAndAppointmentId(1L, "1")).thenReturn(false);
 
         when(feedbackMapper.toEntity(request, 1L)).thenReturn(feedback);
         when(feedbackRepository.save(feedback)).thenReturn(feedback);

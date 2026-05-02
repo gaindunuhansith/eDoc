@@ -8,11 +8,11 @@ import java.util.List;
 @Repository
 public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
 
-    List<Feedback> findByDoctorId(Long doctorId);
+    List<Feedback> findByDoctorId(String doctorId);
 
     List<Feedback> findByPatientId(Long patientId);
 
-    List<Feedback> findByAppointmentId(Long appointmentId);
+    List<Feedback> findByAppointmentId(String appointmentId);
 
-    boolean existsByPatientIdAndAppointmentId(Long patientId, Long appointmentId);
+    boolean existsByPatientIdAndAppointmentId(Long patientId, String appointmentId);
 }

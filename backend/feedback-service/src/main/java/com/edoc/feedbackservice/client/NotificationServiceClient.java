@@ -19,6 +19,21 @@ public class NotificationServiceClient {
         this.restClient = restClientBuilder.build();
     }
 
+    public void sendToDoctorById(String type, String doctorId, Map<String, Object> data) {
+        NotificationRequest request = new NotificationRequest(type, null, doctorId, null, data);
+        try {
+            restClient.post()
+                    .uri(notificationServiceBaseUrl + "/api/v1/notifications/send")
+                    .body(request)
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (RestClientResponseException ex) {
+            System.err.println("Error sending notification: " + ex.getMessage());
+        } catch (Exception ex) {
+            System.err.println("Unexpected error sending notification: " + ex.getMessage());
+        }
+    }
+
     public void sendToUser(String type, Long userId, Map<String, Object> data) {
         NotificationRequest request = new NotificationRequest(type, null, null, userId, data);
         try {

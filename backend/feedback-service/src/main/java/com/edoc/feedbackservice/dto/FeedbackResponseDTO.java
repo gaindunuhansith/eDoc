@@ -6,17 +6,19 @@ public class FeedbackResponseDTO {
 
     private Long id;
     private Long patientId;
-    private Long doctorId;
-    private Long appointmentId;
+    private String doctorId;
+    private String appointmentId;
     private int rating;
     private String comment;
+    private String patientName;
+    private String doctorName;
     private LocalDateTime timestamp;
     private LocalDateTime editableUntil;
     private String status;
 
     public FeedbackResponseDTO() {}
 
-    public FeedbackResponseDTO(Long id, Long patientId, Long doctorId, Long appointmentId, int rating, String comment, LocalDateTime timestamp, String status) {
+    public FeedbackResponseDTO(Long id, Long patientId, String doctorId, String appointmentId, int rating, String comment, LocalDateTime timestamp, String status) {
         this.id = id;
         this.patientId = patientId;
         this.doctorId = doctorId;
@@ -33,17 +35,23 @@ public class FeedbackResponseDTO {
     public Long getPatientId() { return patientId; }
     public void setPatientId(Long patientId) { this.patientId = patientId; }
 
-    public Long getDoctorId() { return doctorId; }
-    public void setDoctorId(Long doctorId) { this.doctorId = doctorId; }
+    public String getDoctorId() { return doctorId; }
+    public void setDoctorId(String doctorId) { this.doctorId = doctorId; }
 
-    public Long getAppointmentId() { return appointmentId; }
-    public void setAppointmentId(Long appointmentId) { this.appointmentId = appointmentId; }
+    public String getAppointmentId() { return appointmentId; }
+    public void setAppointmentId(String appointmentId) { this.appointmentId = appointmentId; }
 
     public int getRating() { return rating; }
     public void setRating(int rating) { this.rating = rating; }
 
     public String getComment() { return comment; }
     public void setComment(String comment) { this.comment = comment; }
+
+    public String getPatientName() { return patientName; }
+    public void setPatientName(String patientName) { this.patientName = patientName; }
+
+    public String getDoctorName() { return doctorName; }
+    public void setDoctorName(String doctorName) { this.doctorName = doctorName; }
 
     public LocalDateTime getTimestamp() { return timestamp; }
     public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }

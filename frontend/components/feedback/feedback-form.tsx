@@ -8,8 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Star } from "lucide-react";
 
 interface FeedbackFormProps {
-  appointmentId: number;
-  doctorId: number;
+  appointmentId: string;
+  doctorId: string;
   doctorName?: string;
   onSubmit: (rating: number, comment: string) => void;
   isLoading?: boolean;

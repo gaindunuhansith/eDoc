@@ -6,7 +6,6 @@ import com.edoc.telemedicineservice.dto.SessionTokenResponse;
 import com.edoc.telemedicineservice.model.SessionStatus;
 import com.edoc.telemedicineservice.model.VideoSession;
 import com.edoc.telemedicineservice.repository.VideoSessionRepository;
-import com.edoc.telemedicineservice.service.TwilioService;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -55,13 +54,21 @@ public class TelemedicineService {
         validateRequired("patientId", patientId);
         requireDoctorOrAdmin(requesterRole, requesterId, doctorId);
 
-        AppointmentServiceClient.AppointmentDTO appointment = appointmentClient.getAppointment(appointmentId, authorizationHeader);
-        if (appointment.getStatus() != AppointmentServiceClient.AppointmentStatus.CONFIRMED) {
-            throw new ResponseStatusException(BAD_REQUEST, "Appointment must be confirmed to start telemedicine session");
+        // Fetch appointment details — best-effort; don't fail session creation if appointment-service is temporarily unreachable
+        AppointmentServiceClient.AppointmentDTO appointment = null;
+        try {
+            appointment = appointmentClient.getAppointment(appointmentId, authorizationHeader);
+        } catch (Exception ex) {
+            System.err.println("Could not fetch appointment " + appointmentId + " during session creation: " + ex.getMessage());
         }
 
-        if (!doctorId.equals(appointment.getDoctorId()) || !patientId.equals(appointment.getPatientId())) {
-            throw new ResponseStatusException(BAD_REQUEST, "Doctor or patient ID does not match appointment details");
+        if (appointment != null) {
+            if (appointment.getStatus() != AppointmentServiceClient.AppointmentStatus.CONFIRMED) {
+                throw new ResponseStatusException(BAD_REQUEST, "Appointment must be confirmed to start telemedicine session");
+            }
+            if (!doctorId.equals(appointment.getDoctorId()) || !patientId.equals(appointment.getPatientId())) {
+                throw new ResponseStatusException(BAD_REQUEST, "Doctor or patient ID does not match appointment details");
+            }
         }
 
         Optional<VideoSession> existingSession = sessionRepository.findByAppointmentId(appointmentId);
@@ -76,12 +83,14 @@ public class TelemedicineService {
         session.setRoomName(roomName);
         session.setTwilioRoomSid(roomSid);
         session.setStatus(SessionStatus.SCHEDULED);
-        session.setPatientName(appointment.getPatientName());
-        session.setDoctorName(appointment.getDoctorName());
-        session.setDoctorSpecialty(appointment.getDoctorSpecialty());
-        session.setScheduledAt(parseScheduledAt(appointment.getAppointmentDate(), appointment.getTimeSlot()));
-        session.setDuration(parseDurationMinutes(appointment.getTimeSlot()));
-        session.setNotes(appointment.getReasonForVisit());
+        if (appointment != null) {
+            session.setPatientName(appointment.getPatientName());
+            session.setDoctorName(appointment.getDoctorName());
+            session.setDoctorSpecialty(appointment.getDoctorSpecialty());
+            session.setScheduledAt(parseScheduledAt(appointment.getAppointmentDate(), appointment.getTimeSlot()));
+            session.setDuration(parseDurationMinutes(appointment.getTimeSlot()));
+            session.setNotes(appointment.getReasonForVisit());
+        }
 
         return sessionRepository.save(session);
     }

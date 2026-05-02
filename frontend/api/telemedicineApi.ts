@@ -340,21 +340,27 @@ export const useGetSessionByAppointmentId = (appointmentId: string) =>
       if (error instanceof AuthenticationError || error instanceof AuthorizationError) {
         return false;
       }
+      if (error instanceof SessionNotFoundError) {
+        return false; // no point retrying a missing session
+      }
       return failureCount < 3;
     },
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
-export const useGetSessionToken = (appointmentId: string) => {
+export const useGetSessionToken = (appointmentId: string, sessionExists = true) => {
   const userId = useStore((state) => state.user?.userId);
   return useQuery({
     queryKey: queryKeys.telemedicine.token(appointmentId, userId || ""),
     queryFn: () => fetchSessionToken(appointmentId).then((r) => r.data),
-    enabled: !!appointmentId && !!userId,
+    enabled: !!appointmentId && !!userId && sessionExists,
     staleTime: 1 * 60 * 1000, // 1 minute - tokens expire quickly
     gcTime: 2 * 60 * 1000, // 2 minutes
     retry: (failureCount, error) => {
       if (error instanceof AuthenticationError || error instanceof AuthorizationError) {
+        return false;
+      }
+      if (error instanceof SessionNotFoundError) {
         return false;
       }
       return failureCount < 2; // Fewer retries for tokens
@@ -519,7 +525,8 @@ export const useGetSessions = () => {
 };
 export const useTelemedicineSession = (appointmentId: string) => {
   const sessionQuery = useGetSessionByAppointmentId(appointmentId);
-  const tokenQuery = useGetSessionToken(appointmentId);
+  const sessionExists = !!sessionQuery.data && !sessionQuery.error;
+  const tokenQuery = useGetSessionToken(appointmentId, sessionExists);
 
   return {
     session: sessionQuery.data,

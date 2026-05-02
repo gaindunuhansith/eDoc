@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   CalendarDays,
   Clock,
@@ -11,7 +12,6 @@ import {
   Video,
   Building2,
   FileText,
-  Link as LinkIcon
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -39,6 +39,7 @@ import {
   type AppointmentStatus,
   type PaymentStatus
 } from "@/api/appointmentApi";
+import { useCreateSession } from "@/api/telemedicineApi";
 
 // --- Helpers -----------------------------------------------------------------
 
@@ -155,26 +156,48 @@ function VideoLinkDialog({ open, onClose, onConfirm, isPending }: any) {
 export default function DoctorAppointmentsHub() {
   const user = useUser();
   const doctorId = user?.userId || "";
+  const router = useRouter();
 
   const [topTab, setTopTab] = useState("REQUESTS");
   const [allTab, setAllTab] = useState<AppointmentStatus | "ALL">("ALL");
 
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [completeId, setCompleteId] = useState<string | null>(null);
-  const [videoLinkApptId, setVideoLinkApptId] = useState<string | null>(null);
+  const [joiningId, setJoiningId] = useState<string | null>(null);
 
   const { data: pendingAppointments = [], isLoading: pendingLoading } = useGetPendingAppointmentsByDoctor(doctorId);
   const { data: allAppointments = [], isLoading: allLoading } = useGetAppointmentsByDoctor(doctorId);
   const updateStatus = useUpdateAppointmentStatus();
+  const createSessionMutation = useCreateSession();
 
-  const handleAccept = (id: string) => {
+  const handleAccept = (appt: any) => {
     updateStatus.mutate(
-      { id, update: { status: "CONFIRMED", doctorNotes: undefined, cancellationReason: undefined, videoSessionLink: undefined } },
+      { id: appt.id, update: { status: "CONFIRMED", doctorNotes: undefined, cancellationReason: undefined, videoSessionLink: undefined } },
       {
-        onSuccess: () => toast.success("Appointment Accepted"),
+        onSuccess: () => {
+          toast.success("Appointment Accepted");
+          if (appt.type === "VIDEO") {
+            createSessionMutation.mutate(
+              { appointmentId: appt.id, doctorId: appt.doctorId || doctorId, patientId: appt.patientId },
+              { onError: () => {} }
+            );
+          }
+        },
         onError: (err: any) => toast.error(err?.response?.data?.message || err?.message || "Failed to accept.")
       }
     );
+  };
+
+  const handleJoinNow = async (appt: any) => {
+    setJoiningId(appt.id);
+    try {
+      await createSessionMutation.mutateAsync({ appointmentId: appt.id, doctorId: appt.doctorId || doctorId, patientId: appt.patientId });
+      router.push(`/doctor/telemedicine/session/${appt.id}`);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || err?.message || "Failed to create video session. Please try again.");
+    } finally {
+      setJoiningId(null);
+    }
   };
 
   const handleReject = (reason: string) => {
@@ -205,19 +228,7 @@ export default function DoctorAppointmentsHub() {
     );
   };
 
-  const handleAddVideoLink = (link: string) => {
-    if (!videoLinkApptId) return;
-    updateStatus.mutate(
-      { id: videoLinkApptId, update: { status: "CONFIRMED", videoSessionLink: link } },
-      {
-        onSuccess: () => {
-          toast.success("Video link added successfully");
-          setVideoLinkApptId(null);
-        },
-        onError: (err: any) => toast.error(err?.response?.data?.message || err?.message || "Failed to save link.")
-      }
-    );
-  };
+
 
   const filteredAllAppointments = allAppointments.filter((app: any) => allTab === "ALL" || app.status === allTab).sort((a: any,b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
@@ -272,7 +283,7 @@ export default function DoctorAppointmentsHub() {
                       </div>
                     )}
                     <div className="flex gap-3 pt-3">
-                      <Button size="sm" className="bg-green-600 hover:bg-green-700 w-32 shadow-sm" onClick={() => handleAccept(appt.id)}>
+                      <Button size="sm" className="bg-green-600 hover:bg-green-700 w-32 shadow-sm" onClick={() => handleAccept(appt)}>
                         <CheckCircle2 className="h-4 w-4 mr-2" /> Accept
                       </Button>
                       <Button size="sm" variant="outline" className="border-red-200 text-red-600 hover:bg-red-50 shadow-sm" onClick={() => setRejectId(appt.id)}>
@@ -352,27 +363,14 @@ export default function DoctorAppointmentsHub() {
                         </div>
                       )}
                       
-                      {((appt.type === "VIDEO" && appt.status === "CONFIRMED") || appt.videoSessionLink) && (
-                        <div className="text-sm pt-1">
-                          <strong className="text-gray-600">Video Link:</strong> {appt.videoSessionLink ? (
-                            <a href={appt.videoSessionLink} target="_blank" rel="noreferrer" className="text-blue-600 font-medium hover:underline ml-1">
-                              {appt.videoSessionLink.substring(0,40)}...
-                            </a>
-                          ) : (
-                            <span className="text-muted-foreground italic ml-1">Link not provided yet.</span>
-                          )}
-                        </div>
-                      )}
-
                       {appt.status === "CONFIRMED" && (
                         <div className="flex flex-wrap gap-3 pt-3 border-t mt-4">
                           {appt.type === "VIDEO" && (
-                            <Button size="sm" variant="outline" className="text-blue-600 border-blue-200 hover:bg-blue-50 shadow-sm" onClick={() => setVideoLinkApptId(appt.id)}>
-                              <LinkIcon className="h-4 w-4 mr-2" />
-                              {appt.videoSessionLink ? "Update Video Link" : "Add Video Link"}
+                            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 shadow-sm" disabled={joiningId === appt.id} onClick={() => handleJoinNow(appt)}>
+                              <Video className="h-4 w-4 mr-2" /> {joiningId === appt.id ? "Joining..." : "Join Now"}
                             </Button>
                           )}
-                          <Button size="sm" className="bg-blue-600 hover:bg-blue-700 shadow-sm" onClick={() => setCompleteId(appt.id)}>
+                          <Button size="sm" className="bg-green-600 hover:bg-green-700 shadow-sm" onClick={() => setCompleteId(appt.id)}>
                             <CheckCircle2 className="h-4 w-4 mr-2" /> Mark as Completed
                           </Button>
                         </div>
@@ -388,7 +386,6 @@ export default function DoctorAppointmentsHub() {
 
       <RejectDialog open={!!rejectId} onClose={() => setRejectId(null)} onConfirm={handleReject} isPending={updateStatus.isPending} />
       <CompleteDialog open={!!completeId} onClose={() => setCompleteId(null)} onConfirm={handleComplete} isPending={updateStatus.isPending} />
-      <VideoLinkDialog open={!!videoLinkApptId} onClose={() => setVideoLinkApptId(null)} onConfirm={handleAddVideoLink} isPending={updateStatus.isPending} />
     </div>
   );
 }

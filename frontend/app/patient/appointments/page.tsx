@@ -118,6 +118,11 @@ export default function AppointmentsHistoryPage() {
     useGetAppointmentsByPatient(patientId);
 
   const { data: feedbackData, isLoading: feedbackLoading, error: feedbackError } = useGetMyFeedback();
+
+  const hasFeedbackForAppointment = (appointmentId: string): boolean => {
+    return feedbackData?.some((f) => String(f.appointmentId) === appointmentId) ?? false;
+  };
+
   // Sort most recent first
   const appointments = [...appointmentsRaw].sort((a, b) => {
     return new Date(b.appointmentDate).getTime() - new Date(a.appointmentDate).getTime();
@@ -280,10 +285,10 @@ export default function AppointmentsHistoryPage() {
                   )}
 
                   {/* Video Join Button */}
-                  {appt.status === "CONFIRMED" && appt.videoSessionLink && (
+                  {appt.type === "VIDEO" && appt.status === "CONFIRMED" && (
                     <div className="pt-2">
                        <Button 
-                         onClick={() => window.open(appt.videoSessionLink, "_blank")}
+                         onClick={() => router.push(`/patient/telemedicine/session/${appt.id}`)}
                          className="w-full bg-indigo-600 hover:bg-indigo-700 shadow-sm"
                        >
                           <Video className="w-4 h-4 mr-2" /> Join Video Session
@@ -312,7 +317,38 @@ export default function AppointmentsHistoryPage() {
                     </div>
                   )}
 
-                  {(appt.status === "COMPLETED" || appt.status === "CANCELLED" || appt.status === "REJECTED" || appt.status === "NO_SHOW") && (
+                  {appt.status === "COMPLETED" && (
+                    <div className="flex flex-col gap-2 w-full">
+                      {hasFeedbackForAppointment(appt.id) ? (
+                        <div className="flex items-center justify-center gap-2 w-full py-2 px-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm font-medium">
+                          <Star className="w-4 h-4 fill-green-600 text-green-600" />
+                          Feedback Submitted
+                        </div>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          className="w-full border-blue-200 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                          onClick={() => {
+                            const params = new URLSearchParams();
+                            if (appt.doctorId) params.set("doctorId", String(appt.doctorId));
+                            if (appt.doctorName) params.set("doctorName", appt.doctorName);
+                            router.push(`/patient/feedback/submit/${appt.id}?${params.toString()}`);
+                          }}
+                        >
+                          <MessageSquare className="w-4 h-4 mr-2" /> Leave Feedback
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        className="w-full text-gray-500 hover:text-red-600 hover:bg-red-50 border-transparent shadow-none"
+                        onClick={() => setDeleteTarget(appt)}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" /> Remove from history
+                      </Button>
+                    </div>
+                  )}
+
+                  {(appt.status === "CANCELLED" || appt.status === "REJECTED" || appt.status === "NO_SHOW") && (
                      <Button 
                        variant="ghost" 
                        className="w-full text-gray-500 hover:text-red-600 hover:bg-red-50 border-transparent shadow-none"

@@ -56,7 +56,7 @@ public class FeedbackService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Appointment not found");
         }
 
-        if (!appointment.getPatientId().equals(patientId)) {
+        if (!appointment.getPatientId().equals(String.valueOf(patientId))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Patient not authorized for this appointment");
         }
 
@@ -94,7 +94,7 @@ public class FeedbackService {
             Map<String, Object> data = new HashMap<>();
             data.put("rating", feedback.getRating());
             data.put("comment", feedback.getComment());
-            notificationServiceClient.sendToUser("FEEDBACK_RECEIVED", feedback.getDoctorId(), data);
+            notificationServiceClient.sendToDoctorById("FEEDBACK_RECEIVED", feedback.getDoctorId(), data);
         } catch (Exception error) {
             System.err.println("Failed to send feedback notification: " + error.getMessage());
         }
@@ -107,7 +107,7 @@ public class FeedbackService {
                 .collect(Collectors.toList());
     }
 
-    public List<FeedbackResponseDTO> getFeedbackForDoctor(Long doctorId) {
+    public List<FeedbackResponseDTO> getFeedbackForDoctor(String doctorId) {
         return feedbackRepository.findByDoctorId(doctorId)
                 .stream()
                 .map(feedbackMapper::toResponseDTO)
@@ -133,7 +133,7 @@ public class FeedbackService {
         return getFeedbackForPatient(resolveCurrentPatientId(authHeader));
     }
 
-    public List<FeedbackResponseDTO> getFeedbackForAppointment(Long appointmentId) {
+    public List<FeedbackResponseDTO> getFeedbackForAppointment(String appointmentId) {
         return feedbackRepository.findByAppointmentId(appointmentId)
                 .stream()
                 .map(feedbackMapper::toResponseDTO)
@@ -174,4 +174,5 @@ public class FeedbackService {
         }
         feedbackRepository.deleteById(id);
     }
+
 }

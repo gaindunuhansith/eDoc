@@ -4,6 +4,9 @@ server:
 spring:
   application:
     name: appointment-service
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
   data:
     mongodb:
       uri: ${MONGO_URI}

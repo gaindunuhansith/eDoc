@@ -68,7 +68,7 @@ export function SessionCard({
   };
 
   const canJoinCall = () => {
-    return session.status === "scheduled" && onJoinCall;
+    return session.status === "active" && onJoinCall;
   };
 
   const canStartCall = () => {
@@ -76,7 +76,7 @@ export function SessionCard({
   };
 
   const canEndCall = () => {
-    return session.status === "ongoing" && onEnd;
+    return session.status === "active" && onEnd;
   };
 
   return (
@@ -151,6 +151,13 @@ export function SessionCard({
         </div>
 
         <div className="flex gap-2 pt-4 border-t border-gray-100">
+          {userRole === "patient" && session.status === "scheduled" && (
+            <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+              <Clock className="h-4 w-4" />
+              Waiting for Doctor to start the session
+            </div>
+          )}
+
           {canJoinCall() && (
             <Button
               onClick={onJoinCall}

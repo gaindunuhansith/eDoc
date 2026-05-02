@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useGetAppointmentById } from "@/api/appointmentApi";
 import { useGetMyPatientProfile } from "@/api/patientApi";
 import { useSubmitFeedback } from "@/api/feedbackApi";
+import { useUser } from "@/store/store";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -27,6 +28,7 @@ export default function SubmitFeedbackPage() {
     useGetAppointmentById(appointmentIdStr);
   const { data: patient, isLoading: profileLoading } = useGetMyPatientProfile();
   const { mutate: submitFeedback, isPending } = useSubmitFeedback();
+  const user = useUser();
 
   const isLoading = apptLoading || profileLoading;
 
@@ -41,18 +43,28 @@ export default function SubmitFeedbackPage() {
       return;
     }
 
-    const finalDoctorId = doctorId ? Number(doctorId) : (appointment ? Number(appointment.doctorId) : null);
+    // Prefer appointment.doctorId (already a string MongoDB ID)
+    const finalDoctorId =
+      appointment?.doctorId ||
+      (doctorId && doctorId !== "undefined" && doctorId !== "null" ? doctorId : null);
+
     if (!finalDoctorId) {
       toast.error("Doctor information not available. Please try again.");
       return;
     }
 
+    const resolvedDoctorName =
+      appointment?.doctorName ||
+      (doctorName && doctorName !== "undefined" && doctorName !== "null" ? doctorName : undefined);
+
     submitFeedback(
       {
-        appointmentId: Number(appointmentIdStr),
+        appointmentId: appointmentIdStr,
         doctorId: finalDoctorId,
         rating,
         comment: comment || undefined,
+        patientName: user?.name || undefined,
+        doctorName: resolvedDoctorName,
       },
       {
         onSuccess: () => setSubmitted(true),
@@ -151,8 +163,8 @@ export default function SubmitFeedbackPage() {
       </div>
 
       <FeedbackForm
-        appointmentId={Number(appointmentIdStr)}
-        doctorId={doctorId ? Number(doctorId) : Number(appointment.doctorId)}
+        appointmentId={appointmentIdStr}
+        doctorId={appointment.doctorId || doctorId || ""}
         doctorName={doctorName || appointment.doctorName}
         onSubmit={handleSubmit}
         isLoading={isPending}

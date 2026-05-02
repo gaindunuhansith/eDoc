@@ -73,9 +73,9 @@ public class AppointmentService {
 
         // Step 5: Snapshot doctor details into the appointment
         if (doctorData != null) {
-            appointment.setDoctorName(
-                    doctorData.get("firstName") + " " + doctorData.get("lastName")
-            );
+            String first = doctorData.get("firstName") != null ? (String) doctorData.get("firstName") : "";
+            String last = doctorData.get("lastName") != null ? (String) doctorData.get("lastName") : "";
+            appointment.setDoctorName((first + " " + last).trim());
             appointment.setDoctorSpecialty((String) doctorData.get("specialty"));
             appointment.setDoctorHospital((String) doctorData.get("hospital"));
             Object fee = doctorData.get("consultationFee");

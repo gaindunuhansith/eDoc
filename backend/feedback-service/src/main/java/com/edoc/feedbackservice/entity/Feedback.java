@@ -20,16 +20,22 @@ public class Feedback {
     private Long patientId;
 
     @Column(name = "doctor_id", nullable = false)
-    private Long doctorId;
+    private String doctorId;
 
     @Column(name = "appointment_id", nullable = false)
-    private Long appointmentId;
+    private String appointmentId;
 
     @Column(name = "rating", nullable = false)
     private int rating;
 
     @Column(name = "comment", length = 500)
     private String comment;
+
+    @Column(name = "patient_name", length = 200)
+    private String patientName;
+
+    @Column(name = "doctor_name", length = 200)
+    private String doctorName;
 
     @Column(name = "timestamp", nullable = false)
     private LocalDateTime timestamp;
@@ -48,17 +54,23 @@ public class Feedback {
     public Long getPatientId() { return patientId; }
     public void setPatientId(Long patientId) { this.patientId = patientId; }
 
-    public Long getDoctorId() { return doctorId; }
-    public void setDoctorId(Long doctorId) { this.doctorId = doctorId; }
+    public String getDoctorId() { return doctorId; }
+    public void setDoctorId(String doctorId) { this.doctorId = doctorId; }
 
-    public Long getAppointmentId() { return appointmentId; }
-    public void setAppointmentId(Long appointmentId) { this.appointmentId = appointmentId; }
+    public String getAppointmentId() { return appointmentId; }
+    public void setAppointmentId(String appointmentId) { this.appointmentId = appointmentId; }
 
     public int getRating() { return rating; }
     public void setRating(int rating) { this.rating = rating; }
 
     public String getComment() { return comment; }
     public void setComment(String comment) { this.comment = comment; }
+
+    public String getPatientName() { return patientName; }
+    public void setPatientName(String patientName) { this.patientName = patientName; }
+
+    public String getDoctorName() { return doctorName; }
+    public void setDoctorName(String doctorName) { this.doctorName = doctorName; }
 
     public LocalDateTime getTimestamp() { return timestamp; }
     public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }

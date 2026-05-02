@@ -6,14 +6,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Star,
-  CheckCircle,
-  XCircle,
-  Clock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableHeader,
@@ -44,7 +40,6 @@ import { useGetMyDoctorFeedback, type Feedback } from "@/api/feedbackApi";
 export default function DoctorFeedbackPage() {
   const { data: feedbacks = [], isLoading } = useGetMyDoctorFeedback();
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [ratingFilter, setRatingFilter] = useState("all");
   const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
 
@@ -53,11 +48,10 @@ export default function DoctorFeedbackPage() {
       const matchesSearch = feedback.comment?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            feedback.patientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            feedback.rating.toString().includes(searchTerm);
-      const matchesStatus = statusFilter === "all" || feedback.status === statusFilter;
       const matchesRating = ratingFilter === "all" || feedback.rating.toString() === ratingFilter;
-      return matchesSearch && matchesStatus && matchesRating;
+      return matchesSearch && matchesRating;
     });
-  }, [feedbacks, searchTerm, statusFilter, ratingFilter]);
+  }, [feedbacks, searchTerm, ratingFilter]);
 
   const averageRating = useMemo(() => {
     if (feedbacks.length === 0) return 0;
@@ -74,28 +68,6 @@ export default function DoctorFeedbackPage() {
         )}
       />
     ));
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "APPROVED":
-        return "bg-green-100 text-green-800 border-green-200";
-      case "REJECTED":
-        return "bg-red-100 text-red-800 border-red-200";
-      default:
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "APPROVED":
-        return <CheckCircle className="h-4 w-4" />;
-      case "REJECTED":
-        return <XCircle className="h-4 w-4" />;
-      default:
-        return <Clock className="h-4 w-4" />;
-    }
   };
 
   return (
@@ -141,17 +113,6 @@ export default function DoctorFeedbackPage() {
                 className="pl-9 border-border/60 bg-background hover:border-border transition-colors h-10"
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[140px] border-border/60 bg-background hover:bg-muted/50 transition-colors h-10">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="PENDING">Pending</SelectItem>
-                <SelectItem value="APPROVED">Approved</SelectItem>
-                <SelectItem value="REJECTED">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
             <Select value={ratingFilter} onValueChange={setRatingFilter}>
               <SelectTrigger className="w-[140px] border-border/60 bg-background hover:bg-muted/50 transition-colors h-10">
                 <SelectValue placeholder="Rating" />
@@ -179,7 +140,6 @@ export default function DoctorFeedbackPage() {
                 <TableHead className="text-muted-foreground font-medium py-4">Rating</TableHead>
                 <TableHead className="text-muted-foreground font-medium py-4">Comment</TableHead>
                 <TableHead className="text-muted-foreground font-medium py-4">Date</TableHead>
-                <TableHead className="text-muted-foreground font-medium py-4">Status</TableHead>
                 <TableHead className="text-muted-foreground font-medium py-4 w-32">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -209,15 +169,6 @@ export default function DoctorFeedbackPage() {
                     {new Date(feedback.timestamp ?? feedback.createdAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="py-4">
-                    <Badge
-                      variant="outline"
-                      className={cn("font-medium capitalize flex items-center gap-1", getStatusColor(feedback.status))}
-                    >
-                      {getStatusIcon(feedback.status)}
-                      {feedback.status.toLowerCase()}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="py-4">
                     <div className="flex items-center gap-2">
                       <Button
                         variant="ghost"
@@ -227,26 +178,6 @@ export default function DoctorFeedbackPage() {
                       >
                         <Star className="h-4 w-4" />
                       </Button>
-                      {feedback.status === "PENDING" && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleStatusChange(feedback.id, "APPROVED")}
-                            className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleStatusChange(feedback.id, "REJECTED")}
-                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <XCircle className="h-4 w-4" />
-                          </Button>
-                        </>
-                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -298,16 +229,6 @@ export default function DoctorFeedbackPage() {
               <div className="flex items-center justify-between">
                 <span className="font-medium">Date:</span>
                 <span>{new Date(selectedFeedback.timestamp ?? selectedFeedback.createdAt).toLocaleDateString()}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="font-medium">Status:</span>
-                <Badge
-                  variant="outline"
-                  className={cn("font-medium capitalize flex items-center gap-1", getStatusColor(selectedFeedback.status))}
-                >
-                  {getStatusIcon(selectedFeedback.status)}
-                  {selectedFeedback.status.toLowerCase()}
-                </Badge>
               </div>
               <div>
                 <span className="font-medium">Comment:</span>

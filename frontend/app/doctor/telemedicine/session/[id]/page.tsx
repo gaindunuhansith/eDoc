@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { WaitingRoom, VideoCall } from "@/components/telemedicine";
 import { Video, ArrowLeft, AlertCircle, Play, Square, FileText, ClipboardList, Clock } from "lucide-react";
-import { useTelemedicineSession, useStartSession, useEndSession } from "@/api/telemedicineApi";
-import { useGetAppointmentsByPatient } from "@/api/appointmentApi";
+import { useTelemedicineSession, useStartSession, useEndSession, useCreateSession } from "@/api/telemedicineApi";
+import { useGetAppointmentsByPatient, useGetAppointmentById } from "@/api/appointmentApi";
 import { useGetPrescriptionsByAppointment } from "@/api/doctorApi";
+import { useUser } from "@/store/store";
 import { toast } from "sonner";
 
 export default function DoctorTelemedicineSessionPage() {
@@ -18,10 +19,13 @@ export default function DoctorTelemedicineSessionPage() {
   const appointmentId = params.id as string;
 
   const { session, token, isLoading, error } = useTelemedicineSession(appointmentId);
-  const { data: patientHistory = [] } = useGetAppointmentsByPatient(session?.patientId ?? "");
+  const user = useUser();
+  const { data: appointment } = useGetAppointmentById(appointmentId);
+  const { data: patientHistory = [] } = useGetAppointmentsByPatient(session?.patientId ?? appointment?.patientId ?? "");
   const { data: sessionPrescriptions = [] } = useGetPrescriptionsByAppointment(appointmentId);
   const startSessionMutation = useStartSession();
   const endSessionMutation = useEndSession();
+  const createSessionMutation = useCreateSession();
   const [currentStep, setCurrentStep] = useState<"waiting" | "calling">("waiting");
 
   const historyItems = patientHistory
@@ -37,6 +41,10 @@ export default function DoctorTelemedicineSessionPage() {
 
   const handleStartSession = async () => {
     try {
+      // Ensure session record exists — use appointment data as fallback for IDs
+      const dId = session?.doctorId ?? user?.userId ?? "";
+      const pId = session?.patientId ?? appointment?.patientId ?? "";
+      await createSessionMutation.mutateAsync({ appointmentId, doctorId: dId, patientId: pId });
       await startSessionMutation.mutateAsync(appointmentId);
       toast.success("Session started successfully");
       setCurrentStep("calling");

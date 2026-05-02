@@ -12,9 +12,9 @@ export interface Feedback {
   id: number;
   patientId: number;
   patientName?: string;
-  doctorId: number;
+  doctorId: string;
   doctorName?: string;
-  appointmentId: number;
+  appointmentId: string;
   rating: number;
   comment?: string;
   timestamp: string;
@@ -46,12 +46,13 @@ export interface FeedbackPayload {
   doctorId: number;
   rating: number;
   comment?: string;
+  patientName?: string;
+  doctorName?: string;
 }
 
 export interface UpdateFeedbackPayload {
   rating?: number;
   comment?: string;
-  status?: FeedbackStatus;
 }
 
 // ─── API Functions ────────────────────────────────────────────────────────────
@@ -172,7 +173,16 @@ export const useGetFeedbackByDoctor = (doctorId: string) =>
 export const useGetMyDoctorFeedback = () =>
   useQuery({
     queryKey: queryKeys.feedback.byDoctor("me"),
-    queryFn: () => fetchMyDoctorFeedback().then((r) => r.data),
+    queryFn: async () => {
+      try {
+        const res = await fetchMyDoctorFeedback();
+        return res.data;
+      } catch (err: any) {
+        if (err?.status === 401 || err?.status === 404 || err?.status >= 500) return [];
+        throw err;
+      }
+    },
+    retry: false,
   });
 
 export const useGetFeedbackByAppointment = (appointmentId: string) =>

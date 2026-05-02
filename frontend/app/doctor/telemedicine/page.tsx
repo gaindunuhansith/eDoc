@@ -1,19 +1,20 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SessionCard } from "@/components/telemedicine";
 import { Video, Calendar, Clock, CheckCircle, AlertCircle, Play, Square } from "lucide-react";
-import { useGetSessions, useStartSession, useEndSession } from "@/api/telemedicineApi";
+import { useGetSessions, useEndSession } from "@/api/telemedicineApi";
 import { telemedicineWebSocket, WebSocketMessage } from "@/api/utils/telemedicineWebSocket";
 import { toast } from "sonner";
 
 export default function DoctorTelemedicinePage() {
+  const router = useRouter();
   const { data: sessions = [], isLoading, error, refetch } = useGetSessions();
-  const startSessionMutation = useStartSession();
   const endSessionMutation = useEndSession();
   const [activeTab, setActiveTab] = useState("upcoming");
   const [webSocketConnected, setWebSocketConnected] = useState(false);
@@ -99,14 +100,7 @@ export default function DoctorTelemedicinePage() {
   };
 
   const handleStartSession = async (appointmentId: string) => {
-    try {
-      await startSessionMutation.mutateAsync(appointmentId);
-      toast.success("Session started successfully");
-      refetch(); // Refresh the sessions list
-    } catch (error) {
-      toast.error("Failed to start session");
-      console.error("Error starting session:", error);
-    }
+    router.push(`/doctor/telemedicine/session/${appointmentId}`);
   };
 
   const handleEndSession = async (appointmentId: string) => {

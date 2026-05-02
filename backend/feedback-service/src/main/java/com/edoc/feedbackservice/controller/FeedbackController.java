@@ -37,7 +37,7 @@ public class FeedbackController {
     }
 
     @GetMapping("/doctor/{doctorId}")
-    public ResponseEntity<List<FeedbackResponseDTO>> getFeedbackForDoctor(@PathVariable Long doctorId) {
+    public ResponseEntity<List<FeedbackResponseDTO>> getFeedbackForDoctor(@PathVariable String doctorId) {
         List<FeedbackResponseDTO> feedbacks = feedbackService.getFeedbackForDoctor(doctorId);
         return ResponseEntity.ok(feedbacks);
     }
@@ -61,7 +61,7 @@ public class FeedbackController {
     }
 
     @GetMapping("/appointment/{appointmentId}")
-    public ResponseEntity<List<FeedbackResponseDTO>> getFeedbackForAppointment(@PathVariable Long appointmentId) {
+    public ResponseEntity<List<FeedbackResponseDTO>> getFeedbackForAppointment(@PathVariable String appointmentId) {
         List<FeedbackResponseDTO> feedbacks = feedbackService.getFeedbackForAppointment(appointmentId);
         return ResponseEntity.ok(feedbacks);
     }
@@ -86,4 +86,5 @@ public class FeedbackController {
         feedbackService.deleteFeedback(id, authHeader);
         return ResponseEntity.noContent().build();
     }
+
 }

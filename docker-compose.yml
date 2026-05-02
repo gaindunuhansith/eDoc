@@ -361,6 +361,8 @@ services:
       APPOINTMENT_SERVICE_URL: http://appointment-service:8081
       NOTIFICATION_SERVICE_URL: http://notification-service:8083
       USER_SERVICE_URL: http://user-service:8088
+      PATIENT_SERVICE_URL: http://patient-service:8084
+      DOCTOR_SERVICE_URL: http://doctor-service:8082
       JWT_PUBLIC_KEY_PATH: /app/secrets/public.pem
     volumes:
       - ./backend/user-service/secrets/public.pem:/app/secrets/public.pem:ro
@@ -369,6 +371,10 @@ services:
     depends_on:
       feedback-db:
         condition: service_healthy
+      patient-service:
+        condition: service_started
+      doctor-service:
+        condition: service_started
     networks:
       - edoc-network
 

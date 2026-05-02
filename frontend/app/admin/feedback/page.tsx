@@ -5,9 +5,6 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-  CheckCircle,
-  XCircle,
-  Clock,
   Star,
   BarChart3
 } from "lucide-react";
@@ -45,7 +42,6 @@ import { useGetAllFeedback, type Feedback } from "@/api/feedbackApi";
 export default function AdminFeedbackPage() {
   const { data: feedbacks = [], isLoading } = useGetAllFeedback();
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [ratingFilter, setRatingFilter] = useState("all");
   const [doctorFilter, setDoctorFilter] = useState("all");
   const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
@@ -56,18 +52,14 @@ export default function AdminFeedbackPage() {
                            (feedback.patientName ?? "").toLowerCase().includes(searchTerm.toLowerCase()) ||
                            (feedback.doctorName ?? "").toLowerCase().includes(searchTerm.toLowerCase()) ||
                            feedback.rating.toString().includes(searchTerm);
-      const matchesStatus = statusFilter === "all" || feedback.status === statusFilter;
       const matchesRating = ratingFilter === "all" || feedback.rating.toString() === ratingFilter;
       const matchesDoctor = doctorFilter === "all" || feedback.doctorName === doctorFilter;
-      return matchesSearch && matchesStatus && matchesRating && matchesDoctor;
+      return matchesSearch && matchesRating && matchesDoctor;
     });
-  }, [feedbacks, searchTerm, statusFilter, ratingFilter, doctorFilter]);
+  }, [feedbacks, searchTerm, ratingFilter, doctorFilter]);
 
   const stats = useMemo(() => {
     const total = feedbacks.length;
-    const approved = feedbacks.filter(f => f.status === "APPROVED").length;
-    const pending = feedbacks.filter(f => f.status === "PENDING").length;
-    const rejected = feedbacks.filter(f => f.status === "REJECTED").length;
     const averageRating = total > 0 ? feedbacks.reduce((sum, f) => sum + f.rating, 0) / total : 0;
 
     const doctorStats = feedbacks.reduce((acc, feedback) => {
@@ -78,7 +70,7 @@ export default function AdminFeedbackPage() {
       return acc;
     }, {} as Record<string, { total: number; sum: number }>);
 
-    return { total, approved, pending, rejected, averageRating, doctorStats };
+    return { total, averageRating, doctorStats };
   }, [feedbacks]);
 
   const uniqueDoctors = useMemo(() => {
@@ -95,28 +87,6 @@ export default function AdminFeedbackPage() {
         )}
       />
     ));
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "APPROVED":
-        return "bg-green-100 text-green-800 border-green-200";
-      case "REJECTED":
-        return "bg-red-100 text-red-800 border-red-200";
-      default:
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "APPROVED":
-        return <CheckCircle className="h-4 w-4" />;
-      case "REJECTED":
-        return <XCircle className="h-4 w-4" />;
-      default:
-        return <Clock className="h-4 w-4" />;
-    }
   };
 
   return (
@@ -143,30 +113,6 @@ export default function AdminFeedbackPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white border border-gray-200 shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              Pending Review
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white border border-gray-200 shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-              <CheckCircle className="h-4 w-4" />
-              Approved
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.approved}</div>
           </CardContent>
         </Card>
 
@@ -227,17 +173,6 @@ export default function AdminFeedbackPage() {
                 className="pl-9 border-border/60 bg-background hover:border-border transition-colors h-10"
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[140px] border-border/60 bg-background hover:bg-muted/50 transition-colors h-10">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="PENDING">Pending</SelectItem>
-                <SelectItem value="APPROVED">Approved</SelectItem>
-                <SelectItem value="REJECTED">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
             <Select value={ratingFilter} onValueChange={setRatingFilter}>
               <SelectTrigger className="w-[140px] border-border/60 bg-background hover:bg-muted/50 transition-colors h-10">
                 <SelectValue placeholder="Rating" />
@@ -277,7 +212,6 @@ export default function AdminFeedbackPage() {
                 <TableHead className="text-muted-foreground font-medium py-4">Rating</TableHead>
                 <TableHead className="text-muted-foreground font-medium py-4">Comment</TableHead>
                 <TableHead className="text-muted-foreground font-medium py-4">Date</TableHead>
-                <TableHead className="text-muted-foreground font-medium py-4">Status</TableHead>
                 <TableHead className="text-muted-foreground font-medium py-4 w-32">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -312,21 +246,13 @@ export default function AdminFeedbackPage() {
                     {new Date(feedback.timestamp ?? feedback.createdAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="py-4">
-                    <Badge
-                      variant="outline"
-                      className={cn("font-medium capitalize flex items-center gap-1", getStatusColor(feedback.status))}
-                    >
-                      {getStatusIcon(feedback.status)}
-                      {feedback.status.toLowerCase()}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="py-4">
                     <div className="flex items-center gap-2">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => setSelectedFeedback(feedback)}
                         className="h-8 w-8 p-0"
+                        title="View details"
                       >
                         <Star className="h-4 w-4" />
                       </Button>
@@ -387,16 +313,6 @@ export default function AdminFeedbackPage() {
               <div className="flex items-center justify-between">
                 <span className="font-medium">Date:</span>
                 <span>{new Date(selectedFeedback.timestamp ?? selectedFeedback.createdAt).toLocaleDateString()}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="font-medium">Status:</span>
-                <Badge
-                  variant="outline"
-                  className={cn("font-medium capitalize flex items-center gap-1", getStatusColor(selectedFeedback.status))}
-                >
-                  {getStatusIcon(selectedFeedback.status)}
-                  {selectedFeedback.status.toLowerCase()}
-                </Badge>
               </div>
               <div>
                 <span className="font-medium">Comment:</span>

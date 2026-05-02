@@ -11,6 +11,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -83,11 +84,18 @@ public class DoctorController {
         return ResponseEntity.ok(doctorService.getAllDoctors());
     }
 
-    // GET /api/v1/internal/doctors/{id} — used by notification-service to resolve userId for contact lookup.
+    // GET /api/v1/doctors/internal/{id} — used by appointment-service and notification-service for service-to-service calls.
     @GetMapping("/internal/{id}")
-    public ResponseEntity<Map<String, String>> getDoctorUserIdInternal(@PathVariable String id) {
+    public ResponseEntity<Map<String, Object>> getDoctorUserIdInternal(@PathVariable String id) {
         Doctor doctor = doctorService.getDoctorById(id);
-        return ResponseEntity.ok(Map.of("userId", doctor.getUserId() != null ? doctor.getUserId() : ""));
+        Map<String, Object> result = new HashMap<>();
+        result.put("userId", doctor.getUserId() != null ? doctor.getUserId() : "");
+        result.put("firstName", doctor.getFirstName());
+        result.put("lastName", doctor.getLastName());
+        result.put("specialty", doctor.getSpecialty());
+        result.put("hospital", doctor.getHospital());
+        result.put("consultationFee", doctor.getConsultationFee());
+        return ResponseEntity.ok(result);
     }
 
     // DELETE /api/v1/doctors/{id} - admin removes a doctor
