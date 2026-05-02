@@ -89,12 +89,14 @@ function BookingSheet({
   const handleBook = () => {
     if (!canSubmit) return;
     const patientName = currentUser?.name?.trim() || user?.name?.trim() || undefined;
+    const doctorName = `Dr. ${doctor!.firstName} ${doctor!.lastName}`;   // change this to remove duplicate DR signs
 
     createMutation.mutate(
       {
         patientId,
         patientName,
         doctorId: doctor!.id,
+        doctorName,
         appointmentDate: getNextDateForDay(selectedDay!),
         timeSlot: selectedSlot!,
         dayOfWeek: selectedDay!,

@@ -16,6 +16,8 @@ public class AppointmentRequest {
     @NotBlank(message = "Doctor ID is required")
     private String doctorId;
 
+    private String doctorName;   // optional, passed by frontend if available
+
     @NotNull(message = "Appointment date is required")
     private LocalDate appointmentDate;
 

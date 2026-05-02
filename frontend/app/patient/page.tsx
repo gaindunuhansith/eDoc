@@ -401,7 +401,7 @@ function ProfileCreationForm() {
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="min-w-[160px]"
+            className="min-w-40"
           >
             {isSubmitting ? "Saving..." : "Create Profile"}
           </Button>
@@ -420,6 +420,10 @@ function PatientDashboardContent() {
   const { data: profile, isLoading: profileLoading } = useGetMyPatientProfile();
   const { data: feedbacks = [] } = useGetMyFeedback();
   const { data: appointments = [] } = useGetAppointmentsByPatient(profile ? String(profile.id) : "");
+  const patientAppointments = React.useMemo(() => {
+    const patientId = profile ? String(profile.id) : "";
+    return appointments.filter((appointment) => String(appointment.patientId) === patientId);
+  }, [appointments, profile]);
 
   // Calculate feedback statistics
   const feedbackStats = React.useMemo(() => {
@@ -437,7 +441,7 @@ function PatientDashboardContent() {
   }, [feedbacks]);
 
   const upcomingTelemedicineAppointments = React.useMemo(() => {
-    return appointments
+    return patientAppointments
       .filter((a) => a.type === "VIDEO" && a.status === "CONFIRMED")
       .sort((a, b) => {
         const aStart = a.timeSlot?.split("-")?.[0]?.trim() || "00:00";
@@ -447,7 +451,7 @@ function PatientDashboardContent() {
         return aTime - bTime;
       })
       .slice(0, 4);
-  }, [appointments]);
+  }, [patientAppointments]);
 
   if (profileLoading) {
     return (
