@@ -63,7 +63,7 @@ public class NotificationServiceClient {
             String type,
             String patientId,
             String doctorId,
-            Long userId,
+            String userId,
             Map<String, Object> data
     ) {}
 }

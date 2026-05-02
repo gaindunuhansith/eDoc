@@ -94,7 +94,8 @@ public class FeedbackService {
             Map<String, Object> data = new HashMap<>();
             data.put("rating", feedback.getRating());
             data.put("comment", feedback.getComment());
-            notificationServiceClient.sendToUser("FEEDBACK_RECEIVED", feedback.getDoctorId(), data);
+            // Use the doctorId path so notification-service resolves the doctor's contact via doctor-service.
+            notificationServiceClient.sendToDoctor("FEEDBACK_RECEIVED", feedback.getDoctorId().toString(), data, authHeader);
         } catch (Exception error) {
             System.err.println("Failed to send feedback notification: " + error.getMessage());
         }

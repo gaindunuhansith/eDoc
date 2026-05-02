@@ -8,7 +8,7 @@ public record NotificationRequestDTO(
         NotificationType type,
         String patientId,   // patient-service ID → resolves phone + email (via userId → user-service)
         String doctorId,    // doctor-service ID  → resolves email + phoneNumber
-        Long userId,        // user-service ID    → resolves email directly (used by feedback-service)
+        String userId,      // user-service UUID  → resolves email directly (used when a userId is known directly)
         Map<String, Object> data
 ) {
 }
