@@ -12,7 +12,7 @@ export type PaymentMethod = "CARD" | "BANK_TRANSFER" | "DIGITAL_WALLET";
 // ─── Matches backend PaymentHistoryResponse ───────────────────────────────────
 export interface PaymentHistoryItem {
   id: string;
-  appointmentId?: number;
+  appointmentId?: string;
   userId: string;
   amount: number;
   currency: string;
@@ -63,8 +63,13 @@ export interface InitiatePaymentPayload {
 }
 
 export interface CheckoutPayloadResponse {
-  actionUrl: string;
-  fields: Record<string, string>;
+  orderId: string;
+  merchantId: string;
+  amount: number;
+  currency: string;
+  hash: string;
+  checkoutUrl: string;
+  notifyUrl: string;
 }
 
 export interface ConfirmPaymentPayload {
@@ -73,8 +78,28 @@ export interface ConfirmPaymentPayload {
 
 // ─── API Functions ─────────────────────────────────────────────────────────────
 
-export const initiatePayment = (payload: InitiatePaymentPayload) =>
-  apiClient.post<CheckoutPayloadResponse>(PAYMENT_ENDPOINTS.INITIATE, payload);
+export const initiatePayment = (payload: InitiatePaymentPayload) => {
+  const fullName = [payload.firstName, payload.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
+  const body = {
+    appointmentId: payload.appointmentId,
+    amount: payload.amount,
+    currency: payload.currency,
+    billing: {
+      fullName: fullName,
+      email: payload.email ?? "",
+      phone: payload.phone ?? "",
+      address: payload.address,
+      city: payload.city,
+      country: payload.country || "Sri Lanka",
+    },
+  };
+
+  return apiClient.post<CheckoutPayloadResponse>(PAYMENT_ENDPOINTS.INITIATE, body);
+};
 
 export const fetchPaymentsByAppointment = (appointmentId: string) =>
   apiClient.get<SpringPage<PaymentHistoryItem>>(
