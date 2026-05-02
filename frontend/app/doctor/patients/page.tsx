@@ -223,9 +223,9 @@ function PatientsContent() {
 
       {loading && activePatientId && (
         <div className="space-y-6 mt-8">
-           <Skeleton className="h-[200px] w-full rounded-xl" />
-           <Skeleton className="h-[250px] w-full rounded-xl" />
-           <Skeleton className="h-[300px] w-full rounded-xl" />
+           <Skeleton className="h-52 w-full rounded-xl" />
+           <Skeleton className="h-64 w-full rounded-xl" />
+           <Skeleton className="h-72 w-full rounded-xl" />
         </div>
       )}
 

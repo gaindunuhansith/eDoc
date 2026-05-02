@@ -245,6 +245,13 @@ export const useGetPrescriptionsByAppointment = (appointmentId: string) =>
     enabled: !!appointmentId,
   });
 
+export const useGetPrescriptionsByPatient = (patientId: string) =>
+  useQuery({
+    queryKey: [...queryKeys.doctor.prescriptions.all, "patient", patientId],
+    queryFn: () => fetchPrescriptionsByPatient(patientId).then((r) => r.data),
+    enabled: !!patientId,
+  });
+
 export const verifyDoctor = (id: string) =>
   apiClient.patch<Doctor>(DOCTOR_ENDPOINTS.VERIFY(id));
 
