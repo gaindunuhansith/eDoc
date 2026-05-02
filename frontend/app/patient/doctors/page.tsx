@@ -41,6 +41,7 @@ import {
 } from "@/api/doctorApi";
 import { useGetMyPatientProfile } from "@/api/patientApi";
 import { type AppointmentType, useCreateAppointment } from "@/api/appointmentApi";
+import { useGetCurrentUser } from "@/api/userApi";
 import { useStore } from "@/store/store";
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
@@ -77,6 +78,7 @@ function BookingSheet({
 
   const createMutation = useCreateAppointment();
   const user = useStore((s) => s.user);
+  const { data: currentUser } = useGetCurrentUser();
 
   const activeDays = availability.filter((a) => a.isActive);
   const availableSlots =
@@ -86,10 +88,12 @@ function BookingSheet({
 
   const handleBook = () => {
     if (!canSubmit) return;
+    const patientName = currentUser?.name?.trim() || user?.name?.trim() || undefined;
+
     createMutation.mutate(
       {
         patientId,
-        patientName: user?.name,
+        patientName,
         doctorId: doctor!.id,
         appointmentDate: getNextDateForDay(selectedDay!),
         timeSlot: selectedSlot!,
