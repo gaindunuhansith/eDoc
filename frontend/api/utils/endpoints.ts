@@ -6,9 +6,9 @@ export const USER_ENDPOINTS = {
   UPDATE_PROFILE: "/api/v1/users/me",
   CHANGE_PASSWORD: "/api/v1/users/me/password",
   PROFILE_CREATED: (id: string) => `/api/v1/users/${id}/profile-created`,
-  ALL_USERS: "/api/v1/admin/users",
-  USER_BY_ID: (id: string) => `/api/v1/admin/users/${id}`,
-  DELETE_USER: (id: string) => `/api/v1/admin/users/${id}`,
+  ALL_USERS: "/api/v1/users",
+  USER_BY_ID: (id: string) => `/api/v1/users/${id}`,
+  DELETE_USER: (id: string) => `/api/v1/users/${id}`,
 } as const;
 export const PATIENT_ENDPOINTS = {
   REGISTER: "/api/v1/patients/register",
