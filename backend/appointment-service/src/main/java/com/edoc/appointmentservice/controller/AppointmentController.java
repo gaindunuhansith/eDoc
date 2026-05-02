@@ -7,6 +7,7 @@ import com.edoc.appointmentservice.model.Appointment;
 import com.edoc.appointmentservice.service.AppointmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,7 +18,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/appointments")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
+@Slf4j
 public class AppointmentController {
 
     private final AppointmentService appointmentService;
@@ -28,6 +29,7 @@ public class AppointmentController {
     @PostMapping
     public ResponseEntity<Appointment> bookAppointment(
             @Valid @RequestBody AppointmentRequest request) {
+        log.info("Received appointment booking request: {}", request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(appointmentService.bookAppointment(request));
     }
