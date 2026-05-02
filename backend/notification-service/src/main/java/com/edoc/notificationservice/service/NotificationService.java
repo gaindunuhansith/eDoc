@@ -76,6 +76,7 @@ public class NotificationService {
             // Resolve userId from doctor-service internal endpoint, then fetch contact info from user-service.
             DoctorServiceClient.DoctorContact doctor = doctorServiceClient.getDoctorById(request.doctorId());
             if (doctor != null && doctor.userId() != null && !doctor.userId().isBlank()) {
+                inboxUserId = doctor.userId();
                 UserServiceClient.UserContact user = userServiceClient.getUserById(doctor.userId());
                 if (user != null) {
                     email = user.email();
@@ -83,7 +84,7 @@ public class NotificationService {
                 }
             }
         } else if (request.userId() != null) {
-            UserServiceClient.UserContact user = userServiceClient.getUserById(request.userId().toString());
+            UserServiceClient.UserContact user = userServiceClient.getUserById(request.userId());
             if (user != null) {
                 email = user.email();
                 phone = user.phoneNumber();
