@@ -21,8 +21,8 @@
 --
 -- USR-PAT-01 (is_active=false) and USR-PAT-02 (is_deleted=true) are excluded.
 --
--- appointment_id (BIGINT) represents IDs from appointment-service.
--- Appointments 1001–1040 are used; each is unique per payment.
+-- appointment_id (VARCHAR) represents string IDs from appointment-service (MongoDB).
+-- Seed values use the format 'APT-SEED-NNNN' (1001–1040).
 -- ─────────────────────────────────────────────────────────────────────────────
 
 DELETE FROM payment_transaction_logs;
@@ -54,7 +54,7 @@ SELECT
         substr(md5('pmt-' || gs), 21, 12)
     )::uuid                                                       AS id,
 
-    1000 + gs                                                     AS appointment_id,
+    'APT-SEED-' || LPAD((1000 + gs)::text, 4, '0')              AS appointment_id,
     'USR-PAT-' || LPAD((3 + ((gs - 1) % 13))::text, 2, '0')       AS user_id,
 
     -- Alternate LKR (in-person/procedure) and USD (telemedicine) amounts
@@ -155,7 +155,7 @@ SELECT
             'payhere_amount',   p.amount,
             'payhere_currency', p.currency,
             'method', (ARRAY['VISA', 'MASTER', 'AMEX', 'eZCash'])
-                          [(p.appointment_id % 4 + 1)::int]
+                          [(abs(hashtext(p.order_id)) % 4 + 1)::int]
         )
         ELSE jsonb_build_object(
             'merchant_id',      'TestMerchant001',
@@ -255,12 +255,12 @@ SELECT
     pt.full_name,
     pt.email,
     pt.phone,
-    ((p.appointment_id - 1000)::text || ' ' ||
+    ((abs(hashtext(p.order_id)) % 999 + 1)::text || ' ' ||
         (ARRAY[
             'Galle Road',       'Kandy Road',      'Negombo Road',    'High Level Road',
             'Baseline Road',    'Union Place',      'Marine Drive',    'Rajagiriya Road',
             'Duplication Road', 'Maharagama Road'
-        ])[(p.appointment_id % 10 + 1)::int]
+        ])[(abs(hashtext(p.order_id)) % 10 + 1)::int]
     ),
     pt.city,
     'Sri Lanka',
