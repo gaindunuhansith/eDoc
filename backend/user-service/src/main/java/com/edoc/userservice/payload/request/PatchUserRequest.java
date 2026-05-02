@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class PatchUserRequest {
 
+    @Pattern(regexp = "^[^<>\"';&]+$", message = "name must not contain special characters")
     private String name;
 
     @Email(message = "email must be valid")
