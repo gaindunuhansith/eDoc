@@ -1,6 +1,5 @@
 package com.edoc.userservice.payload.request;
 
-import com.edoc.userservice.model.enums.UserRole;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
@@ -26,6 +25,4 @@ public class PatchUserRequest {
     private String password;
 
     private String phoneNumber;
-
-    private UserRole role;
 }

@@ -29,9 +29,9 @@ public interface PaymentService {
 
     void flagForReconciliation(UUID paymentId);
 
-    Payment getPaymentByAppointmentId(Long appointmentId);
+    PaymentHistoryResponse getPaymentByAppointmentId(Long appointmentId);
 
-    Payment getPaymentByOrderId(String orderId);
+    PaymentHistoryResponse getPaymentByOrderId(String orderId);
 
     Payment getPaymentEntityById(UUID paymentId);
 }

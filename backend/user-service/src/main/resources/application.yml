@@ -15,7 +15,7 @@ spring:
         format_sql: true
   sql:
     init:
-      mode: always
+      mode: never
       schema-locations: classpath:db/schema.sql
       data-locations: classpath:db/seed.sql
 

@@ -70,6 +70,31 @@ public class PaymentServiceImpl implements PaymentService {
                 log.warn("Payment already completed for appointmentId={}", request.appointmentId());
                 throw new IllegalStateException(AppMessages.PAYMENT_ALREADY_COMPLETED);
             }
+            if (existing.getStatus() == PaymentStatus.FAILED) {
+                log.info("Retrying failed payment for appointmentId={}, new orderId assigned", request.appointmentId());
+                existing.setOrderId(UUID.randomUUID().toString());
+                existing.setAmount(request.amount());
+                existing.setCurrency(request.currency());
+                existing.setStatus(PaymentStatus.PENDING);
+                existing.setPayhereId(null);
+                Payment retried = paymentRepository.save(existing);
+                billingDetailsRepository.findByPaymentId(retried.getId()).ifPresent(b -> {
+                    b.setFullName(request.billing().fullName());
+                    b.setEmail(request.billing().email());
+                    b.setPhone(request.billing().phone());
+                    b.setAddress(request.billing().address());
+                    b.setCity(request.billing().city());
+                    b.setCountry(request.billing().country());
+                    billingDetailsRepository.save(b);
+                });
+                SecurityUtil.populateMdc(retried.getOrderId(), userId);
+                transactionLogRepository.save(PaymentTransactionLog.builder()
+                        .payment(retried)
+                        .event(PaymentConstants.EVENT_PAYMENT_INITIATED)
+                        .rawPayload("{\"orderId\":\"" + retried.getOrderId() + "\",\"status\":\"PENDING\",\"retry\":true}")
+                        .build());
+                return buildInitiateResponse(retried);
+            }
         }
 
         Payment payment = Payment.builder()
@@ -108,9 +133,10 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public Payment getPaymentByAppointmentId(Long appointmentId) {
-        return paymentRepository.findByAppointmentId(appointmentId)
+    public PaymentHistoryResponse getPaymentByAppointmentId(Long appointmentId) {
+        Payment payment = paymentRepository.findByAppointmentId(appointmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Payment not found for appointment"));
+        return paymentMapper.toHistoryResponse(payment);
     }
 
     @Override
@@ -160,9 +186,10 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public Payment getPaymentByOrderId(String orderId) {
-        return paymentRepository.findByOrderId(orderId)
+    public PaymentHistoryResponse getPaymentByOrderId(String orderId) {
+        Payment payment = paymentRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Payment not found for order"));
+        return paymentMapper.toHistoryResponse(payment);
     }
 
     @Override

@@ -4,8 +4,6 @@ import com.edoc.paymentservice.payload.request.InitiatePaymentRequest;
 import com.edoc.paymentservice.payload.response.InitiatePaymentResponse;
 import com.edoc.paymentservice.payload.response.PaymentDetailResponse;
 import com.edoc.paymentservice.payload.response.PaymentHistoryResponse;
-import com.edoc.paymentservice.mapper.PaymentMapper;
-import com.edoc.paymentservice.model.Payment;
 import com.edoc.paymentservice.service.PaymentService;
 import com.edoc.paymentservice.type.PaymentStatus;
 import com.edoc.paymentservice.util.JwtUtil;
@@ -41,7 +39,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class PaymentController {
 
     private final PaymentService paymentService;
-    private final PaymentMapper paymentMapper;
 
     @Operation(summary = "Initiate payment", description = "Creates or reuses a pending payment for an appointment.")
     @PostMapping(value = "/initiate", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -128,11 +125,11 @@ public class PaymentController {
             @PathVariable Long appointmentId) {
         Long userId = JwtUtil.extractUserId(jwt);
         log.info("Fetching payment by appointmentId={}", appointmentId);
-        Payment payment = paymentService.getPaymentByAppointmentId(appointmentId);
-        if (!payment.getUserId().equals(userId)) {
+        PaymentHistoryResponse response = paymentService.getPaymentByAppointmentId(appointmentId);
+        if (!response.userId().equals(userId)) {
             throw new IllegalArgumentException("Payment not found");
         }
-        return ResponseEntity.ok(paymentMapper.toHistoryResponse(payment));
+        return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Get payment by order", description = "Fetches payment summary by external order identifier.")
@@ -143,10 +140,10 @@ public class PaymentController {
             @PathVariable String orderId) {
         Long userId = JwtUtil.extractUserId(jwt);
         log.info("Fetching payment by orderId={}", orderId);
-        Payment payment = paymentService.getPaymentByOrderId(orderId);
-        if (!payment.getUserId().equals(userId)) {
+        PaymentHistoryResponse response = paymentService.getPaymentByOrderId(orderId);
+        if (!response.userId().equals(userId)) {
             throw new IllegalArgumentException("Payment not found");
         }
-        return ResponseEntity.ok(paymentMapper.toHistoryResponse(payment));
+        return ResponseEntity.ok(response);
     }
 }

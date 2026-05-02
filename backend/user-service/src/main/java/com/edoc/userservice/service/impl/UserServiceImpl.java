@@ -91,7 +91,7 @@ public class UserServiceImpl implements UserService {
         User current = userRepository.findByEmailAndIsDeletedFalse(securityUtils.getCurrentEmail())
                 .orElseThrow(() -> new UserNotFoundException(AUTHENTICATED_USER_NOT_FOUND));
 
-        applyPatch(current, request, false);
+        applyPatch(current, request);
         User updated = userRepository.save(current);
         log.info("Patched current user userId={}", current.getUserId());
         return userMapper.toResponse(updated);
@@ -102,7 +102,7 @@ public class UserServiceImpl implements UserService {
     public UserResponse patchByUserIdAsAdmin(String userId, PatchUserRequest request) {
         User target = findByUserIdActive(userId);
 
-        applyPatch(target, request, true);
+        applyPatch(target, request);
         User updated = userRepository.save(target);
         log.info("Admin patched user userId={}", target.getUserId());
         return userMapper.toResponse(updated);
@@ -133,7 +133,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public List<UserResponse> getAllUsers() {
-        return userRepository.findAll().stream()
+        return userRepository.findAllByIsDeletedFalse().stream()
                 .map(userMapper::toResponse)
                 .toList();
     }
@@ -211,7 +211,7 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    private void applyPatch(User target, PatchUserRequest request, boolean allowRoleChange) {
+    private void applyPatch(User target, PatchUserRequest request) {
         if (request == null) {
             throw new IllegalArgumentException("Patch payload is required");
         }
@@ -252,14 +252,6 @@ public class UserServiceImpl implements UserService {
                 throw new IllegalArgumentException("password cannot be blank");
             }
             target.setPassword(passwordEncoder.encode(request.getPassword()));
-            hasAnyField = true;
-        }
-
-        if (request.getRole() != null) {
-            if (!allowRoleChange) {
-                throw new UnauthorizedOperationException("Only admin can change role");
-            }
-            target.setRole(request.getRole());
             hasAnyField = true;
         }
 
