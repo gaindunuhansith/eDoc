@@ -201,6 +201,7 @@ services:
       DB_USER: user
       DB_PASSWORD: password
       DOCTOR_SERVICE_URL: http://doctor-service:8082
+      USER_SERVICE_URL: http://user-service:8088
       JWT_PUBLIC_KEY_PATH: /app/secrets/public.pem
       REPORTS_DIR: /app/uploads/reports
     volumes:

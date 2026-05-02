@@ -15,6 +15,9 @@ export const PATIENT_ENDPOINTS = {
   ME: "/api/v1/patients/me",
   UPDATE_ME: "/api/v1/patients/me",
   UPDATE_STATUS: "/api/v1/patients/me/status",
+  ADMIN_ALL: "/api/v1/patients/admin/all",
+  ADMIN_BY_ID: (id: number) => `/api/v1/patients/admin/${id}`,
+  ADMIN_UPDATE_STATUS: (id: number) => `/api/v1/patients/admin/${id}/status`,
 } as const;
 
 export const REPORT_ENDPOINTS = {
@@ -36,6 +39,7 @@ export const DOCTOR_ENDPOINTS = {
   GET_BY_ID: (id: string) => `/api/v1/doctors/${id}`,
   GET_PATIENT: (doctorId: string, patientId: string) => `/api/v1/doctors/${doctorId}/patients/${patientId}`,
   GET_PATIENT_REPORTS: (doctorId: string, patientId: string) => `/api/v1/doctors/${doctorId}/patients/${patientId}/reports`,
+  GET_PATIENT_REPORT_FILE: (doctorId: string, patientId: string, reportId: number) => `/api/v1/doctors/${doctorId}/patients/${patientId}/reports/${reportId}/file`,
   BY_SPECIALTY: (specialty: string) => `/api/v1/doctors/specialty/${specialty}`,
   CREATE: "/api/v1/doctors/register",
   UPDATE: (id: string) => `/api/v1/doctors/${id}`,

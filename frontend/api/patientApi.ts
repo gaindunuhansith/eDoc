@@ -24,6 +24,12 @@ export interface Patient {
   status: PatientStatus;
   createdAt: string;
   updatedAt?: string;
+  deactivatedAt?: string | null;
+  deactivatedBy?: number | null;
+  deactivationReason?: string | null;
+  // Enriched from user-service by admin endpoints.
+  userName?: string | null;
+  userEmail?: string | null;
 }
 
 export interface PatientPayload {
@@ -84,6 +90,47 @@ export const useUpdateMyPatientProfile = () => {
     mutationFn: updateMyPatientProfile,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.patient.me() });
+    },
+  });
+};
+
+// ─── Admin Patient Management ────────────────────────────────────────────────
+
+export interface AdminPatientStatusPayload {
+  status: PatientStatus;
+  reason?: string;
+}
+
+export const fetchAdminAllPatients = () =>
+  apiClient.get<Patient[]>(PATIENT_ENDPOINTS.ADMIN_ALL);
+
+export const fetchAdminPatientById = (id: number) =>
+  apiClient.get<Patient>(PATIENT_ENDPOINTS.ADMIN_BY_ID(id));
+
+export const adminUpdatePatientStatus = (id: number, payload: AdminPatientStatusPayload) =>
+  apiClient.patch<Patient>(PATIENT_ENDPOINTS.ADMIN_UPDATE_STATUS(id), payload);
+
+export const useGetAdminAllPatients = () =>
+  useQuery({
+    queryKey: queryKeys.patient.adminList(),
+    queryFn: () => fetchAdminAllPatients().then((r) => r.data),
+  });
+
+export const useGetAdminPatientById = (id: number | null) =>
+  useQuery({
+    queryKey: queryKeys.patient.adminDetail(id!),
+    queryFn: () => fetchAdminPatientById(id!).then((r) => r.data),
+    enabled: id !== null,
+  });
+
+export const useAdminUpdatePatientStatus = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: AdminPatientStatusPayload }) =>
+      adminUpdatePatientStatus(id, payload),
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: queryKeys.patient.adminList() });
+      qc.invalidateQueries({ queryKey: queryKeys.patient.adminDetail(id) });
     },
   });
 };
