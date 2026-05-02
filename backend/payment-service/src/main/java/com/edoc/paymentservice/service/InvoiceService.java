@@ -5,5 +5,5 @@ import java.util.UUID;
 
 public interface InvoiceService {
 
-    byte[] generateInvoice(UUID paymentId, Long userId, boolean isAdmin) throws IOException;
+    byte[] generateInvoice(UUID paymentId, String userId, boolean isAdmin) throws IOException;
 }

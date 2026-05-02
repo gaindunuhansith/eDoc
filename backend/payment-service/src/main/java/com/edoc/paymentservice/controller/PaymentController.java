@@ -46,7 +46,7 @@ public class PaymentController {
     public ResponseEntity<InitiatePaymentResponse> initiate(
             @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody InitiatePaymentRequest request) {
-        Long userId = JwtUtil.extractUserId(jwt);
+        String userId = JwtUtil.extractUserId(jwt);
         log.info("Initiating payment request for userId={}, appointmentId={}", userId, request.appointmentId());
         InitiatePaymentResponse response = paymentService.initiatePayment(request, userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -58,7 +58,7 @@ public class PaymentController {
     public ResponseEntity<Page<PaymentHistoryResponse>> history(
             @AuthenticationPrincipal Jwt jwt,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        Long userId = JwtUtil.extractUserId(jwt);
+        String userId = JwtUtil.extractUserId(jwt);
         log.info("Fetching payment history for userId={}", userId);
         Page<PaymentHistoryResponse> response = paymentService.getPaymentHistory(userId, pageable);
         return ResponseEntity.ok(response);
@@ -70,7 +70,7 @@ public class PaymentController {
     public ResponseEntity<PaymentDetailResponse> detail(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID id) {
-        Long userId = JwtUtil.extractUserId(jwt);
+        String userId = JwtUtil.extractUserId(jwt);
         log.info("Fetching payment detail for paymentId={}", id);
         PaymentDetailResponse response = paymentService.getPaymentById(id);
         if (!response.userId().equals(userId)) {
@@ -92,7 +92,7 @@ public class PaymentController {
     @GetMapping(value = "/users/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<PaymentHistoryResponse>> getPaymentsByUserId(
-            @PathVariable Long userId,
+            @PathVariable String userId,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         log.info("Fetching payments for userId={}", userId);
         return ResponseEntity.ok(paymentService.getPaymentsByUser(userId, pageable));
@@ -123,7 +123,7 @@ public class PaymentController {
     public ResponseEntity<PaymentHistoryResponse> byAppointment(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable Long appointmentId) {
-        Long userId = JwtUtil.extractUserId(jwt);
+        String userId = JwtUtil.extractUserId(jwt);
         log.info("Fetching payment by appointmentId={}", appointmentId);
         PaymentHistoryResponse response = paymentService.getPaymentByAppointmentId(appointmentId);
         if (!response.userId().equals(userId)) {
@@ -138,7 +138,7 @@ public class PaymentController {
     public ResponseEntity<PaymentHistoryResponse> byOrder(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable String orderId) {
-        Long userId = JwtUtil.extractUserId(jwt);
+        String userId = JwtUtil.extractUserId(jwt);
         log.info("Fetching payment by orderId={}", orderId);
         PaymentHistoryResponse response = paymentService.getPaymentByOrderId(orderId);
         if (!response.userId().equals(userId)) {

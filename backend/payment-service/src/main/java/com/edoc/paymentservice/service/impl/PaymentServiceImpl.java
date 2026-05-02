@@ -57,7 +57,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional
-    public InitiatePaymentResponse initiatePayment(InitiatePaymentRequest request, Long userId) {
+    public InitiatePaymentResponse initiatePayment(InitiatePaymentRequest request, String userId) {
         SecurityUtil.populateMdc(null, userId);
 
         Payment existing = paymentRepository.findByAppointmentId(request.appointmentId()).orElse(null);
@@ -199,7 +199,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public Page<PaymentHistoryResponse> getPaymentHistory(Long userId, Pageable pageable) {
+    public Page<PaymentHistoryResponse> getPaymentHistory(String userId, Pageable pageable) {
         log.debug("Fetching payment history for userId={}", userId);
         return paymentRepository.findByUserId(userId, pageable).map(paymentMapper::toHistoryResponse);
     }
@@ -220,7 +220,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public Page<PaymentHistoryResponse> getPaymentsByUser(Long userId, Pageable pageable) {
+    public Page<PaymentHistoryResponse> getPaymentsByUser(String userId, Pageable pageable) {
         return paymentRepository.findByUserId(userId, pageable).map(paymentMapper::toHistoryResponse);
     }
 

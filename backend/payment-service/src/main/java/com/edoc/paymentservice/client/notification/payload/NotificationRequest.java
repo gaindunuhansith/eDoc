@@ -7,7 +7,7 @@ public record NotificationRequest(
         NotificationType type,
         String patientId,
         String doctorId,
-        Long userId,
+        String userId,
         Map<String, Object> data
 ) {
 }

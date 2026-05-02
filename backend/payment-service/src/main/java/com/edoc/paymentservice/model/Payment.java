@@ -48,8 +48,8 @@ public class Payment {
     @Column(name = "appointment_id", nullable = false, unique = true)
     private Long appointmentId;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    @Column(name = "user_id", nullable = false, length = 50)
+    private String userId;
 
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal amount;

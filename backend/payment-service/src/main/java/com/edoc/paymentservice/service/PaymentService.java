@@ -13,17 +13,17 @@ import org.springframework.data.domain.Pageable;
 
 public interface PaymentService {
 
-    InitiatePaymentResponse initiatePayment(InitiatePaymentRequest request, Long userId);
+    InitiatePaymentResponse initiatePayment(InitiatePaymentRequest request, String userId);
 
     void processWebhook(PayHereWebhookDTO webhook);
 
-    Page<PaymentHistoryResponse> getPaymentHistory(Long userId, Pageable pageable);
+    Page<PaymentHistoryResponse> getPaymentHistory(String userId, Pageable pageable);
 
     PaymentDetailResponse getPaymentById(UUID paymentId);
 
     Page<PaymentHistoryResponse> getAllPayments(Pageable pageable);
 
-    Page<PaymentHistoryResponse> getPaymentsByUser(Long userId, Pageable pageable);
+    Page<PaymentHistoryResponse> getPaymentsByUser(String userId, Pageable pageable);
 
     Page<PaymentHistoryResponse> getPaymentsByStatus(PaymentStatus status, Pageable pageable);
 

@@ -10,7 +10,7 @@ import java.util.UUID;
 public record PaymentDetailResponse(
         UUID id,
         Long appointmentId,
-        Long userId,
+        String userId,
         BigDecimal amount,
         CurrencyType currency,
         PaymentStatus status,
