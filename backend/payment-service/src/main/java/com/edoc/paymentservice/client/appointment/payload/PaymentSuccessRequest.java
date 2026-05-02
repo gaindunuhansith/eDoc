@@ -4,6 +4,6 @@ import java.util.UUID;
 
 public record PaymentSuccessRequest(
         UUID paymentId,
-        Long appointmentId,
+        String appointmentId,
         String status) {
 }

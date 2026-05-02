@@ -73,7 +73,7 @@ public class AppointmentClientImpl implements AppointmentClient {
 
     private String buildPayloadJson(Payment payment) {
         return "{\"paymentId\":\"" + payment.getId()
-                + "\",\"appointmentId\":" + payment.getAppointmentId()
+                + ",\"appointmentId\":\"" + payment.getAppointmentId() + "\""
                 + ",\"status\":\"" + payment.getStatus().name() + "\"}";
     }
 }

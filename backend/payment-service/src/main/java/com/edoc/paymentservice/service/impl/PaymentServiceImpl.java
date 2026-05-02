@@ -133,7 +133,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public PaymentHistoryResponse getPaymentByAppointmentId(Long appointmentId) {
+    public PaymentHistoryResponse getPaymentByAppointmentId(String appointmentId) {
         Payment payment = paymentRepository.findByAppointmentId(appointmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Payment not found for appointment"));
         return paymentMapper.toHistoryResponse(payment);

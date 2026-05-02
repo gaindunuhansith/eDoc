@@ -29,7 +29,7 @@ public interface PaymentService {
 
     void flagForReconciliation(UUID paymentId);
 
-    PaymentHistoryResponse getPaymentByAppointmentId(Long appointmentId);
+    PaymentHistoryResponse getPaymentByAppointmentId(String appointmentId);
 
     PaymentHistoryResponse getPaymentByOrderId(String orderId);
 

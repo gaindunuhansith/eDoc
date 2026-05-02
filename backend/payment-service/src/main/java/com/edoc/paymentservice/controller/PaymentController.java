@@ -122,7 +122,7 @@ public class PaymentController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<PaymentHistoryResponse> byAppointment(
             @AuthenticationPrincipal Jwt jwt,
-            @PathVariable Long appointmentId) {
+            @PathVariable String appointmentId) {
         String userId = JwtUtil.extractUserId(jwt);
         log.info("Fetching payment by appointmentId={}", appointmentId);
         PaymentHistoryResponse response = paymentService.getPaymentByAppointmentId(appointmentId);

@@ -8,7 +8,7 @@ import java.util.UUID;
 
 public record PaymentHistoryResponse(
         UUID id,
-        Long appointmentId,
+        String appointmentId,
         String userId,
         BigDecimal amount,
         CurrencyType currency,
