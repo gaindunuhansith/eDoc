@@ -23,6 +23,7 @@ export type PaymentStatus =
 export interface Appointment {
   id: string;
   patientId: string;
+  patientUserId?: string;  // patient's userId (String UUID)
   patientName?: string;
   doctorId: string;
   doctorName?: string;
@@ -47,6 +48,7 @@ export interface Appointment {
 
 export interface CreateAppointmentPayload {
   patientId: string;
+  patientUserId?: string;  // patient's userId (String UUID)
   patientName?: string;
   doctorId: string;
   doctorName?: string;
