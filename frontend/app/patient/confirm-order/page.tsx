@@ -143,12 +143,6 @@ export default function ConfirmOrderPage() {
   };
 
   const handleProceedToPay = async () => {
-    const userId = user?.userId || patient?.userId || "";
-    
-    if (!userId) {
-      toast.error("User ID is required before confirming payment.");
-      return;
-    }
     if (!firstName.trim()) {
       toast.error("First name is required.");
       return;
@@ -176,7 +170,6 @@ export default function ConfirmOrderPage() {
 
     try {
       const checkout = await initiatePaymentMutation.mutateAsync({
-        userId,
         appointmentId: resolvedAppointmentId,
         amount,
         currency: currency.toUpperCase(),
@@ -187,7 +180,6 @@ export default function ConfirmOrderPage() {
         address: address.trim() || undefined,
         city: city.trim() || undefined,
         country: country.trim() || undefined,
-        metadata: resolveMetadata(),
       });
 
       if (checkout?.checkoutUrl) {
