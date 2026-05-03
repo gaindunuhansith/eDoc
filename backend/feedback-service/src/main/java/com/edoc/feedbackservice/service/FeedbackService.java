@@ -14,6 +14,7 @@ import com.edoc.feedbackservice.repository.FeedbackRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
@@ -46,6 +47,7 @@ public class FeedbackService {
         this.doctorServiceClient = doctorServiceClient;
     }
 
+    @Transactional
     public FeedbackResponseDTO submitFeedback(FeedbackRequestDTO request, String authHeader) {
 
         Long patientId = resolveCurrentPatientId(authHeader);
@@ -56,7 +58,7 @@ public class FeedbackService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Appointment not found");
         }
 
-        if (!appointment.getPatientId().equals(patientId)) {
+        if (!appointment.getPatientId().equals(String.valueOf(patientId))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Patient not authorized for this appointment");
         }
 
@@ -108,7 +110,7 @@ public class FeedbackService {
                 .collect(Collectors.toList());
     }
 
-    public List<FeedbackResponseDTO> getFeedbackForDoctor(Long doctorId) {
+    public List<FeedbackResponseDTO> getFeedbackForDoctor(String doctorId) {
         return feedbackRepository.findByDoctorId(doctorId)
                 .stream()
                 .map(feedbackMapper::toResponseDTO)
@@ -134,7 +136,7 @@ public class FeedbackService {
         return getFeedbackForPatient(resolveCurrentPatientId(authHeader));
     }
 
-    public List<FeedbackResponseDTO> getFeedbackForAppointment(Long appointmentId) {
+    public List<FeedbackResponseDTO> getFeedbackForAppointment(String appointmentId) {
         return feedbackRepository.findByAppointmentId(appointmentId)
                 .stream()
                 .map(feedbackMapper::toResponseDTO)
@@ -147,6 +149,7 @@ public class FeedbackService {
         return feedbackMapper.toResponseDTO(feedback);
     }
 
+    @Transactional
     public FeedbackResponseDTO updateFeedback(Long id, UpdateFeedbackRequestDTO request, String authHeader) {
         Feedback feedback = feedbackRepository.findById(id)
                 .orElseThrow(() -> new FeedbackNotFoundException("Feedback not found"));
@@ -163,6 +166,7 @@ public class FeedbackService {
         return feedbackMapper.toResponseDTO(updated);
     }
 
+    @Transactional
     public void deleteFeedback(Long id, String authHeader) {
         Feedback feedback = feedbackRepository.findById(id)
                 .orElseThrow(() -> new FeedbackNotFoundException("Feedback not found"));

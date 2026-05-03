@@ -130,7 +130,12 @@ export default function BookAppointmentWizard() {
   };
 
   const handleCreate = () => {
-    if (!patient?.id || !selectedDoctor || !date || !timeSlot || !reason.trim()) {
+    if (!patient?.id) {
+      toast.error("Patient profile not found. Please complete your patient profile before booking.");
+      return;
+    }
+    if (!selectedDoctor || !date || !timeSlot || !reason.trim()) {
+      toast.error("Please ensure all booking details are filled in.");
       return;
     }
 
@@ -228,6 +233,7 @@ export default function BookAppointmentWizard() {
           onBack={() => setStep(2)}
           onConfirm={handleCreate}
           isSubmitting={createMutation.isPending}
+          patientReady={patient != null && patient.id != null}
         />
       )}
 
@@ -505,7 +511,8 @@ function Step3Confirmation({
    setReason,
    onBack,
    onConfirm,
-   isSubmitting
+   isSubmitting,
+   patientReady,
 }: any) {
   return (
     <div className="bg-white rounded-xl shadow-sm border p-6 md:p-8 animate-in fade-in slide-in-from-right-4 duration-300 max-w-3xl mx-auto">
@@ -565,9 +572,22 @@ function Step3Confirmation({
             />
          </div>
 
+         {!patientReady && (
+            <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg flex items-start gap-3">
+               <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5 text-red-500" />
+               <div>
+                  <p className="font-medium text-sm">Patient Profile Required</p>
+                  <p className="text-xs text-red-700/80 mt-1 leading-relaxed">
+                     You must complete your patient profile before booking an appointment.{" "}
+                     <a href="/patient/profile" className="underline font-semibold">Go to Profile</a>
+                  </p>
+               </div>
+            </div>
+         )}
+
          <div className="pt-4 flex justify-end gap-3">
             <Button variant="outline" onClick={onBack} disabled={isSubmitting}>Back</Button>
-            <Button onClick={onConfirm} disabled={!reason.trim() || isSubmitting} className="w-40">
+            <Button onClick={onConfirm} disabled={!reason.trim() || isSubmitting || !patientReady} className="w-40">
                {isSubmitting ? "Booking..." : "Confirm Booking"}
             </Button>
          </div>
