@@ -59,7 +59,7 @@ public class NotificationService {
         this.userNotificationService = userNotificationService;
     }
 
-    public NotificationResponse send(NotificationRequestDTO request) {
+    public NotificationResponse send(NotificationRequestDTO request, String authHeader) {
         if (request == null || request.type() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Notification type is required.");
         }
@@ -70,11 +70,18 @@ public class NotificationService {
         String inboxUserId = null; // JWT uid (UUID) for the patient inbox
 
         if (request.patientId() != null) {
-            // Resolve userId from patient-service, then fetch contact info from user-service.
+            // Resolve userId from patient-service for the in-app inbox.
             String resolvedUserId = patientServiceClient.getPatientUserId(request.patientId());
             if (resolvedUserId != null && !resolvedUserId.isBlank()) {
                 inboxUserId = resolvedUserId;
-                UserServiceClient.UserContact user = userServiceClient.getUserById(inboxUserId);
+            }
+            // Use pre-resolved contact if provided; fall back to user-service only if absent.
+            if ((request.recipientEmail() != null && !request.recipientEmail().isBlank())
+                    || (request.recipientPhone() != null && !request.recipientPhone().isBlank())) {
+                email = request.recipientEmail();
+                phone = request.recipientPhone();
+            } else if (inboxUserId != null) {
+                UserServiceClient.UserContact user = userServiceClient.getUserById(inboxUserId, authHeader);
                 if (user != null) {
                     email = user.email();
                     phone = user.phoneNumber();
@@ -85,14 +92,14 @@ public class NotificationService {
             DoctorServiceClient.DoctorContact doctor = doctorServiceClient.getDoctorById(request.doctorId());
             if (doctor != null && doctor.userId() != null && !doctor.userId().isBlank()) {
                 inboxUserId = doctor.userId();
-                UserServiceClient.UserContact user = userServiceClient.getUserById(doctor.userId());
+                UserServiceClient.UserContact user = userServiceClient.getUserById(doctor.userId(), authHeader);
                 if (user != null) {
                     email = user.email();
                     phone = user.phoneNumber();
                 }
             }
         } else if (request.userId() != null) {
-            UserServiceClient.UserContact user = userServiceClient.getUserById(request.userId());
+            UserServiceClient.UserContact user = userServiceClient.getUserById(request.userId(), authHeader);
             if (user != null) {
                 email = user.email();
                 phone = user.phoneNumber();

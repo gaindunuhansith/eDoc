@@ -9,6 +9,7 @@ public class PrescriptionResponseDTO {
     private String id;
     private String doctorId;
     private String patientId;
+    private String patientUserId;
     private String appointmentId;
     private String diagnosis;
     private String notes;
@@ -38,6 +39,14 @@ public class PrescriptionResponseDTO {
 
     public void setPatientId(String patientId) {
         this.patientId = patientId;
+    }
+
+    public String getPatientUserId() {
+        return patientUserId;
+    }
+
+    public void setPatientUserId(String patientUserId) {
+        this.patientUserId = patientUserId;
     }
 
     public String getAppointmentId() {

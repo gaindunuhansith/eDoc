@@ -3,6 +3,7 @@ package com.edoc.patientservice.controller;
 import com.edoc.patientservice.dto.prescription.PrescriptionResponseDTO;
 import com.edoc.patientservice.service.CurrentPatientProvider;
 import com.edoc.patientservice.service.PrescriptionService;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,13 +26,16 @@ public class PrescriptionController {
 
     @GetMapping("/patients/me/prescriptions")
     // Patient-facing endpoint aggregating prescriptions from doctor-service.
-    public List<PrescriptionResponseDTO> getMyPrescriptions() {
-        return prescriptionService.getPrescriptionsForPatient(currentPatientProvider.getCurrentUserId());
+    public List<PrescriptionResponseDTO> getMyPrescriptions(HttpServletRequest request) {
+        return prescriptionService.getPrescriptionsForPatient(
+                currentPatientProvider.getCurrentUserId(),
+                request.getHeader("Authorization"));
     }
 
     @GetMapping("/internal/patients/{id}/prescriptions")
     // Internal endpoint for cross-service prescription reads by patient id.
-    public List<PrescriptionResponseDTO> getPrescriptionsInternal(@PathVariable UUID id) {
-        return prescriptionService.getPrescriptionsInternal(id);
+    public List<PrescriptionResponseDTO> getPrescriptionsInternal(@PathVariable UUID id,
+                                                                   HttpServletRequest request) {
+        return prescriptionService.getPrescriptionsInternal(id, request.getHeader("Authorization"));
     }
 }

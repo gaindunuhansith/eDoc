@@ -20,7 +20,9 @@ public class Appointment {
 
     private String patientId;
     private String patientUserId;  // patient's userId (String UUID) for consistent ID usage
-    private String patientName;    // snapshot from user-service at booking time
+    private String patientName;    // snapshot at booking time
+    private String patientEmail;   // snapshot at booking time for direct notification delivery
+    private String patientPhone;   // snapshot at booking time for direct notification delivery
     private String doctorId;
 
     // Doctor details snapshot - we store these so if doctor

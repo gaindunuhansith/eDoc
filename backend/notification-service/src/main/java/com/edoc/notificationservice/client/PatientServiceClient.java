@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
-import java.util.Map;
+import java.util.UUID;
 
 @Component
 public class PatientServiceClient {
@@ -26,16 +26,22 @@ public class PatientServiceClient {
     // Returns the userId (JWT uid) for the given internal patient id, or null if unavailable.
     public String getPatientUserId(String patientId) {
         try {
-            Map<?, ?> response = restClient.get()
+            UUID.fromString(patientId);
+        } catch (IllegalArgumentException e) {
+            logger.warn("patientId '{}' is not a valid UUID, skipping patient lookup", patientId);
+            return null;
+        }
+        try {
+            PatientBasic response = restClient.get()
                     .uri(patientServiceBaseUrl + "/api/v1/internal/patients/{id}", patientId)
                     .retrieve()
-                    .body(Map.class);
-            if (response == null) return null;
-            Object userIdObj = response.get("userId");
-            return userIdObj != null ? userIdObj.toString() : null;
+                    .body(PatientBasic.class);
+            return response != null ? response.userId() : null;
         } catch (RestClientException ex) {
             logger.warn("Could not fetch patient {}: {}", patientId, ex.getMessage());
             return null;
         }
     }
+
+    private record PatientBasic(String userId) {}
 }

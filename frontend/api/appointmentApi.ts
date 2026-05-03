@@ -46,6 +46,8 @@ export interface CreateAppointmentPayload {
   patientId: string;
   patientUserId?: string;  // patient's userId (String UUID)
   patientName?: string;
+  patientEmail?: string;   // snapshotted for direct notification delivery
+  patientPhone?: string;   // snapshotted for direct notification delivery
   doctorId: string;
   doctorName?: string;
   appointmentDate: string;   // "YYYY-MM-DD"
