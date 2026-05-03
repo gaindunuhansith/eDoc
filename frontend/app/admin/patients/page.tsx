@@ -49,7 +49,6 @@ import {
   useGetAdminPatientById,
   useAdminUpdatePatientStatus,
   type Patient,
-  type PatientStatus,
 } from "@/api/patientApi";
 
 type FilterTab = "ALL" | "ACTIVE" | "INACTIVE";
@@ -60,9 +59,9 @@ export default function AdminPatientsPage() {
   const [page, setPage] = useState(1);
   const rowsPerPage = 20;
 
-  const [viewId, setViewId] = useState<number | null>(null);
+  const [viewId, setViewId] = useState<string | null>(null);
   const [statusTarget, setStatusTarget] = useState<Patient | null>(null);
-  const [newStatus, setNewStatus] = useState<PatientStatus>("INACTIVE");
+  const [willDeactivate, setWillDeactivate] = useState<boolean>(true);
   const [reason, setReason] = useState("");
 
   const { data: patients = [], isLoading } = useGetAdminAllPatients();
@@ -70,8 +69,8 @@ export default function AdminPatientsPage() {
 
   const filtered = useMemo(() => {
     let list = patients;
-    if (tab === "ACTIVE") list = list.filter((p) => p.status === "ACTIVE");
-    if (tab === "INACTIVE") list = list.filter((p) => p.status === "INACTIVE");
+    if (tab === "ACTIVE") list = list.filter((p) => !p.deleted);
+    if (tab === "INACTIVE") list = list.filter((p) => p.deleted);
     if (searchTerm.trim()) {
       const q = searchTerm.toLowerCase();
       list = list.filter(
@@ -95,22 +94,22 @@ export default function AdminPatientsPage() {
 
   const openStatusDialog = (patient: Patient) => {
     setStatusTarget(patient);
-    setNewStatus(patient.status === "ACTIVE" ? "INACTIVE" : "ACTIVE");
+    setWillDeactivate(!patient.deleted);
     setReason("");
   };
 
   const handleStatusChange = () => {
     if (!statusTarget) return;
-    if (newStatus === "INACTIVE" && !reason.trim()) {
+    if (willDeactivate && !reason.trim()) {
       toast.error("A deactivation reason is required.");
       return;
     }
     statusMutation.mutate(
-      { id: statusTarget.id, payload: { status: newStatus, reason: reason.trim() || undefined } },
+      { id: statusTarget.id, payload: { deleted: willDeactivate, reason: reason.trim() || undefined } },
       {
         onSuccess: () => {
           toast.success(
-            `Patient #${statusTarget.id} marked as ${newStatus}.`
+            `Patient ${statusTarget.id.slice(0, 8)}… ${willDeactivate ? "deactivated" : "reactivated"}.`
           );
           setStatusTarget(null);
         },
@@ -157,10 +156,10 @@ export default function AdminPatientsPage() {
           <TabsList className="bg-gray-100">
             <TabsTrigger value="ALL">All ({patients.length})</TabsTrigger>
             <TabsTrigger value="ACTIVE">
-              Active ({patients.filter((p) => p.status === "ACTIVE").length})
+              Active ({patients.filter((p) => !p.deleted).length})
             </TabsTrigger>
             <TabsTrigger value="INACTIVE">
-              Inactive ({patients.filter((p) => p.status === "INACTIVE").length})
+              Inactive ({patients.filter((p) => p.deleted).length})
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -211,7 +210,7 @@ export default function AdminPatientsPage() {
                 {paginated.map((patient) => (
                   <TableRow key={patient.id}>
                     <TableCell className="font-mono text-sm text-gray-700">
-                      #{patient.id}
+                      {patient.id.slice(0, 8)}…
                     </TableCell>
                     <TableCell className="font-medium text-gray-900 max-w-[160px] truncate">
                       {patient.userName ?? (
@@ -235,7 +234,7 @@ export default function AdminPatientsPage() {
                         : "—"}
                     </TableCell>
                     <TableCell>
-                      <StatusBadge status={patient.status} />
+                      <StatusBadge deleted={patient.deleted} />
                     </TableCell>
                     <TableCell className="text-right space-x-2">
                       <Button
@@ -249,13 +248,13 @@ export default function AdminPatientsPage() {
                         variant="ghost"
                         size="sm"
                         className={
-                          patient.status === "ACTIVE"
+                          !patient.deleted
                             ? "text-red-500 hover:text-red-700 hover:bg-red-50"
                             : "text-green-600 hover:text-green-800 hover:bg-green-50"
                         }
                         onClick={() => openStatusDialog(patient)}
                       >
-                        {patient.status === "ACTIVE" ? (
+                        {!patient.deleted ? (
                           <ShieldOff className="w-4 h-4" />
                         ) : (
                           <ShieldCheck className="w-4 h-4" />
@@ -315,27 +314,27 @@ export default function AdminPatientsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {newStatus === "INACTIVE"
+              {willDeactivate
                 ? "Deactivate Patient"
                 : "Reactivate Patient"}
             </DialogTitle>
             <DialogDescription>
-              {newStatus === "INACTIVE" ? (
+              {willDeactivate ? (
                 <>
                   You are about to deactivate{" "}
-                  <strong>Patient #{statusTarget?.id}</strong>. A reason is
+                  <strong>Patient {statusTarget?.id.slice(0, 8)}…</strong>. A reason is
                   required.
                 </>
               ) : (
                 <>
                   You are about to reactivate{" "}
-                  <strong>Patient #{statusTarget?.id}</strong>. Their account
+                  <strong>Patient {statusTarget?.id.slice(0, 8)}…</strong>. Their account
                   will be restored to active status.
                 </>
               )}
             </DialogDescription>
           </DialogHeader>
-          {newStatus === "INACTIVE" && (
+          {willDeactivate && (
             <div className="space-y-2 py-2">
               <Label htmlFor="reason">Reason for deactivation</Label>
               <Textarea
@@ -361,13 +360,13 @@ export default function AdminPatientsPage() {
               Cancel
             </Button>
             <Button
-              variant={newStatus === "INACTIVE" ? "destructive" : "default"}
+              variant={willDeactivate ? "destructive" : "default"}
               onClick={handleStatusChange}
               disabled={statusMutation.isPending}
             >
               {statusMutation.isPending
                 ? "Saving..."
-                : newStatus === "INACTIVE"
+                : willDeactivate
                 ? "Deactivate"
                 : "Reactivate"}
             </Button>
@@ -380,8 +379,8 @@ export default function AdminPatientsPage() {
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 
-function StatusBadge({ status }: { status: PatientStatus }) {
-  if (status === "ACTIVE")
+function StatusBadge({ deleted }: { deleted: boolean }) {
+  if (!deleted)
     return (
       <Badge
         variant="outline"
@@ -407,7 +406,7 @@ function PatientDetailDialog({
   onClose,
   onChangeStatus,
 }: {
-  id: number;
+  id: string;
   onClose: () => void;
   onChangeStatus: (p: Patient) => void;
 }) {
@@ -417,7 +416,7 @@ function PatientDetailDialog({
     <Dialog open onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto bg-gray-50">
         <DialogHeader>
-          <DialogTitle>Patient Profile — #{id}</DialogTitle>
+          <DialogTitle>Patient Profile — {id.slice(0, 8)}…</DialogTitle>
         </DialogHeader>
 
         {isLoading || !patient ? (
@@ -434,15 +433,15 @@ function PatientDetailDialog({
               <div className="flex-1 space-y-1 text-center sm:text-left">
                 <div className="flex items-center justify-center sm:justify-start gap-2">
                   <span className="text-lg font-bold text-gray-900">
-                    {patient.userName ?? `Patient #${patient.id}`}
+                    {patient.userName ?? `Patient ${patient.id.slice(0, 8)}…`}
                   </span>
-                  <StatusBadge status={patient.status} />
+                  <StatusBadge deleted={patient.deleted} />
                 </div>
                 {patient.userEmail && (
                   <p className="text-sm text-gray-500">{patient.userEmail}</p>
                 )}
                 <p className="text-xs font-mono text-gray-400">
-                  Patient #{patient.id} · User ID: {patient.userId}
+                  ID: {patient.id} · User ID: {patient.userId}
                 </p>
                 <p className="text-sm text-gray-500">
                   Joined:{" "}
@@ -455,11 +454,11 @@ function PatientDetailDialog({
                 <Button
                   size="sm"
                   variant={
-                    patient.status === "ACTIVE" ? "destructive" : "default"
+                    !patient.deleted ? "destructive" : "default"
                   }
                   onClick={() => onChangeStatus(patient)}
                 >
-                  {patient.status === "ACTIVE" ? (
+                  {!patient.deleted ? (
                     <>
                       <ShieldOff className="w-4 h-4 mr-1" /> Deactivate
                     </>
@@ -527,7 +526,7 @@ function PatientDetailDialog({
             </div>
 
             {/* Deactivation Info */}
-            {patient.status === "INACTIVE" && (
+            {patient.deleted && (
               <div className="bg-red-50 border border-red-200 rounded-xl p-5 space-y-2">
                 <h3 className="font-semibold text-red-700 flex items-center gap-2">
                   <ShieldOff className="w-4 h-4" /> Deactivation Details
@@ -536,9 +535,9 @@ function PatientDetailDialog({
                   <DetailRow
                     label="Deactivated At"
                     value={
-                      patient.deactivatedAt
+                      patient.deletedAt
                         ? format(
-                            new Date(patient.deactivatedAt),
+                            new Date(patient.deletedAt),
                             "dd MMM yyyy, HH:mm"
                           )
                         : "—"
@@ -546,7 +545,7 @@ function PatientDetailDialog({
                   />
                   <DetailRow
                     label="Reason"
-                    value={patient.deactivationReason ?? "—"}
+                    value={patient.deletionReason ?? "—"}
                     fullWidth
                   />
                 </div>

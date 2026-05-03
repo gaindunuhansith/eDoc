@@ -24,13 +24,13 @@ public class PatientServiceClient {
 
     // Get all reports uploaded by a specific patient
     // Doctor uses this to view patient history before consultation
-    public List<Map> getPatientReports(String patientId) {
+    public List<Map<String, Object>> getPatientReports(String patientId) {
         try {
             return webClientBuilder.build()
                     .get()
                     .uri(patientServiceUrl + "/api/v1/internal/patients/" + patientId + "/reports")
                     .retrieve()
-                    .bodyToMono(new ParameterizedTypeReference<List<Map>>() {})
+                    .bodyToMono(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
                     .block();
         } catch (WebClientResponseException e) {
             log.error("Error fetching reports for patient: {} — HTTP {} {}", patientId, e.getStatusCode(), e.getResponseBodyAsString());
@@ -64,13 +64,14 @@ public class PatientServiceClient {
     }
 
     // Get basic patient profile info
-    public Map getPatientById(String patientId) {
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> getPatientById(String patientId) {
         try {
             return webClientBuilder.build()
                     .get()
                     .uri(patientServiceUrl + "/api/v1/internal/patients/" + patientId)
                     .retrieve()
-                    .bodyToMono(Map.class)
+                    .bodyToMono((Class<Map<String, Object>>) (Class<?>) Map.class)
                     .block();
         } catch (WebClientResponseException e) {
             log.error("Error fetching patient: {} — HTTP {} {}", patientId, e.getStatusCode(), e.getResponseBodyAsString());

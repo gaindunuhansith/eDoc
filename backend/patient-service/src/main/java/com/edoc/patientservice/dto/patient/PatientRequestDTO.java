@@ -1,5 +1,6 @@
 package com.edoc.patientservice.dto.patient;
 
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 
@@ -26,8 +27,10 @@ public class PatientRequestDTO {
     @Size(max = 50)
     private String emergencyContactPhone;
 
+    @Positive
     private Double height;
 
+    @Positive
     private Double weight;
 
     public LocalDate getDateOfBirth() {

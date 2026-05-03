@@ -7,6 +7,7 @@ import com.edoc.notificationservice.service.NotificationService;
 import com.edoc.notificationservice.service.UserNotificationService;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -59,7 +60,7 @@ public class NotificationController {
 
     @PatchMapping("/{id}/read")
     // Mark a single notification as read.
-    public ResponseEntity<Void> markRead(@PathVariable Long id) {
+    public ResponseEntity<Void> markRead(@PathVariable UUID id) {
         userNotificationService.markRead(id, getCurrentUserId());
         return ResponseEntity.noContent().build();
     }
@@ -73,7 +74,7 @@ public class NotificationController {
 
     @DeleteMapping("/{id}")
     // Delete a notification owned by the authenticated user.
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
         userNotificationService.delete(id, getCurrentUserId());
         return ResponseEntity.noContent().build();
     }

@@ -1,8 +1,10 @@
 package com.edoc.notificationservice.dto;
 
+import java.util.UUID;
+
 // Response DTO for user-facing notification inbox entries.
 public record UserNotificationResponseDTO(
-        Long id,
+        UUID id,
         String userId,
         String type,
         String title,

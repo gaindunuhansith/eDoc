@@ -4,6 +4,7 @@ import com.edoc.notificationservice.dto.UserNotificationResponseDTO;
 import com.edoc.notificationservice.model.UserNotification;
 import com.edoc.notificationservice.repository.UserNotificationRepository;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -42,7 +43,7 @@ public class UserNotificationService {
         return repository.countByUserIdAndReadFalse(userId);
     }
 
-    public void markRead(Long notificationId, String userId) {
+    public void markRead(UUID notificationId, String userId) {
         UserNotification n = repository.findByIdAndUserId(notificationId, userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Notification not found"));
         n.setRead(true);
@@ -53,7 +54,7 @@ public class UserNotificationService {
         repository.markAllReadByUserId(userId);
     }
 
-    public void delete(Long notificationId, String userId) {
+    public void delete(UUID notificationId, String userId) {
         UserNotification n = repository.findByIdAndUserId(notificationId, userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Notification not found"));
         repository.delete(n);

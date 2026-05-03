@@ -5,6 +5,7 @@ import com.edoc.patientservice.dto.report.MedicalReportResponseDTO;
 import com.edoc.patientservice.service.CurrentPatientProvider;
 import com.edoc.patientservice.service.MedicalReportService;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -57,25 +58,25 @@ public class MedicalReportController {
 
     @GetMapping("/patients/me/reports/{id}")
     // Get a single report by id for the authenticated patient.
-    public MedicalReportResponseDTO getMyReport(@PathVariable Long id) {
+    public MedicalReportResponseDTO getMyReport(@PathVariable UUID id) {
         return medicalReportService.getReportForPatient(currentPatientProvider.getCurrentUserId(), id);
     }
 
     @GetMapping("/patients/me/reports/{id}/file")
     // Download the original report file for the authenticated patient.
-    public ResponseEntity<Resource> downloadMyReport(@PathVariable Long id) {
+    public ResponseEntity<Resource> downloadMyReport(@PathVariable UUID id) {
         return medicalReportService.getReportFileForPatient(currentPatientProvider.getCurrentUserId(), id);
     }
 
     @GetMapping("/patients/me/reports/{id}/download")
     // Alias of /file to keep client URLs flexible without duplicating logic.
-    public ResponseEntity<Resource> downloadMyReportAlias(@PathVariable Long id) {
+    public ResponseEntity<Resource> downloadMyReportAlias(@PathVariable UUID id) {
         return medicalReportService.getReportFileForPatient(currentPatientProvider.getCurrentUserId(), id);
     }
 
     @GetMapping("/internal/patients/{id}/reports")
     // Internal lookup for another service to read reports.
-    public List<MedicalReportResponseDTO> getReportsInternal(@PathVariable Long id) {
+    public List<MedicalReportResponseDTO> getReportsInternal(@PathVariable UUID id) {
         return medicalReportService.getReportsForPatientInternal(id);
     }
 
@@ -88,21 +89,21 @@ public class MedicalReportController {
     @GetMapping("/internal/patients/by-user/{userId}/reports/{reportId}/file")
     // Internal file access by user-service UUID string (used by doctor-service).
     public ResponseEntity<Resource> downloadReportByUserIdInternal(@PathVariable String userId,
-                                                                    @PathVariable Long reportId) {
+                                                                    @PathVariable UUID reportId) {
         return medicalReportService.getReportFileForPatient(userId, reportId);
     }
 
     @GetMapping("/internal/patients/{patientId}/reports/{reportId}/file")
     // Internal file access endpoint for doctor-service and other backend services.
-    public ResponseEntity<Resource> downloadReportInternal(@PathVariable Long patientId,
-                                                           @PathVariable Long reportId) {
+    public ResponseEntity<Resource> downloadReportInternal(@PathVariable UUID patientId,
+                                                           @PathVariable UUID reportId) {
         return medicalReportService.getReportFileInternal(patientId, reportId);
     }
 
     @GetMapping("/internal/patients/{patientId}/reports/{reportId}/download")
     // Alias of the internal /file endpoint used by doctor-service integrations.
-    public ResponseEntity<Resource> downloadReportInternalAlias(@PathVariable Long patientId,
-                                                                @PathVariable Long reportId) {
+    public ResponseEntity<Resource> downloadReportInternalAlias(@PathVariable UUID patientId,
+                                                                @PathVariable UUID reportId) {
         return medicalReportService.getReportFileInternal(patientId, reportId);
     }
 

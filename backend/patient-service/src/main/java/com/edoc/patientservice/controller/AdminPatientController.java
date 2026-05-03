@@ -6,6 +6,7 @@ import com.edoc.patientservice.service.PatientService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,13 +32,13 @@ public class AdminPatientController {
 
     @GetMapping("/{id}")
     // Fetch a single patient by internal patient id.
-    public PatientResponseDTO getPatient(@PathVariable Long id, HttpServletRequest request) {
+    public PatientResponseDTO getPatient(@PathVariable UUID id, HttpServletRequest request) {
         return patientService.getAdminPatient(id, request.getHeader("Authorization"));
     }
 
     @PatchMapping("/{id}/status")
     // Change a patient's status on behalf of an admin. actedBy is derived server-side (null for admin actors).
-    public PatientResponseDTO changePatientStatus(@PathVariable Long id,
+    public PatientResponseDTO changePatientStatus(@PathVariable UUID id,
                                                   @Valid @RequestBody PatientStatusUpdateRequestDTO request) {
         return patientService.changePatientStatusAdmin(id, request);
     }

@@ -20,15 +20,15 @@ export const PATIENT_ENDPOINTS = {
   UPDATE_ME: "/api/v1/patients/me",
   UPDATE_STATUS: "/api/v1/patients/me/status",
   ADMIN_ALL: "/api/v1/patients/admin/all",
-  ADMIN_BY_ID: (id: number) => `/api/v1/patients/admin/${id}`,
-  ADMIN_UPDATE_STATUS: (id: number) => `/api/v1/patients/admin/${id}/status`,
+  ADMIN_BY_ID: (id: string) => `/api/v1/patients/admin/${id}`,
+  ADMIN_UPDATE_STATUS: (id: string) => `/api/v1/patients/admin/${id}/status`,
 } as const;
 
 export const REPORT_ENDPOINTS = {
   MY_REPORTS: "/api/v1/patients/me/reports",
-  MY_REPORT: (id: number) => `/api/v1/patients/me/reports/${id}`,
+  MY_REPORT: (id: string) => `/api/v1/patients/me/reports/${id}`,
   UPLOAD: "/api/v1/patients/me/reports",
-  DOWNLOAD: (id: number) => `/api/v1/patients/me/reports/${id}/download`,
+  DOWNLOAD: (id: string) => `/api/v1/patients/me/reports/${id}/download`,
 } as const;
 
 export const PRESCRIPTION_PATIENT_ENDPOINTS = {
@@ -77,7 +77,6 @@ export const APPOINTMENT_ENDPOINTS = {
 
 export const NOTIFICATION_ENDPOINTS = {
   GET_ALL: "/api/v1/notifications",
-  GET_BY_ID: (id: string) => `/api/v1/notifications/${id}`,
   MARK_READ: (id: string) => `/api/v1/notifications/${id}/read`,
   MARK_ALL_READ: "/api/v1/notifications/read-all",
   DELETE: (id: string) => `/api/v1/notifications/${id}`,
