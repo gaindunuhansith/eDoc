@@ -4,11 +4,11 @@ import jakarta.validation.constraints.*;
 
 public class FeedbackRequestDTO {
 
-    @NotNull(message = "Appointment ID is required")
-    private Long appointmentId;
+    @NotBlank(message = "Appointment ID is required")
+    private String appointmentId;
 
-    @NotNull(message = "Doctor ID is required")
-    private Long doctorId;
+    @NotBlank(message = "Doctor ID is required")
+    private String doctorId;
 
     @Min(value = 1, message = "Rating must be at least 1")
     @Max(value = 5, message = "Rating must be at most 5")
@@ -19,18 +19,18 @@ public class FeedbackRequestDTO {
 
     public FeedbackRequestDTO() {}
 
-    public FeedbackRequestDTO(Long appointmentId, Long doctorId, int rating, String comment) {
+    public FeedbackRequestDTO(String appointmentId, String doctorId, int rating, String comment) {
         this.appointmentId = appointmentId;
         this.doctorId = doctorId;
         this.rating = rating;
         this.comment = comment;
     }
 
-    public Long getAppointmentId() { return appointmentId; }
-    public void setAppointmentId(Long appointmentId) { this.appointmentId = appointmentId; }
+    public String getAppointmentId() { return appointmentId; }
+    public void setAppointmentId(String appointmentId) { this.appointmentId = appointmentId; }
 
-    public Long getDoctorId() { return doctorId; }
-    public void setDoctorId(Long doctorId) { this.doctorId = doctorId; }
+    public String getDoctorId() { return doctorId; }
+    public void setDoctorId(String doctorId) { this.doctorId = doctorId; }
 
     public int getRating() { return rating; }
     public void setRating(int rating) { this.rating = rating; }

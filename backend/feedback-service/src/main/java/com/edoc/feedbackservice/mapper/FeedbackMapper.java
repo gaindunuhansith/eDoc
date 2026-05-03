@@ -17,7 +17,6 @@ public class FeedbackMapper {
         feedback.setComment(dto.getComment());
         feedback.setTimestamp(java.time.LocalDateTime.now());
         feedback.setEditableUntil(java.time.LocalDateTime.now().plusHours(24));
-        feedback.setStatus(Feedback.FeedbackStatus.PENDING);
         return feedback;
     }
 
@@ -29,8 +28,7 @@ public class FeedbackMapper {
                 feedback.getAppointmentId(),
                 feedback.getRating(),
                 feedback.getComment(),
-                feedback.getTimestamp(),
-                feedback.getStatus().name()
+                feedback.getTimestamp()
         );
         dto.setEditableUntil(feedback.getEditableUntil());
         return dto;

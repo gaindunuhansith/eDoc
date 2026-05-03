@@ -117,7 +117,13 @@ export default function AppointmentsHistoryPage() {
   const { data: appointmentsRaw = [], isLoading: apptLoading } =
     useGetAppointmentsByPatient(patientId);
 
-  const { data: feedbackData, isLoading: feedbackLoading, error: feedbackError } = useGetMyFeedback();
+  const { data: feedbackData } = useGetMyFeedback();
+
+  // Build a set of appointment IDs that already have feedback submitted
+  const feedbackedAppointmentIds = new Set(
+    (feedbackData || []).map((f) => String(f.appointmentId))
+  );
+
   // Sort most recent first
   const appointments = [...appointmentsRaw].sort((a, b) => {
     return new Date(b.appointmentDate).getTime() - new Date(a.appointmentDate).getTime();
@@ -315,14 +321,46 @@ export default function AppointmentsHistoryPage() {
                     </div>
                   )}
 
-                  {(appt.status === "COMPLETED" || appt.status === "CANCELLED" || appt.status === "REJECTED" || appt.status === "NO_SHOW") && (
-                     <Button 
-                       variant="ghost" 
-                       className="w-full text-gray-500 hover:text-red-600 hover:bg-red-50 border-transparent shadow-none"
-                       onClick={() => setDeleteTarget(appt)}
-                     >
-                       <Trash2 className="w-4 h-4 mr-2" /> Remove from history
-                     </Button>
+                  {appt.status === "COMPLETED" && (
+                    <div className="flex flex-col gap-2 w-full">
+                      {!feedbackedAppointmentIds.has(String(appt.id)) ? (
+                        <Button
+                          className="w-full bg-amber-500 hover:bg-amber-600 text-white shadow-sm"
+                          onClick={() =>
+                            router.push(
+                              `/patient/feedback/submit/${appt.id}?doctorId=${appt.doctorId}&doctorName=${encodeURIComponent(appt.doctorName || "")}`
+                            )
+                          }
+                        >
+                          <MessageSquare className="w-4 h-4 mr-2" /> Leave Feedback
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          className="w-full text-green-700 border-green-200 bg-green-50 hover:bg-green-100"
+                          disabled
+                        >
+                          <Star className="w-4 h-4 mr-2 fill-green-500 text-green-500" /> Feedback Submitted
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        className="w-full text-gray-500 hover:text-red-600 hover:bg-red-50 border-transparent shadow-none"
+                        onClick={() => setDeleteTarget(appt)}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" /> Remove from history
+                      </Button>
+                    </div>
+                  )}
+
+                  {(appt.status === "CANCELLED" || appt.status === "REJECTED" || appt.status === "NO_SHOW") && (
+                    <Button
+                      variant="ghost"
+                      className="w-full text-gray-500 hover:text-red-600 hover:bg-red-50 border-transparent shadow-none"
+                      onClick={() => setDeleteTarget(appt)}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" /> Remove from history
+                    </Button>
                   )}
                 </CardFooter>
               </Card>

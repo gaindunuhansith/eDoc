@@ -6,22 +6,16 @@ import { queryKeys } from "./utils/queryKeys";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export type FeedbackStatus = "PENDING" | "APPROVED" | "REJECTED";
-
 export interface Feedback {
   id: number;
   patientId: number;
   patientName?: string;
-  doctorId: number;
-  doctorName?: string;
-  appointmentId: number;
+  doctorId: string;
+  appointmentId: string;
   rating: number;
   comment?: string;
   timestamp: string;
   editableUntil: string;
-  status: FeedbackStatus;
-  createdAt: string;
-  updatedAt?: string;
 }
 
 export function isFeedbackEditable(feedback: Feedback): boolean {
@@ -42,8 +36,8 @@ export function getEditableUntilLabel(feedback: Feedback): string {
 }
 
 export interface FeedbackPayload {
-  appointmentId: number;
-  doctorId: number;
+  appointmentId: string;
+  doctorId: string;
   rating: number;
   comment?: string;
 }
@@ -51,7 +45,6 @@ export interface FeedbackPayload {
 export interface UpdateFeedbackPayload {
   rating?: number;
   comment?: string;
-  status?: FeedbackStatus;
 }
 
 // ─── API Functions ────────────────────────────────────────────────────────────
@@ -78,7 +71,7 @@ export const fetchFeedbackByDoctor = (doctorId: string) =>
   apiClient.get<Feedback[]>(FEEDBACK_ENDPOINTS.BY_DOCTOR(doctorId));
 
 export const fetchFeedbackByAppointment = (appointmentId: string) =>
-  apiClient.get<Feedback>(FEEDBACK_ENDPOINTS.BY_APPOINTMENT(appointmentId));
+  apiClient.get<Feedback[]>(FEEDBACK_ENDPOINTS.BY_APPOINTMENT(appointmentId));
 
 export const updateFeedback = (id: string, payload: UpdateFeedbackPayload) =>
   apiClient.put<Feedback>(FEEDBACK_ENDPOINTS.UPDATE(id), payload);
@@ -154,8 +147,9 @@ export const useGetMyFeedback = () =>
         const res = await fetchMyFeedback();
         return res.data;
       } catch (err: any) {
-        // Patient profile not found or service unavailable — treat as empty list
-        if (err?.status === 401 || err?.status === 404 || err?.status >= 500) return [];
+        // Treat empty / not-found as empty list; re-throw auth errors
+        if (err?.status === 401 || err?.response?.status === 401) throw err;
+        if (err?.status === 404 || err?.status >= 500) return [];
         throw err;
       }
     },
