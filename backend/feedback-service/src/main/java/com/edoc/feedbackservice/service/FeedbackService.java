@@ -94,7 +94,16 @@ public class FeedbackService {
 
     private void sendFeedbackNotification(Feedback feedback, String authHeader) {
         try {
+            String doctorName = null;
+            try {
+                DoctorServiceClient.DoctorDTO doctor = doctorServiceClient.getDoctorById(feedback.getDoctorId(), authHeader);
+                if (doctor != null) doctorName = doctor.getFullName();
+            } catch (Exception ignored) {
+                // non-critical — notification will fall back to generic salutation
+            }
+
             Map<String, Object> data = new HashMap<>();
+            data.put("doctorName", doctorName);
             data.put("rating", feedback.getRating());
             data.put("comment", feedback.getComment());
             // Use the doctorId path so notification-service resolves the doctor's contact via doctor-service.

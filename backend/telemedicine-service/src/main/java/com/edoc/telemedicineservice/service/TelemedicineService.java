@@ -6,6 +6,8 @@ import com.edoc.telemedicineservice.dto.SessionTokenResponse;
 import com.edoc.telemedicineservice.model.SessionStatus;
 import com.edoc.telemedicineservice.model.VideoSession;
 import com.edoc.telemedicineservice.repository.VideoSessionRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -24,6 +26,8 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Service
 public class TelemedicineService {
+
+    private static final Logger logger = LoggerFactory.getLogger(TelemedicineService.class);
 
     private final VideoSessionRepository sessionRepository;
     private final TwilioService twilioService;
@@ -179,7 +183,8 @@ public class TelemedicineService {
                     AppointmentServiceClient.AppointmentStatus.COMPLETED,
                     "Telemedicine session completed successfully"), authorizationHeader);
         } catch (Exception ex) {
-            System.err.println("Failed to update appointment status: " + ex.getMessage());
+            logger.warn("Failed to update appointment status to COMPLETED for appointmentId={}: {}",
+                    appointmentId, ex.getMessage());
         }
 
         return savedSession;
