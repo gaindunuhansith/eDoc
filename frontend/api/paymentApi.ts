@@ -58,8 +58,7 @@ export interface InitiatePaymentPayload {
   appointmentId: string;
   amount: number;
   currency: CurrencyType | string;
-  firstName?: string;
-  lastName?: string;
+  fullName?: string;
   email?: string;
   phone?: string;
   address?: string;
@@ -81,17 +80,12 @@ export interface CheckoutPayloadResponse {
 // ─── API Functions ─────────────────────────────────────────────────────────────
 
 export const initiatePayment = (payload: InitiatePaymentPayload) => {
-  const fullName = [payload.firstName, payload.lastName]
-    .filter(Boolean)
-    .join(" ")
-    .trim();
-
   const body = {
     appointmentId: payload.appointmentId,
     amount: payload.amount,
     currency: payload.currency,
     billing: {
-      fullName: fullName,
+      fullName: payload.fullName ?? "",
       email: payload.email ?? "",
       phone: payload.phone ?? "",
       address: payload.address,

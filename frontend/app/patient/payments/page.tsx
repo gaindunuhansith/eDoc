@@ -12,6 +12,7 @@ import {
   Check,
   X,
   ChevronRight as ChevronRightIcon,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,8 +40,9 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { useGetMyPaymentHistory, usePollPaymentByOrder, type PaymentStatus } from "@/api/paymentApi";
+import { useGetMyPaymentHistory, usePollPaymentByOrder, downloadInvoice, type PaymentStatus } from "@/api/paymentApi";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 const PAGE_SIZE = 10;
 
@@ -54,6 +56,11 @@ function formatDate(iso: string) {
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+}
+
+function truncateId(id: string) {
+  if (!id) return "—";
+  return id.length > 8 ? `${id.slice(0, 8)}…` : id;
 }
 
 const statusLabel: Record<PaymentStatus, string> = {
@@ -215,6 +222,23 @@ export default function PaymentsPage() {
 
   const { data, isLoading, isError } = useGetMyPaymentHistory(page, PAGE_SIZE);
 
+  const handleDownloadInvoice = async (id: string) => {
+    try {
+      const response = await downloadInvoice(id);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `invoice-${id}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Failed to download invoice:", error);
+      toast.error("Failed to download invoice. Please try again.");
+    }
+  };
+
   const filtered = useMemo(() => {
     if (!data?.content) return [];
     return data.content.filter((tx) => {
@@ -298,6 +322,7 @@ export default function PaymentsPage() {
                 <TableHead className="text-muted-foreground font-medium py-4">Amount</TableHead>
                 <TableHead className="text-muted-foreground font-medium py-4 hidden md:table-cell">Receipt #</TableHead>
                 <TableHead className="text-muted-foreground font-medium py-4">Status</TableHead>
+                <TableHead className="text-muted-foreground font-medium py-4 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -331,12 +356,12 @@ export default function PaymentsPage() {
                     <Checkbox className="border-border/60 w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity" />
                   </TableCell>
                   <TableCell className="py-4">
-                    <p className="font-semibold text-foreground text-sm">
-                      {tx.appointmentId ? `Appointment #${tx.appointmentId}` : "—"}
+                    <p className="font-semibold text-foreground text-sm" title={tx.appointmentId}>
+                      {tx.appointmentId ? `Appointment #${truncateId(tx.appointmentId)}` : "—"}
                     </p>
                   </TableCell>
-                  <TableCell className="py-4 text-sm font-medium text-foreground">
-                    {tx.orderId ?? tx.id}
+                  <TableCell className="py-4 text-sm font-medium text-foreground" title={tx.orderId ?? tx.id}>
+                    {truncateId(tx.orderId ?? tx.id)}
                   </TableCell>
                   <TableCell className="py-4">
                     <div className="text-sm text-foreground font-medium">{formatDate(tx.createdAt)}</div>
@@ -348,7 +373,7 @@ export default function PaymentsPage() {
                     </span>
                   </TableCell>
                   <TableCell className="py-4 text-xs text-muted-foreground font-mono hidden md:table-cell max-w-45 truncate" title={tx.id}>
-                    {tx.id}
+                    {truncateId(tx.id)}
                   </TableCell>
                   <TableCell className="py-4">
                     <div className="flex flex-col items-start gap-2">
@@ -376,6 +401,18 @@ export default function PaymentsPage() {
                         </Button>
                       )}
                     </div>
+                  </TableCell>
+                  <TableCell className="py-4 text-right">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-primary transition-colors"
+                      disabled={tx.status !== "SUCCESS"}
+                      onClick={() => handleDownloadInvoice(tx.id)}
+                      title="Download Invoice"
+                    >
+                      <FileText className="w-4 h-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
