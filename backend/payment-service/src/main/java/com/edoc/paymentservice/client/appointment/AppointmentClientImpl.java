@@ -22,24 +22,23 @@ public class AppointmentClientImpl implements AppointmentClient {
     private final RestClient restClient;
     private final TransactionLogRepository transactionLogRepository;
 
-    @Value("${app.appointment-service.notify-path:/api/v1/appointments/payments/notify-success}")
-    private String notifyPath;
+    @Value("${app.appointment-service.payment-update-path:/api/v1/appointments/{appointmentId}/payment}")
+    private String paymentUpdatePathTemplate;
 
     @Override
     public void notifyPaymentSuccess(Payment payment) {
         PaymentSuccessRequest payload = new PaymentSuccessRequest(
-                payment.getId(),
-                payment.getAppointmentId(),
-                payment.getStatus().name());
+                payment.getStatus().name(),
+                payment.getId().toString());
 
         String payloadJson = buildPayloadJson(payment);
 
         try {
-            log.info("Sending payment success notification for paymentId={} to path={}",
-                    payment.getId(), notifyPath);
+            log.info("Sending payment success notification for paymentId={} appointmentId={}",
+                    payment.getId(), payment.getAppointmentId());
 
-            restClient.post()
-                    .uri(notifyPath)
+            restClient.patch()
+                    .uri(paymentUpdatePathTemplate, payment.getAppointmentId())
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(payload)
                     .retrieve()
@@ -72,8 +71,8 @@ public class AppointmentClientImpl implements AppointmentClient {
     }
 
     private String buildPayloadJson(Payment payment) {
-        return "{\"paymentId\":\"" + payment.getId()
-                + ",\"appointmentId\":\"" + payment.getAppointmentId() + "\""
-                + ",\"status\":\"" + payment.getStatus().name() + "\"}";
+        return "{\"paymentStatus\":\"" + payment.getStatus().name() + "\""
+                + ",\"paymentId\":\"" + payment.getId() + "\""
+                + ",\"appointmentId\":\"" + payment.getAppointmentId() + "\"}";  // audit only
     }
 }
