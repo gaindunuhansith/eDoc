@@ -14,10 +14,10 @@ export const queryKeys = {
     detail: (id: string) => ["patient", "detail", id] as const,
     stats: () => ["patient", "stats"] as const,
     reports: () => ["patient", "reports"] as const,
-    report: (id: number) => ["patient", "report", id] as const,
+    report: (id: string) => ["patient", "report", id] as const,
     prescriptions: () => ["patient", "prescriptions"] as const,
     adminList: () => ["patient", "admin", "list"] as const,
-    adminDetail: (id: number) => ["patient", "admin", "detail", id] as const,
+    adminDetail: (id: string) => ["patient", "admin", "detail", id] as const,
   },
 
   doctor: {

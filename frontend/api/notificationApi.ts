@@ -5,13 +5,14 @@ import { NOTIFICATION_ENDPOINTS } from "./utils/endpoints";
 import { queryKeys } from "./utils/queryKeys";
 
 export type NotificationType =
-  | "APPOINTMENT_REMINDER"
+  | "APPOINTMENT_BOOKED"
   | "APPOINTMENT_CONFIRMED"
+  | "APPOINTMENT_REJECTED"
   | "APPOINTMENT_CANCELLED"
-  | "PAYMENT_SUCCESS"
-  | "PAYMENT_FAILED"
-  | "TELEMEDICINE_STARTING"
-  | "GENERAL";
+  | "APPOINTMENT_COMPLETED"
+  | "TELEMEDICINE_SESSION_STARTED"
+  | "FEEDBACK_RECEIVED"
+  | "PAYMENT_SUCCESS";
 
 export interface Notification {
   id: string;
@@ -21,7 +22,6 @@ export interface Notification {
   message: string;
   isRead: boolean;
   createdAt: string;
-  metadata?: Record<string, unknown>;
 }
 
 export interface UnreadCountResponse {
@@ -30,9 +30,6 @@ export interface UnreadCountResponse {
 
 export const fetchAllNotifications = () =>
   apiClient.get<Notification[]>(NOTIFICATION_ENDPOINTS.GET_ALL);
-
-export const fetchNotificationById = (id: string) =>
-  apiClient.get<Notification>(NOTIFICATION_ENDPOINTS.GET_BY_ID(id));
 
 export const markNotificationRead = (id: string) =>
   apiClient.patch(NOTIFICATION_ENDPOINTS.MARK_READ(id));
@@ -50,13 +47,6 @@ export const useGetAllNotifications = () =>
   useQuery({
     queryKey: queryKeys.notification.lists(),
     queryFn: () => fetchAllNotifications().then((r) => r.data),
-  });
-
-export const useGetNotificationById = (id: string) =>
-  useQuery({
-    queryKey: queryKeys.notification.detail(id),
-    queryFn: () => fetchNotificationById(id).then((r) => r.data),
-    enabled: !!id,
   });
 
 export const useGetUnreadCount = () =>

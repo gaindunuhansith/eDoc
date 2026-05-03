@@ -42,14 +42,15 @@ import { cn } from "@/lib/utils";
 function NotificationIcon({ type }: { type: NotificationType }) {
   const base = "w-4 h-4";
   switch (type) {
-    case "APPOINTMENT_REMINDER":
+    case "APPOINTMENT_BOOKED":
     case "APPOINTMENT_CONFIRMED":
+    case "APPOINTMENT_REJECTED":
     case "APPOINTMENT_CANCELLED":
+    case "APPOINTMENT_COMPLETED":
       return <Calendar className={cn(base, "text-blue-500")} />;
     case "PAYMENT_SUCCESS":
-    case "PAYMENT_FAILED":
-      return <CreditCard className={cn(base, type === "PAYMENT_FAILED" ? "text-rose-500" : "text-emerald-500")} />;
-    case "TELEMEDICINE_STARTING":
+      return <CreditCard className={cn(base, "text-emerald-500")} />;
+    case "TELEMEDICINE_SESSION_STARTED":
       return <Video className={cn(base, "text-purple-500")} />;
     default:
       return <Info className={cn(base, "text-muted-foreground")} />;
