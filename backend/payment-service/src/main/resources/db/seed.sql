@@ -57,13 +57,10 @@ SELECT
     'APT-SEED-' || LPAD((1000 + gs)::text, 4, '0')              AS appointment_id,
     'USR-PAT-' || LPAD((3 + ((gs - 1) % 13))::text, 2, '0')       AS user_id,
 
-    -- Alternate LKR (in-person/procedure) and USD (telemedicine) amounts
-    CASE
-        WHEN gs % 2 = 0 THEN ROUND((1800.00 + gs * 213.50)::numeric, 2)
-        ELSE                 ROUND((  45.00 + gs *   3.25)::numeric, 2)
-    END                                                           AS amount,
+    -- All consultation fees in LKR (1200 + gs * 190); range LKR 1390–8800
+    ROUND((1200.00 + gs * 190.00)::numeric, 2)                    AS amount,
 
-    CASE WHEN gs % 2 = 0 THEN 'LKR' ELSE 'USD' END              AS currency,
+    'LKR'                                                         AS currency,
 
     CASE
         WHEN gs % 7 = 0 THEN 'FAILED'
@@ -83,6 +80,27 @@ SELECT
     NOW() - ((41 - gs) * INTERVAL '2 days') + INTERVAL '8 minutes' AS updated_at
 
 FROM generate_series(1, 40) AS gs;
+
+-- ── Lehan Navaratne (USR-PAT-16) explicit payments ──────────────────────────
+INSERT INTO payments (id, appointment_id, user_id, amount, currency, status, order_id, payhere_id, created_at, updated_at)
+VALUES
+    ((substr(md5('pmt-41'),1,8)||'-'||substr(md5('pmt-41'),9,4)||'-'||substr(md5('pmt-41'),13,4)||'-'||substr(md5('pmt-41'),17,4)||'-'||substr(md5('pmt-41'),21,12))::uuid,
+     'APT-SEED-1041', 'USR-PAT-16', 8990.00, 'LKR', 'SUCCESS',
+     'ORD-2026-00041', 'PH-000200287',
+     NOW() - INTERVAL '6 days',
+     NOW() - INTERVAL '6 days' + INTERVAL '8 minutes'),
+
+    ((substr(md5('pmt-42'),1,8)||'-'||substr(md5('pmt-42'),9,4)||'-'||substr(md5('pmt-42'),13,4)||'-'||substr(md5('pmt-42'),17,4)||'-'||substr(md5('pmt-42'),21,12))::uuid,
+     'APT-SEED-1042', 'USR-PAT-16', 9180.00, 'LKR', 'SUCCESS',
+     'ORD-2026-00042', 'PH-000200294',
+     NOW() - INTERVAL '3 days',
+     NOW() - INTERVAL '3 days' + INTERVAL '8 minutes'),
+
+    ((substr(md5('pmt-43'),1,8)||'-'||substr(md5('pmt-43'),9,4)||'-'||substr(md5('pmt-43'),13,4)||'-'||substr(md5('pmt-43'),17,4)||'-'||substr(md5('pmt-43'),21,12))::uuid,
+     'APT-SEED-1043', 'USR-PAT-16', 9370.00, 'LKR', 'PENDING',
+     'ORD-2026-00043', NULL,
+     NOW() - INTERVAL '1 day',
+     NOW() - INTERVAL '1 day' + INTERVAL '8 minutes');
 
 -- ─── Transaction Logs ─────────────────────────────────────────────────────────
 -- Each payment receives a full lifecycle log sequence.
@@ -238,7 +256,8 @@ WITH patients (user_id, full_name, email, phone, city) AS (
     ('USR-PAT-12', 'Gimhan Perera',        'gimhan.perera@edoc.com',        '0744200012', 'Badulla'),
     ('USR-PAT-13', 'Hasitha Jayasena',     'hasitha.jayasena@edoc.com',     '0755300013', 'Anuradhapura'),
     ('USR-PAT-14', 'Indika Kumara',        'indika.kumara@edoc.com',        '0766400014', 'Nuwara Eliya'),
-    ('USR-PAT-15', 'Janani Thilakarathne', 'janani.thilakarathne@edoc.com', '0777500015', 'Colombo')
+    ('USR-PAT-15', 'Janani Thilakarathne', 'janani.thilakarathne@edoc.com', '0777500015', 'Colombo'),
+    ('USR-PAT-16', 'Lehan Navaratne',      'lehanxp@gmail.com',             '0788600016', 'Rajagiriya'))
 )
 INSERT INTO billing_details (
     id, payment_id, full_name, email, phone, address, city, country, created_at
