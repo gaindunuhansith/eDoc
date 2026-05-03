@@ -17,15 +17,15 @@ public class AppointmentServiceClient {
     }
 
     public AppointmentDTO getAppointment(String appointmentId, String authorizationHeader) {
+        if (authorizationHeader == null || authorizationHeader.isBlank()) {
+            throw new IllegalArgumentException("Authorization header is required for inter-service calls");
+        }
         try {
-            WebClient webClient = webClientBuilder.build();
-            if (authorizationHeader != null && !authorizationHeader.isBlank()) {
-                webClient = webClient.mutate().defaultHeader("Authorization", authorizationHeader).build();
-            }
+            WebClient webClient = webClientBuilder.defaultHeader("Authorization", authorizationHeader).build();
             
             return webClient
                     .get()
-                    .uri(appointmentServiceUrl + "/api/v1/appointments/" + appointmentId)
+                    .uri(appointmentServiceUrl + "/api/v1/appointments/{appointmentId}", appointmentId)
                     .retrieve()
                     .bodyToMono(AppointmentDTO.class)
                     .block();
@@ -36,15 +36,15 @@ public class AppointmentServiceClient {
     }
 
     public AppointmentDTO updateAppointmentStatus(String appointmentId, AppointmentStatusUpdate update, String authorizationHeader) {
+        if (authorizationHeader == null || authorizationHeader.isBlank()) {
+            throw new IllegalArgumentException("Authorization header is required for inter-service calls");
+        }
         try {
-            WebClient webClient = webClientBuilder.build();
-            if (authorizationHeader != null && !authorizationHeader.isBlank()) {
-                webClient = webClient.mutate().defaultHeader("Authorization", authorizationHeader).build();
-            }
+            WebClient webClient = webClientBuilder.defaultHeader("Authorization", authorizationHeader).build();
             
             return webClient
                     .patch()
-                    .uri(appointmentServiceUrl + "/api/v1/appointments/" + appointmentId + "/status")
+                    .uri(appointmentServiceUrl + "/api/v1/appointments/{appointmentId}/status", appointmentId)
                     .bodyValue(update)
                     .retrieve()
                     .bodyToMono(AppointmentDTO.class)

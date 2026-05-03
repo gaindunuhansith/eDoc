@@ -20,19 +20,19 @@ spring:
 # Service URLs - following patient service pattern
 appointment:
   service:
-    base-url: ${APPOINTMENT_SERVICE_URL:http://appointment-service:8081}
+    url: ${APPOINTMENT_SERVICE_URL:http://appointment-service:8081}
 notification:
   service:
-    base-url: ${NOTIFICATION_SERVICE_URL:http://notification-service:8083}
+    url: ${NOTIFICATION_SERVICE_URL:http://notification-service:8083}
 user:
   service:
-    base-url: ${USER_SERVICE_URL:http://user-service:8088}
+    url: ${USER_SERVICE_URL:http://user-service:8088}
 patient:
   service:
-    base-url: ${PATIENT_SERVICE_URL:http://patient-service:8084}
+    url: ${PATIENT_SERVICE_URL:http://patient-service:8084}
 doctor:
   service:
-    base-url: ${DOCTOR_SERVICE_URL:http://doctor-service:8082}
+    url: ${DOCTOR_SERVICE_URL:http://doctor-service:8082}
 
 server:
   port: ${SERVER_PORT:8089}

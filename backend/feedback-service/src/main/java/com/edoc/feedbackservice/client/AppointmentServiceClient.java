@@ -12,7 +12,7 @@ public class AppointmentServiceClient {
 
     private final RestClient restClient;
 
-    @Value("${appointment.service.base-url}")
+    @Value("${appointment.service.url}")
     private String appointmentServiceBaseUrl;
 
     public AppointmentServiceClient(RestClient.Builder restClientBuilder) {

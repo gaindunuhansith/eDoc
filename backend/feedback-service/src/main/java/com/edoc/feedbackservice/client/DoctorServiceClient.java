@@ -12,7 +12,7 @@ public class DoctorServiceClient {
 
     private final RestClient restClient;
 
-    @Value("${doctor.service.base-url}")
+    @Value("${doctor.service.url}")
     private String doctorServiceBaseUrl;
 
     public DoctorServiceClient(RestClient.Builder restClientBuilder) {
@@ -29,9 +29,9 @@ public class DoctorServiceClient {
         } catch (RestClientResponseException ex) {
             if (ex.getStatusCode() == HttpStatus.NOT_FOUND) {
                 System.out.println("Doctor profile not found for authenticated user");
-            } else {
-                System.err.println("Error calling doctor service: " + ex.getMessage());
+                return null;
             }
+            System.err.println("Error calling doctor service: " + ex.getMessage());
             throw ex;
         } catch (Exception ex) {
             System.err.println("Unexpected error calling doctor service: " + ex.getMessage());
@@ -39,8 +39,29 @@ public class DoctorServiceClient {
         }
     }
 
+    public DoctorDTO getDoctorById(String doctorId, String authHeader) {
+        try {
+            return restClient.get()
+                    .uri(doctorServiceBaseUrl + "/api/v1/doctors/{id}", doctorId)
+                    .header(HttpHeaders.AUTHORIZATION, authHeader)
+                    .retrieve()
+                    .body(DoctorDTO.class);
+        } catch (RestClientResponseException ex) {
+            if (ex.getStatusCode() == HttpStatus.NOT_FOUND) {
+                return null;
+            }
+            System.err.println("Error fetching doctor by id from doctor service: " + ex.getMessage());
+            throw ex;
+        } catch (Exception ex) {
+            System.err.println("Unexpected error fetching doctor by id: " + ex.getMessage());
+            return null;
+        }
+    }
+
     public static class DoctorDTO {
         private String id;
+        private String firstName;
+        private String lastName;
 
         public String getId() {
             return id;
@@ -48,6 +69,27 @@ public class DoctorServiceClient {
 
         public void setId(String id) {
             this.id = id;
+        }
+
+        public String getFirstName() {
+            return firstName;
+        }
+
+        public void setFirstName(String firstName) {
+            this.firstName = firstName;
+        }
+
+        public String getLastName() {
+            return lastName;
+        }
+
+        public void setLastName(String lastName) {
+            this.lastName = lastName;
+        }
+
+        public String getFullName() {
+            if (firstName == null && lastName == null) return null;
+            return ((firstName != null ? firstName : "") + " " + (lastName != null ? lastName : "")).trim();
         }
     }
 }
