@@ -6,6 +6,7 @@ import { queryKeys } from "./utils/queryKeys";
 
 export interface Doctor {
   id: string;
+  userId?: string;  // Links to the user-service account
   email?: string;
   firstName: string;
   lastName: string;
@@ -20,6 +21,7 @@ export interface Doctor {
   consultationFee: number;
   isVerified: boolean;
   isAvailable: boolean;
+  role?: string;  // e.g., "DOCTOR"
   languages?: string[];
 }
 
@@ -108,7 +110,7 @@ export const updateDoctor = ({
 }) => apiClient.put<Doctor>(DOCTOR_ENDPOINTS.UPDATE(id), payload);
 
 export const toggleDoctorAvailability = (id: string) =>
-  apiClient.patch<{ message: string; isAvailable: boolean }>(`${DOCTOR_ENDPOINTS.UPDATE(id)}/toggle-availability`);
+  apiClient.patch<Doctor>(DOCTOR_ENDPOINTS.TOGGLE_AVAILABILITY(id));
 
 
 export const deleteDoctor = (id: string) =>
@@ -119,6 +121,9 @@ export const fetchDoctorsBySpecialty = (specialty: string) =>
 
 export const fetchDoctorAvailability = (id: string) =>
   apiClient.get<DoctorAvailability[]>(DOCTOR_ENDPOINTS.AVAILABILITY(id));
+
+export const verifyDoctor = (id: string) =>
+  apiClient.patch<Doctor>(DOCTOR_ENDPOINTS.VERIFY(id));
 
 export const fetchDoctorPatientProfile = (doctorId: string, patientId: string) =>
   apiClient.get(DOCTOR_ENDPOINTS.GET_PATIENT(doctorId, patientId));
@@ -198,6 +203,26 @@ export const useGetDoctorAvailability = (id: string) =>
     enabled: !!id,
   });
 
+export const useToggleDoctorAvailability = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: toggleDoctorAvailability,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.doctor.all });
+    },
+  });
+};
+
+export const useVerifyDoctor = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: verifyDoctor,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.doctor.all });
+    },
+  });
+};
+
 export const useSetDoctorAvailability = () => {
   const qc = useQueryClient();
   return useMutation({
@@ -254,19 +279,6 @@ export const useGetPrescriptionsByPatient = (patientUserId: string) =>
     enabled: !!patientUserId,
   });
 
-export const verifyDoctor = (id: string) =>
-  apiClient.patch<Doctor>(DOCTOR_ENDPOINTS.VERIFY(id));
-
-export const useVerifyDoctor = () => {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: verifyDoctor,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.doctor.lists() });
-    },
-  });
-};
-
 export const useCreateDoctor = () => {
   const qc = useQueryClient();
   return useMutation({
@@ -287,16 +299,7 @@ export const useUpdateDoctor = () => {
     },
   });
 };
-export const useToggleDoctorAvailability = () => {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: toggleDoctorAvailability,
-    onSuccess: (_, id) => {
-      qc.invalidateQueries({ queryKey: queryKeys.doctor.detail(id) });
-      qc.invalidateQueries({ queryKey: queryKeys.doctor.detail("me") });
-    },
-  });
-};
+
 export const useDeleteDoctor = () => {
   const qc = useQueryClient();
   return useMutation({

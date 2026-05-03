@@ -74,8 +74,8 @@ public class AppointmentService {
         appointment.setCreatedAt(LocalDateTime.now());
         appointment.setUpdatedAt(LocalDateTime.now());
 
-        // Payment starts as NOT_REQUIRED until doctor confirms
-        appointment.setPaymentStatus(Appointment.PaymentStatus.NOT_REQUIRED);
+        // Payment starts as PENDING until confirmed/processed
+        appointment.setPaymentStatus(Appointment.PaymentStatus.PENDING);
 
         // Step 5: Snapshot doctor details into the appointment
         if (request.getDoctorName() != null && !request.getDoctorName().isBlank()) {
@@ -180,12 +180,8 @@ public class AppointmentService {
         if (update.getStatus() == Appointment.AppointmentStatus.CANCELLED) {
             appointment.setCancellationReason(update.getCancellationReason());
 
-            // If already paid (SUCCESS), mark as failed/refunded in our model
-            if (appointment.getPaymentStatus() == Appointment.PaymentStatus.SUCCESS) {
-                appointment.setPaymentStatus(Appointment.PaymentStatus.FAILED);
-            } else {
-                appointment.setPaymentStatus(Appointment.PaymentStatus.NOT_REQUIRED);
-            }
+            // Mark payment as FAILED whether already paid or pending (refund or cancellation)
+            appointment.setPaymentStatus(Appointment.PaymentStatus.FAILED);
 
             String startTime = appointment.getTimeSlot().split("-")[0];
             doctorServiceClient.markSlotAsFree(
@@ -283,12 +279,8 @@ public class AppointmentService {
         appointment.setCancellationReason(reason);
         appointment.setUpdatedAt(LocalDateTime.now());
 
-        // Handle payment refund if already paid
-        if (appointment.getPaymentStatus() == Appointment.PaymentStatus.SUCCESS) {
-            appointment.setPaymentStatus(Appointment.PaymentStatus.FAILED);
-        } else {
-            appointment.setPaymentStatus(Appointment.PaymentStatus.NOT_REQUIRED);
-        }
+        // Mark payment as FAILED on cancellation (whether already paid or pending)
+        appointment.setPaymentStatus(Appointment.PaymentStatus.FAILED);
 
         String startTime = appointment.getTimeSlot().split("-")[0];
         doctorServiceClient.markSlotAsFree(
