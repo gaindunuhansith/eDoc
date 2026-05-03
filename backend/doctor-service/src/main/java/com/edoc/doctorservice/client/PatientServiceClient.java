@@ -28,10 +28,15 @@ public class PatientServiceClient {
         try {
             return webClientBuilder.build()
                     .get()
-                    .uri(patientServiceUrl + "/api/v1/internal/patients/by-user/" + patientId + "/reports")
+                    .uri(patientServiceUrl + "/api/v1/internal/patients/" + patientId + "/reports")
                     .retrieve()
                     .bodyToMono(new ParameterizedTypeReference<List<Map>>() {})
                     .block();
+        } catch (WebClientResponseException e) {
+            log.error("Error fetching reports for patient: {} — HTTP {} {}", patientId, e.getStatusCode(), e.getResponseBodyAsString());
+            throw new RuntimeException(
+                    "Could not fetch patient reports: " + e.getStatusCode()
+            );
         } catch (Exception e) {
             log.error("Error fetching reports for patient: {}", patientId, e);
             throw new RuntimeException(
@@ -45,7 +50,7 @@ public class PatientServiceClient {
         try {
             return webClientBuilder.build()
                     .get()
-                    .uri(patientServiceUrl + "/api/v1/internal/patients/by-user/" + patientId + "/reports/" + reportId + "/file")
+                    .uri(patientServiceUrl + "/api/v1/internal/patients/" + patientId + "/reports/" + reportId + "/file")
                     .retrieve()
                     .toEntity(byte[].class)
                     .block();
@@ -63,10 +68,15 @@ public class PatientServiceClient {
         try {
             return webClientBuilder.build()
                     .get()
-                    .uri(patientServiceUrl + "/api/v1/internal/patients/by-user/" + patientId)
+                    .uri(patientServiceUrl + "/api/v1/internal/patients/" + patientId)
                     .retrieve()
                     .bodyToMono(Map.class)
                     .block();
+        } catch (WebClientResponseException e) {
+            log.error("Error fetching patient: {} — HTTP {} {}", patientId, e.getStatusCode(), e.getResponseBodyAsString());
+            throw new RuntimeException(
+                    "Could not fetch patient details: " + e.getStatusCode()
+            );
         } catch (Exception e) {
             log.error("Error fetching patient with id: {}", patientId, e);
             throw new RuntimeException(
