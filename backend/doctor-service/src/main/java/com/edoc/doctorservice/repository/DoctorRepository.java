@@ -29,4 +29,14 @@ public interface DoctorRepository extends MongoRepository<Doctor, String> {
     List<Doctor> findBySpecialtyAndIsVerifiedAndIsAvailable(
             String specialty, boolean isVerified, boolean isAvailable
     );
+
+    Optional<Doctor> findByUserId(String userId);
+
+    List<Doctor> findByIsDeletedFalse();
+
+    List<Doctor> findByIsVerifiedAndIsDeletedFalse(boolean isVerified);
+
+    List<Doctor> findBySpecialtyAndIsVerifiedAndIsAvailableAndIsDeletedFalse(
+            String specialty, boolean isVerified, boolean isAvailable
+    );
 }

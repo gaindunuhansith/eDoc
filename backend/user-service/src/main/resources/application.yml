@@ -33,10 +33,10 @@ jwt:
 microservices:
   patient:
     base-url: ${PATIENT_SERVICE_URL:http://patient-service:8084}
-    delete-by-user-id-path: ${PATIENT_DELETE_BY_USER_ID_PATH:/patients/{userId}}
+    delete-by-user-id-path: ${PATIENT_DELETE_BY_USER_ID_PATH:/api/v1/internal/patients/by-user/{userId}}
   doctor:
     base-url: ${DOCTOR_SERVICE_URL:http://doctor-service:8082}
-    delete-by-user-id-path: ${DOCTOR_DELETE_BY_USER_ID_PATH:/api/v1/doctors/{userId}}
+    delete-by-user-id-path: ${DOCTOR_DELETE_BY_USER_ID_PATH:/api/v1/doctors/internal/by-user/{userId}}
 
 server:
   port: ${SERVER_PORT:8088}

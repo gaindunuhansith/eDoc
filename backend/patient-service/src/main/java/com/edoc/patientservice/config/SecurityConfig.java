@@ -57,6 +57,7 @@ public class SecurityConfig {
                         // Read-only internal lookups are safe to leave open for service-to-service calls.
                         .requestMatchers(HttpMethod.GET, "/api/v1/internal/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/internal/**").permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/internal/**").permitAll()
                         // Write operations on internal endpoints require a valid service JWT.
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/internal/**").authenticated()
                         .anyRequest().authenticated()

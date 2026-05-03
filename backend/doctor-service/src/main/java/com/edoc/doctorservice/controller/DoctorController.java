@@ -90,6 +90,13 @@ public class DoctorController {
         return ResponseEntity.ok(Map.of("userId", doctor.getUserId() != null ? doctor.getUserId() : ""));
     }
 
+    // DELETE /api/v1/doctors/internal/by-user/{userId} — called by user-service on DOCTOR account deletion.
+    @DeleteMapping("/internal/by-user/{userId}")
+    public ResponseEntity<Void> softDeleteDoctorByUserId(@PathVariable String userId) {
+        doctorService.softDeleteDoctorByUserId(userId);
+        return ResponseEntity.noContent().build();
+    }
+
     // DELETE /api/v1/doctors/{id} - admin removes a doctor
     // This also removes their availability and prescriptions
     @DeleteMapping("/{id}")
