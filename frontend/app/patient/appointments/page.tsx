@@ -162,7 +162,7 @@ export default function AppointmentsHistoryPage() {
   const handleDeleteConfirm = () => {
     if (!deleteTarget || !patientId) return;
     deleteMutation.mutate(
-      { id: deleteTarget.id, patientId },
+      { id: deleteTarget.id },
       {
         onSuccess: () => {
           toast.success("Appointment permanently removed from history.");

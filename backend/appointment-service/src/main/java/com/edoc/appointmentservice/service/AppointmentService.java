@@ -237,10 +237,30 @@ public class AppointmentService {
 
     // ─── CANCEL ──────────────────────────────────────────────────────────────
 
-    public Appointment cancelAppointment(String id, String reason) {
+    public Appointment cancelAppointment(String id, String reason, String authenticatedUserId) {
         Appointment appointment = getAppointmentById(id);
 
-        // Can only cancel if PENDING or CONFIRMED
+        // Security check - ensure the authenticated user owns this appointment
+        String ownerUserId = appointment.getPatientUserId();
+
+        if (ownerUserId != null) {
+            if (authenticatedUserId == null || !ownerUserId.equals(authenticatedUserId)) {
+                throw new RuntimeException("You are not authorized to cancel this appointment.");
+            }
+        } else {
+            // Fallback for legacy records: resolve patient by patientId and compare userId
+            if (appointment.getPatientId() == null) {
+                throw new RuntimeException("You are not authorized to cancel this appointment.");
+            }
+            Map<String, Object> patient = patientServiceClient.getPatientById(appointment.getPatientId());
+            Object userIdObj = patient != null ? patient.get("userId") : null;
+            String patientUserIdFromService = userIdObj != null ? userIdObj.toString() : null;
+            if (patientUserIdFromService == null || authenticatedUserId == null || !patientUserIdFromService.equals(authenticatedUserId)) {
+                throw new RuntimeException("You are not authorized to cancel this appointment.");
+            }
+        }
+
+        // Can only cancel if not COMPLETED or already CANCELLED
         if (appointment.getStatus() == Appointment.AppointmentStatus.COMPLETED) {
             throw new RuntimeException("Cannot cancel a completed appointment.");
         }
@@ -329,14 +349,27 @@ public class AppointmentService {
     }
 
     // Delete a completed appointment - patient cleans up their history
-    public void deleteCompletedAppointment(String id, String patientId) {
+    public void deleteCompletedAppointment(String id, String authenticatedUserId) {
         Appointment appointment = getAppointmentById(id);
 
-        // Security check - make sure the patient owns this appointment
-        if (!appointment.getPatientId().equals(patientId)) {
-            throw new RuntimeException(
-                    "You are not authorized to delete this appointment."
-            );
+        // Security check - ensure the authenticated user owns this appointment
+        String ownerUserId = appointment.getPatientUserId();
+
+        if (ownerUserId != null) {
+            if (authenticatedUserId == null || !ownerUserId.equals(authenticatedUserId)) {
+                throw new RuntimeException("You are not authorized to delete this appointment.");
+            }
+        } else {
+            // Fallback for legacy records: resolve patient by patientId and compare userId
+            if (appointment.getPatientId() == null) {
+                throw new RuntimeException("You are not authorized to delete this appointment.");
+            }
+            Map<String, Object> patient = patientServiceClient.getPatientById(appointment.getPatientId());
+            Object userIdObj = patient != null ? patient.get("userId") : null;
+            String patientUserIdFromService = userIdObj != null ? userIdObj.toString() : null;
+            if (patientUserIdFromService == null || authenticatedUserId == null || !patientUserIdFromService.equals(authenticatedUserId)) {
+                throw new RuntimeException("You are not authorized to delete this appointment.");
+            }
         }
 
         // Only COMPLETED or CANCELLED appointments can be deleted
