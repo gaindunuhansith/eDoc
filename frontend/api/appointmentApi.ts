@@ -17,8 +17,8 @@ export type AppointmentType = "IN_PERSON" | "VIDEO";
 export type PaymentStatus =
   | "NOT_REQUIRED"
   | "PENDING"
-  | "PAID"
-  | "REFUNDED";
+  | "SUCCESS"
+  | "FAILED";
 
 export interface Appointment {
   id: string;
