@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   Search,
@@ -14,7 +14,12 @@ import {
   MapPin,
   AlertCircle,
   ClipboardList,
-  FileText
+  FileText,
+  CalendarDays,
+  HeartPulse,
+  Ruler,
+  Weight,
+  Stethoscope
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +34,43 @@ import {
   fetchPrescriptionsByPatient, 
   type Prescription 
 } from "@/api/doctorApi";
+import { useGetAppointmentsByDoctor, type Appointment } from "@/api/appointmentApi";
 import { DOCTOR_ENDPOINTS } from "@/api/utils/endpoints";
+
+interface PatientAppointmentCase {
+  patientId: string;
+  patientName: string;
+  appointmentId: string;
+  appointmentDate: string;
+  timeSlot: string;
+  reasonForVisit?: string;
+  status: "CONFIRMED" | "COMPLETED";
+  doctorNotes?: string;
+}
+
+interface PatientSummary {
+  userId?: string;
+  phone?: string;
+  gender?: string;
+  dateOfBirth?: string;
+  bloodGroup?: string;
+  height?: number;
+  weight?: number;
+  address?: string;
+  allergies?: string;
+}
+
+interface PatientReport {
+  id: number;
+  reportName: string;
+  reportType: string;
+  createdAt: string;
+}
+
+function appointmentTimestamp(appointment: Appointment) {
+  const startTime = appointment.timeSlot?.split("-")?.[0] || "00:00";
+  return new Date(`${appointment.appointmentDate}T${startTime}:00`).getTime();
+}
 
 function formatDate(s: string) {
   return new Date(s).toLocaleDateString("en-US", {
@@ -119,33 +160,134 @@ function PatientsContent() {
   const initialPatientId = searchParams.get("patientId") || "";
 
   const { data: doctor } = useGetMyDoctorProfile();
+  const { data: doctorAppointments = [], isLoading: appointmentsLoading } = useGetAppointmentsByDoctor(doctor?.id || "");
 
   const [searchInput, setSearchInput] = useState(initialPatientId);
   const [activePatientId, setActivePatientId] = useState(initialPatientId);
 
+  const [patientSummaryById, setPatientSummaryById] = useState<Record<string, PatientSummary>>({});
+  const [patientSummaryLoading, setPatientSummaryLoading] = useState(false);
+
   const [loading, setLoading] = useState(false);
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<PatientSummary | null>(null);
   const [profileError, setProfileError] = useState(false);
-  const [reports, setReports] = useState<any[]>([]);
+  const [reports, setReports] = useState<PatientReport[]>([]);
   const [reportsError, setReportsError] = useState(false);
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [prescriptionsError, setPrescriptionsError] = useState(false);
 
+  const patientCases = useMemo<PatientAppointmentCase[]>(() => {
+    const relevantAppointments = doctorAppointments
+      .filter((appointment) => appointment.status === "CONFIRMED" || appointment.status === "COMPLETED")
+      .sort((a, b) => appointmentTimestamp(b) - appointmentTimestamp(a));
+
+    const latestAppointmentByPatient = new Map<string, Appointment>();
+    for (const appointment of relevantAppointments) {
+      if (!latestAppointmentByPatient.has(appointment.patientId)) {
+        latestAppointmentByPatient.set(appointment.patientId, appointment);
+      }
+    }
+
+    return Array.from(latestAppointmentByPatient.values())
+      .sort((a, b) => appointmentTimestamp(b) - appointmentTimestamp(a))
+      .map((appointment) => ({
+        patientId: appointment.patientId,
+        patientName: appointment.patientName?.trim() || "Unknown Patient",
+        appointmentId: appointment.id,
+        appointmentDate: appointment.appointmentDate,
+        timeSlot: appointment.timeSlot,
+        reasonForVisit: appointment.reasonForVisit,
+        status: appointment.status as "CONFIRMED" | "COMPLETED",
+        doctorNotes: appointment.doctorNotes,
+      }));
+  }, [doctorAppointments]);
+
+  const activePatientCase = useMemo(
+    () => patientCases.find((patientCase) => patientCase.patientId === activePatientId) || null,
+    [patientCases, activePatientId]
+  );
+
   const handleSearch = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (searchInput.trim()) {
-      setActivePatientId(searchInput.trim());
-      router.push(`/doctor/patients?patientId=${searchInput.trim()}`);
+
+    const query = searchInput.trim();
+    if (!query) return;
+
+    // Try to resolve by patient name from the current appointment-derived list (case-insensitive substring)
+    const match = patientCases.find((pc) => pc.patientName.toLowerCase().includes(query.toLowerCase()));
+    if (match) {
+      setActivePatientId(match.patientId);
+      router.push(`/doctor/patients?patientId=${match.patientId}`);
+      return;
     }
+
+    // Fallback: if the input looks like an ID (contains numbers or dashes), try it directly
+    if (/\d|-/g.test(query)) {
+      setActivePatientId(query);
+      router.push(`/doctor/patients?patientId=${query}`);
+      return;
+    }
+
+    // No match found — use the raw query as patientId as a last resort
+    setActivePatientId(query);
+    router.push(`/doctor/patients?patientId=${query}`);
   };
+
+  const handleSelectPatient = (patientId: string) => {
+    setSearchInput(patientId);
+    setActivePatientId(patientId);
+    router.push(`/doctor/patients?patientId=${patientId}`);
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchPatientSummaries = async () => {
+      if (!doctor?.id || patientCases.length === 0) {
+        if (isMounted) {
+          setPatientSummaryById({});
+          setPatientSummaryLoading(false);
+        }
+        return;
+      }
+
+      setPatientSummaryLoading(true);
+
+      const results = await Promise.allSettled(
+        patientCases.map(async (patientCase) => {
+          const response = await fetchDoctorPatientProfile(doctor.id, patientCase.patientId);
+          return [patientCase.patientId, response.data] as const;
+        })
+      );
+
+      if (!isMounted) return;
+
+      const nextSummaryById: Record<string, PatientSummary> = {};
+      for (const result of results) {
+        if (result.status === "fulfilled") {
+          const [patientId, profileData] = result.value;
+          nextSummaryById[patientId] = profileData;
+        }
+      }
+
+      setPatientSummaryById(nextSummaryById);
+      setPatientSummaryLoading(false);
+    };
+
+    void fetchPatientSummaries();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [doctor?.id, patientCases]);
 
   useEffect(() => {
     if (!doctor?.id || !activePatientId) return;
 
     let isMounted = true;
-    setLoading(true);
 
     const fetchAll = async () => {
+      setLoading(true);
       const results = await Promise.allSettled([
         fetchDoctorPatientProfile(doctor.id, activePatientId),
         fetchDoctorPatientReports(doctor.id, activePatientId),
@@ -193,9 +335,88 @@ function PatientsContent() {
       <div>
         <h1 className="text-2xl font-semibold">Patient Records</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
-          Lookup and view specific patient information
+          Confirmed and completed patients are automatically listed for quick consultation prep
         </p>
       </div>
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-medium flex items-center gap-2">
+          <Stethoscope className="w-5 h-5 text-primary" /> Confirmed & Completed Patients
+        </h2>
+
+        {appointmentsLoading || patientSummaryLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Skeleton className="h-36 w-full rounded-xl" />
+            <Skeleton className="h-36 w-full rounded-xl" />
+          </div>
+        ) : patientCases.length === 0 ? (
+          <div className="p-8 rounded-xl border border-dashed border-border/80 bg-muted/10 text-center space-y-2">
+            <User className="w-8 h-8 text-muted-foreground/40 mx-auto" />
+            <p className="text-sm text-muted-foreground">
+              No confirmed or completed appointments found for your account yet.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {patientCases.map((patientCase) => {
+              const patientSummary = patientSummaryById[patientCase.patientId];
+              const isActive = patientCase.patientId === activePatientId;
+
+              return (
+                <button
+                  key={patientCase.appointmentId}
+                  type="button"
+                  onClick={() => handleSelectPatient(patientCase.patientId)}
+                  className={`text-left rounded-xl border p-4 transition-colors ${
+                    isActive
+                      ? "border-primary/60 bg-primary/5"
+                      : "border-border/60 bg-card hover:bg-muted/20"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-base">{patientCase.patientName}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Patient ID: {patientCase.patientId}</p>
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className={patientCase.status === "COMPLETED"
+                        ? "bg-green-100 text-green-800 border-green-200"
+                        : "bg-blue-100 text-blue-800 border-blue-200"
+                      }
+                    >
+                      {patientCase.status}
+                    </Badge>
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                    <p className="flex items-center gap-1.5"><HeartPulse className="w-3.5 h-3.5" /> {patientSummary?.bloodGroup || "Blood Group: N/A"}</p>
+                    <p className="flex items-center gap-1.5"><Ruler className="w-3.5 h-3.5" /> {patientSummary?.height ? `${patientSummary.height} cm` : "Height: -"}</p>
+                    <p className="flex items-center gap-1.5"><Weight className="w-3.5 h-3.5" /> {patientSummary?.weight ? `${patientSummary.weight} kg` : "Weight: -"}</p>
+                    <p className="flex items-center gap-1.5"><CalendarDays className="w-3.5 h-3.5" /> {formatDate(patientCase.appointmentDate)}</p>
+                  </div>
+
+                  <div className="mt-3 space-y-1.5">
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground">Reason For Appointment</p>
+                    <p className="text-sm font-medium text-foreground/90">
+                      {patientCase.reasonForVisit || "No reason provided"}
+                    </p>
+                  </div>
+
+                  {patientCase.status === "COMPLETED" && patientCase.doctorNotes && (
+                    <div className="mt-3 space-y-1">
+                      <p className="text-xs uppercase tracking-wider text-muted-foreground">Doctor Notes</p>
+                      <p className="text-sm text-foreground/80 line-clamp-2">
+                        {patientCase.doctorNotes}
+                      </p>
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </section>
 
       {/* Search Bar */}
       <form onSubmit={handleSearch} className="flex gap-3">
@@ -210,14 +431,14 @@ function PatientsContent() {
           />
         </div>
         <Button type="submit" disabled={!searchInput.trim()}>
-          Fetch Records
+          Open Patient
         </Button>
       </form>
 
-      {!activePatientId && !loading && (
+      {!activePatientId && !loading && !appointmentsLoading && (
         <div className="p-8 mt-4 rounded-xl border border-dashed border-border/80 bg-muted/10 text-center space-y-2">
            <User className="w-10 h-10 text-muted-foreground/40 mx-auto" />
-           <p className="text-sm text-muted-foreground">Enter a Patient ID above to view their records.</p>
+           <p className="text-sm text-muted-foreground">Select a patient above or enter a Patient ID to view records.</p>
         </div>
       )}
 
@@ -231,6 +452,48 @@ function PatientsContent() {
 
       {!loading && activePatientId && (
         <div className="space-y-6 mt-8">
+
+          {activePatientCase && (
+            <Card className="border-border/60 bg-muted/10">
+              <CardContent className="p-5 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Current Consultation Context</p>
+                    <p className="text-base font-semibold mt-0.5">{activePatientCase.patientName}</p>
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className={activePatientCase.status === "COMPLETED"
+                      ? "bg-green-100 text-green-800 border-green-200"
+                      : "bg-blue-100 text-blue-800 border-blue-200"
+                    }
+                  >
+                    {activePatientCase.status}
+                  </Badge>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div className="space-y-1.5">
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground">Appointment Time</p>
+                    <p className="font-medium">{formatDate(activePatientCase.appointmentDate)} • {activePatientCase.timeSlot}</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground">Reason For Appointment</p>
+                    <p className="font-medium">{activePatientCase.reasonForVisit || "No reason provided"}</p>
+                  </div>
+                </div>
+
+                {activePatientCase.status === "COMPLETED" && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground">Doctor Notes</p>
+                    <p className="text-sm font-medium text-foreground/90">
+                      {activePatientCase.doctorNotes || "No notes added yet."}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
           
           {/* --- SECTION 1: Patient Profile --- */}
           <section>
