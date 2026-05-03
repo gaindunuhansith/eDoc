@@ -2,7 +2,10 @@ package com.edoc.apigateway.filter;
 
 import com.edoc.apigateway.config.RateLimitProperties;
 import com.edoc.apigateway.ratelimit.RateLimitBucketRegistry;
+import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
+import java.util.UUID;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -43,8 +46,11 @@ public class IpRateLimitingFilter implements GlobalFilter, Ordered {
         exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
         exchange.getResponse().getHeaders().set("Retry-After", "1");
         String body = "{\"error\":\"too_many_requests\",\"message\":\"Rate limit exceeded\"}";
-        DataBuffer dataBuffer = exchange.getResponse().bufferFactory().wrap(body.getBytes(StandardCharsets.UTF_8));
-        return exchange.getResponse().writeWith(Mono.just(dataBuffer));
+        @SuppressWarnings("null")
+        DataBuffer dataBuffer = exchange.getResponse().bufferFactory()
+                .wrap(body.getBytes(StandardCharsets.UTF_8));
+        Mono<DataBuffer> publisher = Objects.requireNonNull(Mono.just(dataBuffer));
+        return exchange.getResponse().writeWith(publisher);
     }
 
     @Override
@@ -63,17 +69,29 @@ public class IpRateLimitingFilter implements GlobalFilter, Ordered {
     }
 
     private String getClientIp(ServerHttpRequest request) {
-        String headerName = properties.getClientHeader();
-        String forwarded = request.getHeaders().getFirst(headerName);
-        if (forwarded != null && !forwarded.isBlank()) {
-            int commaIndex = forwarded.indexOf(',');
-            return (commaIndex > 0 ? forwarded.substring(0, commaIndex) : forwarded).trim();
+        // Only trust the forwarding header if the direct connection comes from a
+        // private/loopback address (i.e. a trusted internal proxy). Accepting it
+        // unconditionally lets any client spoof an arbitrary IP and bypass limiting.
+        InetSocketAddress remoteAddress = request.getRemoteAddress();
+        boolean fromTrustedProxy = remoteAddress != null
+                && remoteAddress.getAddress() != null
+                && remoteAddress.getAddress().isSiteLocalAddress(); // 10.x, 172.16-31.x, 192.168.x
+
+        if (fromTrustedProxy) {
+            String headerName = Objects.requireNonNull(properties.getClientHeader());
+            String forwarded = request.getHeaders().getFirst(headerName);
+            if (forwarded != null && !forwarded.isBlank()) {
+                int commaIndex = forwarded.indexOf(',');
+                return (commaIndex > 0 ? forwarded.substring(0, commaIndex) : forwarded).trim();
+            }
         }
 
-        if (request.getRemoteAddress() != null && request.getRemoteAddress().getAddress() != null) {
-            return request.getRemoteAddress().getAddress().getHostAddress();
+        if (remoteAddress != null && remoteAddress.getAddress() != null) {
+            return Objects.requireNonNull(remoteAddress.getAddress().getHostAddress());
         }
 
-        return "unknown";
+        // Assign a per-request random key so unresolvable clients do not share a bucket
+        // and inadvertently throttle each other.
+        return "anon-" + UUID.randomUUID();
     }
 }

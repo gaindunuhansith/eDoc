@@ -16,17 +16,23 @@ export interface RegisterPayload {
   email: string;
   password: string;
   phoneNumber: string;
-  role: "PATIENT" | "DOCTOR";
+  role: "PATIENT" | "DOCTOR" | "ADMIN";
 }
 
+// ─── Matches backend PatchUserRequest (all optional for PATCH /api/v1/users/me) ──
 export interface UpdateProfilePayload {
   name?: string;
+  email?: string;
   phoneNumber?: string;
+  password?: string;
 }
 
-export interface ChangePasswordPayload {
-  currentPassword: string;
-  newPassword: string;
+// ─── Matches backend UpdateUserRequest (for PUT /api/v1/users/{userId}) ──────
+export interface UpdateUserPayload {
+  name: string;
+  email: string;
+  phoneNumber: string;
+  password?: string;
 }
 
 export interface UserProfile {
@@ -36,33 +42,41 @@ export interface UserProfile {
   role: "PATIENT" | "DOCTOR" | "ADMIN";
   phoneNumber?: string;
   isProfileCreated?: boolean;
-  profileCreated?: boolean;
+  isActive?: boolean;
+  isDeleted?: boolean;
   createdAt: string;
+  updatedAt?: string;
+  deletedAt?: string;
+}
+
+// ─── Matches backend AuthResponse ─────────────────────────────────────────────
+export interface AuthResponse {
+  token: string;
+  expiresIn: number;
+  user: UserProfile;
 }
 
 // ─── Plain API Functions ──────────────────────────────────────────────────────
 export const loginUser = (credentials: LoginCredentials) =>
-  apiClient.post<{ token: string; user: UserProfile }>(
-    USER_ENDPOINTS.LOGIN,
-    credentials
-  );
+  apiClient.post<AuthResponse>(USER_ENDPOINTS.LOGIN, credentials);
 
 export const registerUser = (payload: RegisterPayload) =>
-  apiClient.post<{ token: string; user: UserProfile }>(
-    USER_ENDPOINTS.REGISTER,
-    payload
-  );
+  apiClient.post<AuthResponse>(USER_ENDPOINTS.REGISTER, payload);
 
-export const logoutUser = () => apiClient.post(USER_ENDPOINTS.LOGOUT);
+// Backend has no logout endpoint — JWT is stateless; logout is client-side only
+export const logoutUser = () => Promise.resolve();
 
 export const fetchCurrentUser = () =>
   apiClient.get<UserProfile>(USER_ENDPOINTS.ME);
 
 export const updateProfile = (payload: UpdateProfilePayload) =>
-  apiClient.put<UserProfile>(USER_ENDPOINTS.UPDATE_PROFILE, payload);
+  apiClient.patch<UserProfile>(USER_ENDPOINTS.UPDATE_PROFILE, payload);
 
-export const changePassword = (payload: ChangePasswordPayload) =>
-  apiClient.patch(USER_ENDPOINTS.CHANGE_PASSWORD, payload);
+export const updateUserById = (id: string, payload: UpdateUserPayload) =>
+  apiClient.put<UserProfile>(USER_ENDPOINTS.UPDATE_BY_ID(id), payload);
+
+export const patchUserById = (id: string, payload: UpdateProfilePayload) =>
+  apiClient.patch<UserProfile>(USER_ENDPOINTS.PATCH_BY_ID(id), payload);
 
 export const fetchAllUsers = () =>
   apiClient.get<UserProfile[]>(USER_ENDPOINTS.ALL_USERS);
@@ -70,8 +84,20 @@ export const fetchAllUsers = () =>
 export const fetchUserById = (id: string) =>
   apiClient.get<UserProfile>(USER_ENDPOINTS.USER_BY_ID(id));
 
+export const batchFetchUsers = (userIds: string[]) =>
+  apiClient.post<UserProfile[]>(USER_ENDPOINTS.BATCH_USERS, userIds);
+
 export const deleteUser = (id: string) =>
   apiClient.delete(USER_ENDPOINTS.DELETE_USER(id));
+
+export const activateUser = (id: string) =>
+  apiClient.patch<UserProfile>(USER_ENDPOINTS.ACTIVATE_USER(id));
+
+export const deactivateUser = (id: string) =>
+  apiClient.patch<UserProfile>(USER_ENDPOINTS.DEACTIVATE_USER(id));
+
+export const restoreUser = (id: string) =>
+  apiClient.patch<UserProfile>(USER_ENDPOINTS.RESTORE_USER(id));
 
 export const markProfileCreated = (userId: string) =>
   apiClient.patch(USER_ENDPOINTS.PROFILE_CREATED(userId));
@@ -133,13 +159,64 @@ export const useUpdateProfile = () => {
   });
 };
 
-export const useChangePassword = () =>
-  useMutation({ mutationFn: changePassword });
+export const useUpdateUserById = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateUserPayload }) =>
+      updateUserById(id, payload).then((r) => r.data),
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: queryKeys.user.detail(id) });
+      qc.invalidateQueries({ queryKey: queryKeys.user.lists() });
+    },
+  });
+};
+
+export const usePatchUserById = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateProfilePayload }) =>
+      patchUserById(id, payload).then((r) => r.data),
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: queryKeys.user.detail(id) });
+      qc.invalidateQueries({ queryKey: queryKeys.user.lists() });
+    },
+  });
+};
 
 export const useDeleteUser = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: deleteUser,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.user.lists() });
+    },
+  });
+};
+
+export const useActivateUser = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: activateUser,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.user.lists() });
+    },
+  });
+};
+
+export const useDeactivateUser = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: deactivateUser,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.user.lists() });
+    },
+  });
+};
+
+export const useRestoreUser = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: restoreUser,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.user.lists() });
     },
