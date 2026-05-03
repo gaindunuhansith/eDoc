@@ -9,6 +9,7 @@ import com.edoc.patientservice.service.PatientService;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -79,5 +80,15 @@ public class PatientController {
     public PatientResponseDTO updatePatientStatusInternal(@PathVariable UUID id,
                                                           @Valid @RequestBody PatientStatusUpdateRequestDTO request) {
         return patientService.changePatientStatus(id, request, request.getActedBy());
+    }
+
+    @DeleteMapping("/internal/patients/by-user/{userId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    // Called by user-service on PATIENT account deletion — soft-deletes the linked profile.
+    public void softDeletePatientByUserId(@PathVariable String userId) {
+        PatientStatusUpdateRequestDTO req = new PatientStatusUpdateRequestDTO();
+        req.setDeleted(true);
+        req.setReason("Account deleted via user-service cascade");
+        patientService.changePatientStatusByUserId(userId, req);
     }
 }
