@@ -119,7 +119,7 @@ src/main/resources/secrets/*.pem
 *.sqlite
 *.sqlite3
 *.h2.db
-data/
+
 
 
 # LOGS
