@@ -19,7 +19,7 @@ public class PatientReportController {
     // GET /api/v1/doctors/{doctorId}/patients/{patientId}/reports
     // Doctor views all uploaded reports of a specific patient
     @GetMapping("/{doctorId}/patients/{patientId}/reports")
-    public ResponseEntity<List<Map>> getPatientReports(
+    public ResponseEntity<List<Map<String, Object>>> getPatientReports(
             @PathVariable String doctorId,
             @PathVariable String patientId) {
         return ResponseEntity.ok(patientServiceClient.getPatientReports(patientId));
@@ -48,7 +48,7 @@ public class PatientReportController {
     // GET /api/v1/doctors/{doctorId}/patients/{patientId}
     // Doctor views basic patient profile
     @GetMapping("/{doctorId}/patients/{patientId}")
-    public ResponseEntity<Map> getPatientProfile(
+    public ResponseEntity<Map<String, Object>> getPatientProfile(
             @PathVariable String doctorId,
             @PathVariable String patientId) {
         return ResponseEntity.ok(patientServiceClient.getPatientById(patientId));

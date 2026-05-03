@@ -41,12 +41,6 @@ public class PrescriptionService {
         return doctorPrescriptionClient.getPrescriptionsByPatient(patient.getUserId());
     }
 
-    private void assertPatientExists(UUID patientId) {
-        if (!patientRepository.existsById(patientId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient not found");
-        }
-    }
-
     private Patient findPatientByUserIdOrThrow(String userId) {
         return patientRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient not found"));

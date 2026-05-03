@@ -24,7 +24,7 @@ public class PatientServiceClient {
                     .get()
                     .uri(patientServiceUrl + "/api/v1/internal/patients/" + patientId)
                     .retrieve()
-                    .bodyToMono(Map.class)
+                    .bodyToMono(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                     .block();
         } catch (Exception ex) {
             log.error("Error fetching patient with id: {}", patientId, ex);
@@ -38,7 +38,7 @@ public class PatientServiceClient {
                     .get()
                     .uri(patientServiceUrl + "/api/v1/internal/patients/" + patientId + "/status")
                     .retrieve()
-                    .bodyToMono(Map.class)
+                    .bodyToMono(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                     .block();
         } catch (Exception ex) {
             log.error("Error fetching patient status with id: {}", patientId, ex);
