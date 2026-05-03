@@ -1,8 +1,10 @@
 package com.edoc.doctorservice.controller;
 
 import com.edoc.doctorservice.dto.AvailabilityRequest;
+import com.edoc.doctorservice.dto.AvailabilitySlotRequest;
 import com.edoc.doctorservice.model.Availability;
 import com.edoc.doctorservice.service.AvailabilityService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -36,10 +38,9 @@ public class AvailabilityController {
     @PatchMapping("/book")
     public ResponseEntity<Availability> markSlotBooked(
             @PathVariable String doctorId,
-            @RequestParam String dayOfWeek,
-            @RequestParam String startTime) {
+            @Valid @RequestBody AvailabilitySlotRequest request) {
         return ResponseEntity.ok(
-                availabilityService.markSlotAsBooked(doctorId, dayOfWeek, startTime)
+                availabilityService.markSlotAsBooked(doctorId, request.getDayOfWeek(), request.getStartTime())
         );
     }
 
@@ -48,10 +49,9 @@ public class AvailabilityController {
     @PatchMapping("/free")
     public ResponseEntity<Availability> markSlotFree(
             @PathVariable String doctorId,
-            @RequestParam String dayOfWeek,
-            @RequestParam String startTime) {
+            @Valid @RequestBody AvailabilitySlotRequest request) {
         return ResponseEntity.ok(
-                availabilityService.markSlotAsFree(doctorId, dayOfWeek, startTime)
+                availabilityService.markSlotAsFree(doctorId, request.getDayOfWeek(), request.getStartTime())
         );
     }
 

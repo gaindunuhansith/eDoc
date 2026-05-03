@@ -17,8 +17,8 @@ export type AppointmentType = "IN_PERSON" | "VIDEO";
 export type PaymentStatus =
   | "NOT_REQUIRED"
   | "PENDING"
-  | "PAID"
-  | "REFUNDED";
+  | "SUCCESS"
+  | "FAILED";
 
 export interface Appointment {
   id: string;
@@ -78,10 +78,7 @@ export const cancelAppointment = ({
   id: string;
   reason?: string;
 }) => {
-  const url = reason
-    ? `${APPOINTMENT_ENDPOINTS.CANCEL(id)}?reason=${encodeURIComponent(reason)}`
-    : APPOINTMENT_ENDPOINTS.CANCEL(id);
-  return apiClient.delete<Appointment>(url);
+  return apiClient.patch<Appointment>(APPOINTMENT_ENDPOINTS.CANCEL(id), { reason });
 };
 
 export const updateAppointment = ({
@@ -94,11 +91,9 @@ export const updateAppointment = ({
 
 export const deleteAppointment = ({
   id,
-  patientId,
 }: {
   id: string;
-  patientId: string;
-}) => apiClient.delete<void>(`${APPOINTMENT_ENDPOINTS.DELETE(id)}?patientId=${patientId}`);
+}) => apiClient.delete<void>(APPOINTMENT_ENDPOINTS.DELETE(id));
 
 export interface AppointmentStatusUpdate {
   status: AppointmentStatus;

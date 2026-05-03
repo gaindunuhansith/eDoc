@@ -24,11 +24,20 @@ public interface AppointmentRepository extends MongoRepository<Appointment, Stri
 
     // Check if a slot is already booked on a specific date
     // Used to prevent double-booking
-    boolean existsByDoctorIdAndAppointmentDateAndTimeSlotAndStatusNot(
+    boolean existsByDoctorIdAndAppointmentDateAndTimeSlotAndStatusIn(
             String doctorId,
             LocalDate appointmentDate,
             String timeSlot,
-            Appointment.AppointmentStatus status
+            List<Appointment.AppointmentStatus> statuses
+    );
+
+    // Same as above, but excludes a specific appointment id when editing an existing booking
+    boolean existsByDoctorIdAndAppointmentDateAndTimeSlotAndStatusInAndIdNot(
+            String doctorId,
+            LocalDate appointmentDate,
+            String timeSlot,
+            List<Appointment.AppointmentStatus> statuses,
+            String id
     );
 
     // Get appointments for a doctor on a specific date
