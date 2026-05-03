@@ -123,9 +123,11 @@ export const AI_ENDPOINTS = {
 export const PAYMENT_ENDPOINTS = {
   GET_ALL: "/api/v1/payments",
   GET_BY_ID: (id: string) => `/api/v1/payments/${id}`,
+  HISTORY: "/api/v1/payments/history",
   INITIATE: "/api/v1/payments/initiate",
   CONFIRM: (id: string) => `/api/v1/payments/${id}/confirm`,
   REFUND: (id: string) => `/api/v1/payments/${id}/refund`,
+  BY_USER: (userId: string) => `/api/v1/payments/users/${userId}`,
   BY_PATIENT: (patientId: string) => `/api/v1/payments?patientId=${patientId}`,
   BY_APPOINTMENT: (appointmentId: string) =>
     `/api/v1/payments?appointmentId=${appointmentId}`,

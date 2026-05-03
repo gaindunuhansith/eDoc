@@ -10,13 +10,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PaymentRepository extends JpaRepository<Payment, UUID> {
 
-    Optional<Payment> findByAppointmentId(Long appointmentId);
+    Optional<Payment> findByAppointmentId(String appointmentId);
 
     Optional<Payment> findByPayhereId(String payhereId);
 
     Optional<Payment> findByOrderId(String orderId);
 
-    Page<Payment> findByUserId(Long userId, Pageable pageable);
+    Page<Payment> findByUserId(String userId, Pageable pageable);
 
     Page<Payment> findByStatus(PaymentStatus status, Pageable pageable);
 }

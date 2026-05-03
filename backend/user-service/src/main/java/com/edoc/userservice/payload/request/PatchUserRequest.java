@@ -1,6 +1,5 @@
 package com.edoc.userservice.payload.request;
 
-import com.edoc.userservice.model.enums.UserRole;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
@@ -14,6 +13,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class PatchUserRequest {
 
+    @Pattern(regexp = "^[^<>\"';&]+$", message = "name must not contain special characters")
     private String name;
 
     @Email(message = "email must be valid")
@@ -26,6 +26,4 @@ public class PatchUserRequest {
     private String password;
 
     private String phoneNumber;
-
-    private UserRole role;
 }

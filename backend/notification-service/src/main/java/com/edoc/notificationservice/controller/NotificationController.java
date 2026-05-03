@@ -83,7 +83,7 @@ public class NotificationController {
         if (auth == null || !(auth.getPrincipal() instanceof Jwt jwt)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
         }
-        Object uid = jwt.getClaim("uid");
+        Object uid = jwt.getClaim("userId");
         if (uid == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User identity missing");
         }

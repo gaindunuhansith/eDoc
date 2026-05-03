@@ -18,7 +18,7 @@ public class RequestMdcFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         String orderId = request.getHeader("X-Order-Id");
-        Long userId = extractUserId(request);
+        String userId = extractUserId(request);
 
         try {
             SecurityUtil.populateMdc(orderId, userId);
@@ -28,15 +28,15 @@ public class RequestMdcFilter extends OncePerRequestFilter {
         }
     }
 
-    private Long extractUserId(HttpServletRequest request) {
+    private String extractUserId(HttpServletRequest request) {
         Authentication authentication = (Authentication) request.getUserPrincipal();
         if (authentication instanceof JwtAuthenticationToken jwtAuthenticationToken) {
             Object claim = jwtAuthenticationToken.getToken().getClaims().get("userId");
-            if (claim instanceof Number number) {
-                return number.longValue();
-            }
             if (claim instanceof String text && !text.isBlank()) {
-                return Long.parseLong(text);
+                return text;
+            }
+            if (claim instanceof Number number) {
+                return String.valueOf(number.longValue());
             }
         }
         return null;

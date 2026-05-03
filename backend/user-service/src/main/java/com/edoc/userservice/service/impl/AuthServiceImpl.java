@@ -4,6 +4,7 @@ import com.edoc.userservice.payload.response.AuthResponse;
 import com.edoc.userservice.payload.request.LoginUserRequest;
 import com.edoc.userservice.payload.request.RegisterUserRequest;
 import com.edoc.userservice.exception.EmailAlreadyExistsException;
+import com.edoc.userservice.exception.UnauthorizedOperationException;
 import com.edoc.userservice.mapper.UserMapper;
 import com.edoc.userservice.model.User;
 import com.edoc.userservice.model.enums.UserRole;
@@ -78,7 +79,7 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
 
         if (!user.isActive()) {
-            throw new IllegalArgumentException("Account is deactivated");
+            throw new UnauthorizedOperationException("Account is deactivated");
         }
 
         String token = jwtService.generateToken(user);

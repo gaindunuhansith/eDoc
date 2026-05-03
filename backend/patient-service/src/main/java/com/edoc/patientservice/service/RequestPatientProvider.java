@@ -17,7 +17,7 @@ public class RequestPatientProvider implements CurrentPatientProvider {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Patient identity is missing.");
         }
 
-        Object uid = jwt.getClaim("uid");
+        Object uid = jwt.getClaim("userId");
         if (uid == null || uid.toString().isBlank()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Patient identity is missing.");
         }

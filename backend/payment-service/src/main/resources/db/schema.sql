@@ -1,11 +1,13 @@
 DROP TABLE IF EXISTS billing_details;
 DROP TABLE IF EXISTS payment_transaction_logs;
+DROP TABLE IF EXISTS payments_aud;
+DROP TABLE IF EXISTS revinfo;
 DROP TABLE IF EXISTS payments;
 
 CREATE TABLE IF NOT EXISTS payments (
     id UUID PRIMARY KEY,
-    appointment_id BIGINT NOT NULL UNIQUE,
-    user_id BIGINT NOT NULL,
+    appointment_id VARCHAR(100) NOT NULL UNIQUE,
+    user_id VARCHAR(50) NOT NULL,
     amount NUMERIC(12, 2) NOT NULL,
     currency VARCHAR(3) NOT NULL CHECK (currency IN ('LKR', 'USD')),
     status VARCHAR(16) NOT NULL CHECK (status IN ('PENDING', 'SUCCESS', 'FAILED')),
@@ -39,3 +41,25 @@ CREATE INDEX IF NOT EXISTS idx_payments_user_id ON payments(user_id);
 CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
 CREATE INDEX IF NOT EXISTS idx_payment_transaction_logs_payment_id ON payment_transaction_logs(payment_id);
 CREATE INDEX IF NOT EXISTS idx_billing_details_payment_id ON billing_details(payment_id);
+
+-- ─── Hibernate Envers audit tables ───────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS revinfo (
+    rev      SERIAL PRIMARY KEY,
+    revtstmp BIGINT
+);
+
+CREATE TABLE IF NOT EXISTS payments_aud (
+    id             UUID         NOT NULL,
+    rev            INTEGER      NOT NULL REFERENCES revinfo(rev),
+    revtype        SMALLINT,
+    appointment_id VARCHAR(100),
+    user_id        VARCHAR(50),
+    amount         NUMERIC(12, 2),
+    currency       VARCHAR(3),
+    status         VARCHAR(16),
+    order_id       VARCHAR(50),
+    payhere_id     VARCHAR(50),
+    created_at     TIMESTAMPTZ,
+    updated_at     TIMESTAMPTZ,
+    PRIMARY KEY (id, rev)
+);

@@ -9,20 +9,16 @@ public final class JwtUtil {
     private JwtUtil() {
     }
 
-    public static Long extractUserId(Jwt jwt) {
+    public static String extractUserId(Jwt jwt) {
         Object userId = jwt.getClaims().get("userId");
-        if (userId instanceof Number number) {
-            return number.longValue();
-        }
         if (userId instanceof String str && !str.isBlank()) {
-            return Long.parseLong(str);
+            return str;
+        }
+        if (userId instanceof Number number) {
+            return String.valueOf(number.longValue());
         }
 
-        String subject = jwt.getSubject();
-        if (subject == null || subject.isBlank()) {
-            throw new IllegalArgumentException("JWT missing both userId and subject claims");
-        }
-        return Long.parseLong(subject);
+        throw new IllegalArgumentException("JWT missing userId claim");
     }
 
     @SuppressWarnings("unchecked")

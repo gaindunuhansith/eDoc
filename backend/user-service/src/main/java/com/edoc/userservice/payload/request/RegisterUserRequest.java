@@ -17,6 +17,7 @@ import lombok.NoArgsConstructor;
 public class RegisterUserRequest {
 
     @NotBlank(message = "name is required")
+    @Pattern(regexp = "^[^<>\"';&]+$", message = "name must not contain special characters")
     private String name;
 
     @Email(message = "email must be valid")

@@ -7,8 +7,8 @@ import com.edoc.paymentservice.model.Payment;
 import com.edoc.paymentservice.model.PaymentTransactionLog;
 import com.edoc.paymentservice.repository.TransactionLogRepository;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -17,11 +17,17 @@ import org.springframework.web.client.RestClientException;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class NotificationClientImpl implements NotificationClient {
 
     private final RestClient restClient;
     private final TransactionLogRepository transactionLogRepository;
+
+    public NotificationClientImpl(
+            @Qualifier("notificationRestClient") RestClient restClient,
+            TransactionLogRepository transactionLogRepository) {
+        this.restClient = restClient;
+        this.transactionLogRepository = transactionLogRepository;
+    }
 
     @Value("${app.notification-service.send-path:/api/v1/notifications/send}")
     private String sendPath;

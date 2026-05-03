@@ -4,28 +4,49 @@ import apiClient from "./utils/axiosInstance";
 import { PAYMENT_ENDPOINTS } from "./utils/endpoints";
 import { queryKeys } from "./utils/queryKeys";
 
-export type PaymentStatus =
-  | "PENDING"
-  | "COMPLETED"
-  | "FAILED"
-  | "REFUNDED"
-  | "CANCELLED";
+// ─── Actual backend status values ─────────────────────────────────────────────
+export type PaymentStatus = "PENDING" | "SUCCESS" | "FAILED";
 
 export type PaymentMethod = "CARD" | "BANK_TRANSFER" | "DIGITAL_WALLET";
 
-export interface Payment {
+// ─── Matches backend PaymentHistoryResponse ───────────────────────────────────
+export interface PaymentHistoryItem {
   id: string;
-  patientId: string;
   appointmentId?: string;
+  userId: string;
   amount: number;
   currency: string;
   status: PaymentStatus;
-  method: PaymentMethod;
-  transactionId?: string;
+  orderId?: string;
   createdAt: string;
-  updatedAt: string;
 }
 
+// ─── Matches backend PaymentDetailResponse ────────────────────────────────────
+export interface PaymentDetailItem extends PaymentHistoryItem {
+  payhereId?: string;
+  updatedAt: string;
+  billing?: {
+    fullName?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    country?: string;
+  };
+}
+
+// ─── Spring Page wrapper ───────────────────────────────────────────────────────
+export interface SpringPage<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+  first: boolean;
+  last: boolean;
+}
+
+// ─── Legacy types kept for confirm-order page compatibility ───────────────────
 export interface InitiatePaymentPayload {
   userId: string;
   appointmentId: string;
@@ -42,60 +63,81 @@ export interface InitiatePaymentPayload {
 }
 
 export interface CheckoutPayloadResponse {
-  actionUrl: string;
-  fields: Record<string, string>;
+  orderId: string;
+  merchantId: string;
+  amount: number;
+  currency: string;
+  hash: string;
+  checkoutUrl: string;
+  notifyUrl: string;
 }
 
 export interface ConfirmPaymentPayload {
   transactionId: string;
 }
 
-export const fetchAllPayments = () =>
-  apiClient.get<Payment[]>(PAYMENT_ENDPOINTS.GET_ALL);
+// ─── API Functions ─────────────────────────────────────────────────────────────
 
-export const fetchPaymentById = (id: string) =>
-  apiClient.get<Payment>(PAYMENT_ENDPOINTS.GET_BY_ID(id));
+export const initiatePayment = (payload: InitiatePaymentPayload) => {
+  const fullName = [payload.firstName, payload.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
 
-export const initiatePayment = (payload: InitiatePaymentPayload) =>
-  apiClient.post<CheckoutPayloadResponse>(PAYMENT_ENDPOINTS.INITIATE, payload);
+  const body = {
+    appointmentId: payload.appointmentId,
+    amount: payload.amount,
+    currency: payload.currency,
+    billing: {
+      fullName: fullName,
+      email: payload.email ?? "",
+      phone: payload.phone ?? "",
+      address: payload.address,
+      city: payload.city,
+      country: payload.country || "Sri Lanka",
+    },
+  };
 
-export const confirmPayment = ({
-  id,
-  payload,
-}: {
-  id: string;
-  payload: ConfirmPaymentPayload;
-}) => apiClient.patch<Payment>(PAYMENT_ENDPOINTS.CONFIRM(id), payload);
-
-export const refundPayment = (id: string) =>
-  apiClient.patch<Payment>(PAYMENT_ENDPOINTS.REFUND(id));
-
-export const fetchPaymentsByPatient = (patientId: string) =>
-  apiClient.get<Payment[]>(PAYMENT_ENDPOINTS.BY_PATIENT(patientId));
+  return apiClient.post<CheckoutPayloadResponse>(PAYMENT_ENDPOINTS.INITIATE, body);
+};
 
 export const fetchPaymentsByAppointment = (appointmentId: string) =>
-  apiClient.get<Payment[]>(
+  apiClient.get<SpringPage<PaymentHistoryItem>>(
     PAYMENT_ENDPOINTS.BY_APPOINTMENT(appointmentId)
   );
 
-export const useGetAllPayments = () =>
+// ─── Hooks ─────────────────────────────────────────────────────────────────────
+
+export const useGetMyPaymentHistory = (page = 0, size = 10) =>
   useQuery({
-    queryKey: queryKeys.payment.lists(),
-    queryFn: () => fetchAllPayments().then((r) => r.data),
+    queryKey: queryKeys.payment.history(page, size),
+    queryFn: () =>
+      apiClient
+        .get<SpringPage<PaymentHistoryItem>>(PAYMENT_ENDPOINTS.HISTORY, {
+          params: { page, size, sort: "createdAt,desc" },
+        })
+        .then((r) => r.data),
+  });
+
+export const useGetAllPayments = (page = 0, size = 10) =>
+  useQuery({
+    queryKey: queryKeys.payment.lists(page, size),
+    queryFn: () =>
+      apiClient
+        .get<SpringPage<PaymentHistoryItem>>(PAYMENT_ENDPOINTS.GET_ALL, {
+          params: { page, size, sort: "createdAt,desc" },
+        })
+        .then((r) => r.data),
   });
 
 export const useGetPaymentById = (id: string) =>
   useQuery({
     queryKey: queryKeys.payment.detail(id),
-    queryFn: () => fetchPaymentById(id).then((r) => r.data),
+    queryFn: () =>
+      apiClient
+        .get<PaymentDetailItem>(PAYMENT_ENDPOINTS.GET_BY_ID(id))
+        .then((r) => r.data),
     enabled: !!id,
-  });
-
-export const useGetPaymentsByPatient = (patientId: string) =>
-  useQuery({
-    queryKey: queryKeys.payment.byPatient(patientId),
-    queryFn: () => fetchPaymentsByPatient(patientId).then((r) => r.data),
-    enabled: !!patientId,
   });
 
 export const useGetPaymentsByAppointment = (appointmentId: string) =>
@@ -111,28 +153,7 @@ export const useInitiatePayment = () => {
     mutationFn: (payload: InitiatePaymentPayload) =>
       initiatePayment(payload).then((r) => r.data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.payment.lists() });
-    },
-  });
-};
-
-export const useConfirmPayment = () => {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: confirmPayment,
-    onSuccess: (_, { id }) => {
-      qc.invalidateQueries({ queryKey: queryKeys.payment.detail(id) });
-      qc.invalidateQueries({ queryKey: queryKeys.payment.lists() });
-    },
-  });
-};
-
-export const useRefundPayment = () => {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: refundPayment,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.payment.lists() });
+      qc.invalidateQueries({ queryKey: queryKeys.payment.all });
     },
   });
 };

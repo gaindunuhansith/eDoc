@@ -38,7 +38,7 @@ public class InvoiceController {
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID id) throws IOException {
 
-        Long userId = JwtUtil.extractUserId(jwt);
+        String userId = JwtUtil.extractUserId(jwt);
         boolean isAdmin = jwt.getClaimAsStringList("roles") != null
                 && jwt.getClaimAsStringList("roles").contains("ROLE_ADMIN");
 

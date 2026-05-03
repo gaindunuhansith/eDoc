@@ -4,8 +4,6 @@ import com.edoc.paymentservice.payload.request.InitiatePaymentRequest;
 import com.edoc.paymentservice.payload.response.InitiatePaymentResponse;
 import com.edoc.paymentservice.payload.response.PaymentDetailResponse;
 import com.edoc.paymentservice.payload.response.PaymentHistoryResponse;
-import com.edoc.paymentservice.mapper.PaymentMapper;
-import com.edoc.paymentservice.model.Payment;
 import com.edoc.paymentservice.service.PaymentService;
 import com.edoc.paymentservice.type.PaymentStatus;
 import com.edoc.paymentservice.util.JwtUtil;
@@ -41,7 +39,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class PaymentController {
 
     private final PaymentService paymentService;
-    private final PaymentMapper paymentMapper;
 
     @Operation(summary = "Initiate payment", description = "Creates or reuses a pending payment for an appointment.")
     @PostMapping(value = "/initiate", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -49,7 +46,7 @@ public class PaymentController {
     public ResponseEntity<InitiatePaymentResponse> initiate(
             @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody InitiatePaymentRequest request) {
-        Long userId = JwtUtil.extractUserId(jwt);
+        String userId = JwtUtil.extractUserId(jwt);
         log.info("Initiating payment request for userId={}, appointmentId={}", userId, request.appointmentId());
         InitiatePaymentResponse response = paymentService.initiatePayment(request, userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -61,7 +58,7 @@ public class PaymentController {
     public ResponseEntity<Page<PaymentHistoryResponse>> history(
             @AuthenticationPrincipal Jwt jwt,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        Long userId = JwtUtil.extractUserId(jwt);
+        String userId = JwtUtil.extractUserId(jwt);
         log.info("Fetching payment history for userId={}", userId);
         Page<PaymentHistoryResponse> response = paymentService.getPaymentHistory(userId, pageable);
         return ResponseEntity.ok(response);
@@ -73,7 +70,7 @@ public class PaymentController {
     public ResponseEntity<PaymentDetailResponse> detail(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID id) {
-        Long userId = JwtUtil.extractUserId(jwt);
+        String userId = JwtUtil.extractUserId(jwt);
         log.info("Fetching payment detail for paymentId={}", id);
         PaymentDetailResponse response = paymentService.getPaymentById(id);
         if (!response.userId().equals(userId)) {
@@ -95,7 +92,7 @@ public class PaymentController {
     @GetMapping(value = "/users/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<PaymentHistoryResponse>> getPaymentsByUserId(
-            @PathVariable Long userId,
+            @PathVariable String userId,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         log.info("Fetching payments for userId={}", userId);
         return ResponseEntity.ok(paymentService.getPaymentsByUser(userId, pageable));
@@ -125,14 +122,14 @@ public class PaymentController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<PaymentHistoryResponse> byAppointment(
             @AuthenticationPrincipal Jwt jwt,
-            @PathVariable Long appointmentId) {
-        Long userId = JwtUtil.extractUserId(jwt);
+            @PathVariable String appointmentId) {
+        String userId = JwtUtil.extractUserId(jwt);
         log.info("Fetching payment by appointmentId={}", appointmentId);
-        Payment payment = paymentService.getPaymentByAppointmentId(appointmentId);
-        if (!payment.getUserId().equals(userId)) {
+        PaymentHistoryResponse response = paymentService.getPaymentByAppointmentId(appointmentId);
+        if (!response.userId().equals(userId)) {
             throw new IllegalArgumentException("Payment not found");
         }
-        return ResponseEntity.ok(paymentMapper.toHistoryResponse(payment));
+        return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Get payment by order", description = "Fetches payment summary by external order identifier.")
@@ -141,12 +138,12 @@ public class PaymentController {
     public ResponseEntity<PaymentHistoryResponse> byOrder(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable String orderId) {
-        Long userId = JwtUtil.extractUserId(jwt);
+        String userId = JwtUtil.extractUserId(jwt);
         log.info("Fetching payment by orderId={}", orderId);
-        Payment payment = paymentService.getPaymentByOrderId(orderId);
-        if (!payment.getUserId().equals(userId)) {
+        PaymentHistoryResponse response = paymentService.getPaymentByOrderId(orderId);
+        if (!response.userId().equals(userId)) {
             throw new IllegalArgumentException("Payment not found");
         }
-        return ResponseEntity.ok(paymentMapper.toHistoryResponse(payment));
+        return ResponseEntity.ok(response);
     }
 }

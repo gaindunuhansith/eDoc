@@ -54,7 +54,7 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     @Override
     @Transactional
-    public byte[] generateInvoice(UUID paymentId, Long userId, boolean isAdmin) throws IOException {
+    public byte[] generateInvoice(UUID paymentId, String userId, boolean isAdmin) throws IOException {
         Payment payment = paymentService.getPaymentEntityById(paymentId);
 
         if (!isAdmin && !payment.getUserId().equals(userId)) {
@@ -69,7 +69,7 @@ public class InvoiceServiceImpl implements InvoiceService {
         transactionLogRepository.save(PaymentTransactionLog.builder()
                 .payment(payment)
                 .event(PaymentConstants.EVENT_INVOICE_GENERATED)
-                .rawPayload("{\"requestedByUserId\":" + userId + ",\"paymentId\":\"" + paymentId + "\"}")
+                .rawPayload("{\"requestedByUserId\":\"" + userId + "\",\"paymentId\":\"" + paymentId + "\"}")
                 .build());
 
         log.info("Invoice generated for paymentId={} by userId={}", paymentId, userId);
