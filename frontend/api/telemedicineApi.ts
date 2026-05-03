@@ -27,10 +27,14 @@ export interface TelemedicineSession {
   status: SessionStatus;
   roomName?: string;
   notes?: string;
-  startedAt?: string;
-  endedAt?: string;
+  /** Raw backend field — populated by the backend on session start */
   startTime?: string;
+  /** Raw backend field — populated by the backend on session end */
   endTime?: string;
+  /** Frontend-normalized alias for startTime */
+  startedAt?: string;
+  /** Frontend-normalized alias for endTime */
+  endedAt?: string;
   createdAt: string;
   updatedAt: string;
 }

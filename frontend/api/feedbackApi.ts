@@ -7,8 +7,8 @@ import { queryKeys } from "./utils/queryKeys";
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface Feedback {
-  id: number;
-  patientId: number;
+  id: string;
+  patientId: string;
   patientName?: string;
   doctorId: string;
   appointmentId: string;
@@ -43,7 +43,7 @@ export interface FeedbackPayload {
 }
 
 export interface UpdateFeedbackPayload {
-  rating?: number;
+  rating: number;
   comment?: string;
 }
 
@@ -88,9 +88,9 @@ export const useSubmitFeedback = () => {
   return useMutation({
     mutationFn: submitFeedback,
     onSuccess: (data) => {
-      qc.invalidateQueries({ queryKey: queryKeys.feedback.byPatient(String(data.data.patientId)) });
+      qc.invalidateQueries({ queryKey: queryKeys.feedback.byPatient(data.data.patientId) });
       qc.invalidateQueries({ queryKey: queryKeys.feedback.byPatient("me") });
-      qc.invalidateQueries({ queryKey: queryKeys.feedback.byDoctor(String(data.data.doctorId)) });
+      qc.invalidateQueries({ queryKey: queryKeys.feedback.byDoctor(data.data.doctorId) });
       qc.invalidateQueries({ queryKey: queryKeys.feedback.byDoctor("me") });
     },
     onError: (error: any) => {
@@ -182,8 +182,8 @@ export const useUpdateFeedback = () => {
     mutationFn: ({ id, payload }: { id: string; payload: UpdateFeedbackPayload }) =>
       updateFeedback(id, payload),
     onSuccess: (data) => {
-      qc.invalidateQueries({ queryKey: queryKeys.feedback.detail(data.data.id.toString()) });
-      qc.invalidateQueries({ queryKey: queryKeys.feedback.byPatient(String(data.data.patientId)) });
+      qc.invalidateQueries({ queryKey: queryKeys.feedback.detail(data.data.id) });
+      qc.invalidateQueries({ queryKey: queryKeys.feedback.byPatient(data.data.patientId) });
       qc.invalidateQueries({ queryKey: queryKeys.feedback.byPatient("me") });
       qc.invalidateQueries({ queryKey: queryKeys.feedback.byDoctor(String(data.data.doctorId)) });
       qc.invalidateQueries({ queryKey: queryKeys.feedback.byDoctor("me") });
