@@ -28,9 +28,9 @@ public class DoctorRegistrationRequest {
 
     private String licenseNumber;
 
-    private int experienceYears;
+    private Integer experienceYears;
 
     private String hospital;
     private String bio;
-    private double consultationFee;
+    private Double consultationFee;
 }
