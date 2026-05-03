@@ -45,7 +45,7 @@ public class Patient {
     private Instant createdAt;
 
     @Column(name = "is_deleted", nullable = false)
-    private boolean deleted = false;
+    private boolean isDeleted = false;
 
     @Column(name = "deleted_at")
     private Instant deletedAt;

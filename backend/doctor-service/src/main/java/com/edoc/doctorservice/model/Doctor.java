@@ -3,7 +3,6 @@ package com.edoc.doctorservice.model;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -48,9 +47,10 @@ public class Doctor {
 
     private List<String> languages;    // Languages the doctor speaks
 
-    @JsonIgnore
+    @JsonProperty("isDeleted")
     private boolean isDeleted = false;
 
-    @JsonIgnore
     private Instant deletedAt;
+
+    private String deletionReason;
 }

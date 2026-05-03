@@ -142,6 +142,7 @@ public class DoctorService {
                 .orElseThrow(() -> new RuntimeException("Doctor not found with userId: " + userId));
         doctor.setDeleted(true);
         doctor.setDeletedAt(Instant.now());
+        doctor.setDeletionReason("Account deleted via user-service cascade");
         doctorRepository.save(doctor);
     }
 }
