@@ -185,7 +185,7 @@ export default function ConfirmOrderPage() {
       if (checkout?.checkoutUrl) {
         submitCheckoutForm(checkout.checkoutUrl, {
           merchant_id:  checkout.merchantId,
-          return_url:   `${window.location.origin}/payments/success`,
+          return_url:   `${window.location.origin}/patient/payments`,
           cancel_url:   `${window.location.origin}/patient/payments`,
           notify_url:   checkout.notifyUrl,
           order_id:     checkout.orderId,

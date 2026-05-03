@@ -190,6 +190,20 @@ export const useGetPaymentByOrder = (orderId: string) =>
     enabled: !!orderId,
   });
 
+// Polls every 2.5 s until status is SUCCESS or FAILED, then stops.
+export const usePollPaymentByOrder = (orderId: string, active: boolean) =>
+  useQuery({
+    queryKey: ["payment", "order", orderId, "poll"],
+    queryFn: () => fetchPaymentsByOrder(orderId).then((r) => r.data),
+    enabled: !!orderId && active,
+    refetchInterval: (query) => {
+      const status = (query.state.data as PaymentHistoryItem | undefined)?.status;
+      if (status === "SUCCESS" || status === "FAILED") return false;
+      return 2500;
+    },
+    refetchIntervalInBackground: false,
+  });
+
 export const useInitiatePayment = () => {
   const qc = useQueryClient();
   return useMutation({
