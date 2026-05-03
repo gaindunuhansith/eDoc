@@ -8,9 +8,12 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/feedback")
@@ -25,7 +28,9 @@ public class FeedbackController {
 
     @PostMapping("/submit")
     public ResponseEntity<FeedbackResponseDTO> submitFeedback(@Valid @RequestBody FeedbackRequestDTO request,
-                                                              @RequestHeader("Authorization") String authHeader) {
+                                                              @AuthenticationPrincipal Jwt jwt) {
+        // patientId is resolved securely from the validated JWT via Spring Security Context
+        String authHeader = "Bearer " + jwt.getTokenValue();
         FeedbackResponseDTO response = feedbackService.submitFeedback(request, authHeader);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -43,19 +48,23 @@ public class FeedbackController {
     }
 
     @GetMapping("/doctor/me")
-    public ResponseEntity<List<FeedbackResponseDTO>> getMyDoctorFeedback(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<List<FeedbackResponseDTO>> getMyDoctorFeedback(@AuthenticationPrincipal Jwt jwt) {
+        // doctorId is resolved securely from the validated JWT via Spring Security Context
+        String authHeader = "Bearer " + jwt.getTokenValue();
         List<FeedbackResponseDTO> feedbacks = feedbackService.getFeedbackForCurrentDoctor(authHeader);
         return ResponseEntity.ok(feedbacks);
     }
 
     @GetMapping("/patient/{patientId}")
-    public ResponseEntity<List<FeedbackResponseDTO>> getFeedbackForPatient(@PathVariable Long patientId) {
+    public ResponseEntity<List<FeedbackResponseDTO>> getFeedbackForPatient(@PathVariable UUID patientId) {
         List<FeedbackResponseDTO> feedbacks = feedbackService.getFeedbackForPatient(patientId);
         return ResponseEntity.ok(feedbacks);
     }
 
     @GetMapping("/patient/me")
-    public ResponseEntity<List<FeedbackResponseDTO>> getMyFeedback(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<List<FeedbackResponseDTO>> getMyFeedback(@AuthenticationPrincipal Jwt jwt) {
+        // patientId is resolved securely from the validated JWT via Spring Security Context
+        String authHeader = "Bearer " + jwt.getTokenValue();
         List<FeedbackResponseDTO> feedbacks = feedbackService.getFeedbackForCurrentPatient(authHeader);
         return ResponseEntity.ok(feedbacks);
     }
@@ -67,22 +76,26 @@ public class FeedbackController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<FeedbackResponseDTO> getFeedbackById(@PathVariable Long id) {
+    public ResponseEntity<FeedbackResponseDTO> getFeedbackById(@PathVariable UUID id) {
         FeedbackResponseDTO feedback = feedbackService.getFeedbackById(id);
         return ResponseEntity.ok(feedback);
     }
 
     @PutMapping("/update/{id}")
-    public ResponseEntity<FeedbackResponseDTO> updateFeedback(@PathVariable Long id,
+    public ResponseEntity<FeedbackResponseDTO> updateFeedback(@PathVariable UUID id,
                                                               @Valid @RequestBody UpdateFeedbackRequestDTO request,
-                                                              @RequestHeader("Authorization") String authHeader) {
+                                                              @AuthenticationPrincipal Jwt jwt) {
+        // patientId is resolved securely from the validated JWT via Spring Security Context
+        String authHeader = "Bearer " + jwt.getTokenValue();
         FeedbackResponseDTO updated = feedbackService.updateFeedback(id, request, authHeader);
         return ResponseEntity.ok(updated);
     }
 
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<Void> deleteFeedback(@PathVariable Long id,
-                                               @RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<Void> deleteFeedback(@PathVariable UUID id,
+                                               @AuthenticationPrincipal Jwt jwt) {
+        // patientId is resolved securely from the validated JWT via Spring Security Context
+        String authHeader = "Bearer " + jwt.getTokenValue();
         feedbackService.deleteFeedback(id, authHeader);
         return ResponseEntity.noContent().build();
     }

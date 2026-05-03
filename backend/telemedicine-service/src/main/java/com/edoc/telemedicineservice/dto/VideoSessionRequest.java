@@ -1,8 +1,16 @@
 package com.edoc.telemedicineservice.dto;
 
+import jakarta.validation.constraints.NotBlank;
+
 public class VideoSessionRequest {
+
+    @NotBlank(message = "Appointment ID is required")
     private String appointmentId;
+
+    @NotBlank(message = "Doctor ID is required")
     private String doctorId;
+
+    @NotBlank(message = "Patient ID is required")
     private String patientId;
 
     public VideoSessionRequest() {}

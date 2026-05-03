@@ -8,6 +8,8 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.UUID;
+
 @Service
 public class PatientServiceClient {
 
@@ -41,13 +43,13 @@ public class PatientServiceClient {
     }
 
     public static class PatientDTO {
-        private Long id;
+        private UUID id;
 
-        public Long getId() {
+        public UUID getId() {
             return id;
         }
 
-        public void setId(Long id) {
+        public void setId(UUID id) {
             this.id = id;
         }
     }

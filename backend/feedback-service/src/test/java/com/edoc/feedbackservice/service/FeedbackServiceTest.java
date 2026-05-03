@@ -16,11 +16,15 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class FeedbackServiceTest {
+
+    private static final UUID PATIENT_UUID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    private static final UUID FEEDBACK_UUID = UUID.fromString("00000000-0000-0000-0000-000000000002");
 
     @Mock
     private FeedbackRepository feedbackRepository;
@@ -53,18 +57,18 @@ class FeedbackServiceTest {
 
         // Mock appointment validation
         AppointmentServiceClient.AppointmentDTO appointmentDTO = new AppointmentServiceClient.AppointmentDTO();
-        appointmentDTO.setPatientId("1");
+        appointmentDTO.setPatientId(PATIENT_UUID.toString());
         appointmentDTO.setDoctorId("2");
         appointmentDTO.setStatus("COMPLETED");
         when(appointmentServiceClient.getAppointment("1", "Bearer token")).thenReturn(appointmentDTO);
 
         PatientServiceClient.PatientDTO patientDTO = new PatientServiceClient.PatientDTO();
-        patientDTO.setId(1L);
+        patientDTO.setId(PATIENT_UUID);
         when(patientServiceClient.getMyPatientProfile("Bearer token")).thenReturn(patientDTO);
 
-        when(feedbackRepository.existsByPatientIdAndAppointmentId(1L, "1")).thenReturn(false);
+        when(feedbackRepository.existsByPatientIdAndAppointmentId(PATIENT_UUID, "1")).thenReturn(false);
 
-        when(feedbackMapper.toEntity(request, 1L)).thenReturn(feedback);
+        when(feedbackMapper.toEntity(request, PATIENT_UUID)).thenReturn(feedback);
         when(feedbackRepository.save(feedback)).thenReturn(feedback);
         when(feedbackMapper.toResponseDTO(feedback)).thenReturn(response);
 
@@ -79,18 +83,18 @@ class FeedbackServiceTest {
         Feedback feedback = new Feedback();
         FeedbackResponseDTO response = new FeedbackResponseDTO();
 
-        when(feedbackRepository.findById(1L)).thenReturn(Optional.of(feedback));
+        when(feedbackRepository.findById(FEEDBACK_UUID)).thenReturn(Optional.of(feedback));
         when(feedbackMapper.toResponseDTO(feedback)).thenReturn(response);
 
-        FeedbackResponseDTO result = feedbackService.getFeedbackById(1L);
+        FeedbackResponseDTO result = feedbackService.getFeedbackById(FEEDBACK_UUID);
 
         assertNotNull(result);
     }
 
     @Test
     void getFeedbackById_shouldThrowExceptionWhenNotFound() {
-        when(feedbackRepository.findById(1L)).thenReturn(Optional.empty());
+        when(feedbackRepository.findById(FEEDBACK_UUID)).thenReturn(Optional.empty());
 
-        assertThrows(FeedbackNotFoundException.class, () -> feedbackService.getFeedbackById(1L));
+        assertThrows(FeedbackNotFoundException.class, () -> feedbackService.getFeedbackById(FEEDBACK_UUID));
     }
 }

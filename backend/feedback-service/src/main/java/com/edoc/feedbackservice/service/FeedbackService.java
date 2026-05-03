@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -50,7 +51,7 @@ public class FeedbackService {
     @Transactional
     public FeedbackResponseDTO submitFeedback(FeedbackRequestDTO request, String authHeader) {
 
-        Long patientId = resolveCurrentPatientId(authHeader);
+        UUID patientId = resolveCurrentPatientId(authHeader);
 
         AppointmentServiceClient.AppointmentDTO appointment = appointmentServiceClient.getAppointment(request.getAppointmentId(), authHeader);
 
@@ -83,7 +84,7 @@ public class FeedbackService {
         return feedbackMapper.toResponseDTO(saved);
     }
 
-    private Long resolveCurrentPatientId(String authHeader) {
+    private UUID resolveCurrentPatientId(String authHeader) {
         PatientServiceClient.PatientDTO patient = patientServiceClient.getMyPatientProfile(authHeader);
         if (patient == null || patient.getId() == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authenticated patient profile not found");
@@ -125,7 +126,7 @@ public class FeedbackService {
         return getFeedbackForDoctor(doctor.getId());
     }
 
-    public List<FeedbackResponseDTO> getFeedbackForPatient(Long patientId) {
+    public List<FeedbackResponseDTO> getFeedbackForPatient(UUID patientId) {
         return feedbackRepository.findByPatientId(patientId)
                 .stream()
                 .map(feedbackMapper::toResponseDTO)
@@ -143,17 +144,17 @@ public class FeedbackService {
                 .collect(Collectors.toList());
     }
 
-    public FeedbackResponseDTO getFeedbackById(Long id) {
+    public FeedbackResponseDTO getFeedbackById(UUID id) {
         Feedback feedback = feedbackRepository.findById(id)
                 .orElseThrow(() -> new FeedbackNotFoundException("Feedback not found"));
         return feedbackMapper.toResponseDTO(feedback);
     }
 
     @Transactional
-    public FeedbackResponseDTO updateFeedback(Long id, UpdateFeedbackRequestDTO request, String authHeader) {
+    public FeedbackResponseDTO updateFeedback(UUID id, UpdateFeedbackRequestDTO request, String authHeader) {
         Feedback feedback = feedbackRepository.findById(id)
                 .orElseThrow(() -> new FeedbackNotFoundException("Feedback not found"));
-        Long patientId = resolveCurrentPatientId(authHeader);
+        UUID patientId = resolveCurrentPatientId(authHeader);
         if (!feedback.getPatientId().equals(patientId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only edit your own feedback");
         }
@@ -167,10 +168,10 @@ public class FeedbackService {
     }
 
     @Transactional
-    public void deleteFeedback(Long id, String authHeader) {
+    public void deleteFeedback(UUID id, String authHeader) {
         Feedback feedback = feedbackRepository.findById(id)
                 .orElseThrow(() -> new FeedbackNotFoundException("Feedback not found"));
-        Long patientId = resolveCurrentPatientId(authHeader);
+        UUID patientId = resolveCurrentPatientId(authHeader);
         if (!feedback.getPatientId().equals(patientId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only delete your own feedback");
         }

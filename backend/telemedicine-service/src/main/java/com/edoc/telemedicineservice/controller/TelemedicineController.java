@@ -4,6 +4,7 @@ import com.edoc.telemedicineservice.dto.VideoSessionRequest;
 import com.edoc.telemedicineservice.dto.SessionTokenResponse;
 import com.edoc.telemedicineservice.model.VideoSession;
 import com.edoc.telemedicineservice.service.TelemedicineService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -22,7 +23,7 @@ public class TelemedicineController {
 
     @PostMapping("/sessions")
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<VideoSession> createSession(@RequestBody VideoSessionRequest request,
+    public ResponseEntity<VideoSession> createSession(@Valid @RequestBody VideoSessionRequest request,
                                                      @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
                                                      @AuthenticationPrincipal Jwt jwt) {
         VideoSession session = telemedicineService.createSession(

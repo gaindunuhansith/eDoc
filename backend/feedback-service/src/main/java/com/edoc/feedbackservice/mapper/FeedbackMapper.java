@@ -5,10 +5,12 @@ import com.edoc.feedbackservice.dto.FeedbackResponseDTO;
 import com.edoc.feedbackservice.entity.Feedback;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
+
 @Component
 public class FeedbackMapper {
 
-    public Feedback toEntity(FeedbackRequestDTO dto, Long patientId) {
+    public Feedback toEntity(FeedbackRequestDTO dto, UUID patientId) {
         Feedback feedback = new Feedback();
         feedback.setPatientId(patientId);
         feedback.setDoctorId(dto.getDoctorId());
