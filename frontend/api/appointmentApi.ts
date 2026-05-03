@@ -14,11 +14,7 @@ export type AppointmentStatus =
 
 export type AppointmentType = "IN_PERSON" | "VIDEO";
 
-export type PaymentStatus =
-  | "NOT_REQUIRED"
-  | "PENDING"
-  | "SUCCESS"
-  | "FAILED";
+export type PaymentStatus = "PENDING" | "SUCCESS" | "FAILED";
 
 export interface Appointment {
   id: string;
@@ -76,7 +72,7 @@ export const cancelAppointment = ({
   reason,
 }: {
   id: string;
-  reason?: string;
+  reason: string;
 }) => {
   return apiClient.patch<Appointment>(APPOINTMENT_ENDPOINTS.CANCEL(id), { reason });
 };
@@ -112,6 +108,34 @@ export const updateAppointmentStatus = ({
 
 export const fetchPendingAppointmentsByDoctor = (doctorId: string) =>
   apiClient.get<Appointment[]>(APPOINTMENT_ENDPOINTS.PENDING_BY_DOCTOR(doctorId));
+
+export interface PaymentStatusUpdate {
+  paymentStatus: PaymentStatus;
+  paymentId: string;  // Reference ID from payment service
+}
+
+export const updatePaymentStatus = ({
+  id,
+  update,
+}: {
+  id: string;
+  update: PaymentStatusUpdate;
+}) => apiClient.patch<Appointment>(APPOINTMENT_ENDPOINTS.UPDATE_PAYMENT(id), update);
+
+export const fetchAllAppointments = () =>
+  apiClient.get<Appointment[]>(APPOINTMENT_ENDPOINTS.GET_ALL);
+
+export const fetchAppointmentsByStatus = ({
+  patientId,
+  status,
+}: {
+  patientId: string;
+  status: AppointmentStatus;
+}) =>
+  apiClient.get<Appointment[]>(APPOINTMENT_ENDPOINTS.BY_PATIENT_STATUS(patientId, status));
+
+export const fetchUnpaidConfirmedAppointments = (doctorId: string) =>
+  apiClient.get<Appointment[]>(APPOINTMENT_ENDPOINTS.UNPAID_BY_DOCTOR(doctorId));
 
 export const useGetAppointmentsByPatient = (patientId: string) =>
   useQuery({
@@ -190,5 +214,41 @@ export const useDeleteAppointment = () => {
     },
   });
 };
+
+export const useUpdatePaymentStatus = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: updatePaymentStatus,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.appointment.all });
+    },
+  });
+};
+
+export const useGetAllAppointments = () =>
+  useQuery({
+    queryKey: queryKeys.appointment.all,
+    queryFn: () => fetchAllAppointments().then((r) => r.data),
+  });
+
+export const useGetAppointmentsByStatus = ({
+  patientId,
+  status,
+}: {
+  patientId: string;
+  status: AppointmentStatus;
+}) =>
+  useQuery({
+    queryKey: ["appointments", "patient", patientId, "status", status],
+    queryFn: () => fetchAppointmentsByStatus({ patientId, status }).then((r) => r.data),
+    enabled: !!patientId && !!status,
+  });
+
+export const useGetUnpaidConfirmedAppointments = (doctorId: string) =>
+  useQuery({
+    queryKey: ["appointments", "unpaid", doctorId],
+    queryFn: () => fetchUnpaidConfirmedAppointments(doctorId).then((r) => r.data),
+    enabled: !!doctorId,
+  });
 
 

@@ -63,15 +63,19 @@ export const DOCTOR_ENDPOINTS = {
 
 
 export const APPOINTMENT_ENDPOINTS = {
+  GET_ALL: "/api/v1/appointments",
   GET_BY_ID: (id: string) => `/api/v1/appointments/${id}`,
   CREATE: "/api/v1/appointments",
   UPDATE: (id: string) => `/api/v1/appointments/${id}`,
   DELETE: (id: string) => `/api/v1/appointments/${id}`,
   CANCEL: (id: string) => `/api/v1/appointments/${id}/cancel`,
   UPDATE_STATUS: (id: string) => `/api/v1/appointments/${id}/status`,
+  UPDATE_PAYMENT: (id: string) => `/api/v1/appointments/${id}/payment`,
   BY_PATIENT: (patientId: string) => `/api/v1/appointments/patient/${patientId}`,
+  BY_PATIENT_STATUS: (patientId: string, status: string) => `/api/v1/appointments/patient/${patientId}/status/${status}`,
   BY_DOCTOR: (doctorId: string) => `/api/v1/appointments/doctor/${doctorId}`,
   PENDING_BY_DOCTOR: (doctorId: string) => `/api/v1/appointments/doctor/${doctorId}/pending`,
+  UNPAID_BY_DOCTOR: (doctorId: string) => `/api/v1/appointments/doctor/${doctorId}/unpaid`,
 } as const;
 
 

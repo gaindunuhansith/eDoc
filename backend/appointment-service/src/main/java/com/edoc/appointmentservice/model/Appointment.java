@@ -78,11 +78,10 @@ public class Appointment {
         NO_SHOW         // Patient didn't show up
     }
 
-    // NEW - Payment status enum
+    // Payment status enum - aligned with payment-service states
     public enum PaymentStatus {
-        NOT_REQUIRED,   // default before doctor confirms
-        PENDING,        // doctor confirmed - payment now required
-        SUCCESS,        // payment service confirmed payment
-        FAILED          // failed or refunded
+        PENDING,        // payment is required and awaiting payment
+        SUCCESS,        // payment service confirmed payment successful
+        FAILED          // payment failed or appointment refunded
     }
 }
