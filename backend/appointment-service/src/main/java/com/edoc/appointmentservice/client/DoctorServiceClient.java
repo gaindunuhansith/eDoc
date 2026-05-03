@@ -1,5 +1,4 @@
 package com.edoc.appointmentservice.client;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,12 +36,13 @@ public class DoctorServiceClient {
     // Tell doctor-service to mark a slot as booked
     public void markSlotAsBooked(String doctorId, String dayOfWeek, String startTime) {
         try {
+            AvailabilitySlotRequest request = new AvailabilitySlotRequest(dayOfWeek, startTime);
+
             webClientBuilder.build()
                     .patch()
                     .uri(doctorServiceUrl + "/api/v1/doctors/" + doctorId
-                            + "/availability/book"
-                            + "?dayOfWeek=" + dayOfWeek
-                            + "&startTime=" + startTime)
+                    + "/availability/book")
+                .bodyValue(request)
                     .retrieve()
                     .bodyToMono(Void.class)
                     .block();
@@ -55,12 +55,13 @@ public class DoctorServiceClient {
     // Tell doctor-service to free up a slot (when appointment is cancelled)
     public void markSlotAsFree(String doctorId, String dayOfWeek, String startTime) {
         try {
+            AvailabilitySlotRequest request = new AvailabilitySlotRequest(dayOfWeek, startTime);
+
             webClientBuilder.build()
                     .patch()
                     .uri(doctorServiceUrl + "/api/v1/doctors/" + doctorId
-                            + "/availability/free"
-                            + "?dayOfWeek=" + dayOfWeek
-                            + "&startTime=" + startTime)
+                    + "/availability/free")
+                .bodyValue(request)
                     .retrieve()
                     .bodyToMono(Void.class)
                     .block();
