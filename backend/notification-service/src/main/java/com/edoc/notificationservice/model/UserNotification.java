@@ -3,6 +3,7 @@ package com.edoc.notificationservice.model;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import java.util.UUID;
 import jakarta.persistence.PrePersist;
@@ -18,7 +19,8 @@ import lombok.Setter;
 public class UserNotification {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(columnDefinition = "uuid")
     private UUID id;
 
     // JWT uid claim (UUID string) — the user who owns this inbox entry.

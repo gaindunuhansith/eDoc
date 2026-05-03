@@ -25,3 +25,6 @@ patient:
 logging:
   level:
     com.edoc: DEBUG
+
+seed:
+  enabled: ${SEED_ENABLED:false}
