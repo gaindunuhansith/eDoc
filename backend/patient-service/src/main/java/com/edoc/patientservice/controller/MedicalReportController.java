@@ -79,6 +79,19 @@ public class MedicalReportController {
         return medicalReportService.getReportsForPatientInternal(id);
     }
 
+    @GetMapping("/internal/patients/by-user/{userId}/reports")
+    // Internal report listing by user-service UUID string (used by doctor-service).
+    public List<MedicalReportResponseDTO> getReportsByUserIdInternal(@PathVariable String userId) {
+        return medicalReportService.getReportsForPatient(userId);
+    }
+
+    @GetMapping("/internal/patients/by-user/{userId}/reports/{reportId}/file")
+    // Internal file access by user-service UUID string (used by doctor-service).
+    public ResponseEntity<Resource> downloadReportByUserIdInternal(@PathVariable String userId,
+                                                                    @PathVariable Long reportId) {
+        return medicalReportService.getReportFileForPatient(userId, reportId);
+    }
+
     @GetMapping("/internal/patients/{patientId}/reports/{reportId}/file")
     // Internal file access endpoint for doctor-service and other backend services.
     public ResponseEntity<Resource> downloadReportInternal(@PathVariable Long patientId,

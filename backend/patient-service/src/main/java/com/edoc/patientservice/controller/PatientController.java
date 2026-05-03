@@ -61,6 +61,12 @@ public class PatientController {
         return patientService.getPatient(id);
     }
 
+    @GetMapping("/internal/patients/by-user/{userId}")
+    // Internal lookup by user-service UUID string (used by doctor-service).
+    public PatientResponseDTO getPatientByUserIdInternal(@PathVariable String userId) {
+        return patientService.getPatientByUserId(userId);
+    }
+
     @GetMapping("/internal/patients/{id}/status")
     // Internal lightweight status lookup for booking and authorization checks.
     public PatientStatusResponseDTO getPatientStatusInternal(@PathVariable Long id) {

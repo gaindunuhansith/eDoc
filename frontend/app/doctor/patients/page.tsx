@@ -155,13 +155,15 @@ function PrescriptionItem({ prescription }: { prescription: Prescription }) {
   );
 }
 
+const EMPTY_APPOINTMENTS: Appointment[] = [];
+
 function PatientsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialPatientId = searchParams.get("patientUserId") || searchParams.get("patientId") || "";
 
   const { data: doctor } = useGetMyDoctorProfile();
-  const { data: doctorAppointments = [], isLoading: appointmentsLoading } = useGetAppointmentsByDoctor(doctor?.id || "");
+  const { data: doctorAppointments = EMPTY_APPOINTMENTS, isLoading: appointmentsLoading } = useGetAppointmentsByDoctor(doctor?.id || "");
 
   const [searchInput, setSearchInput] = useState(initialPatientId);
   const [activePatientId, setActivePatientId] = useState(initialPatientId);

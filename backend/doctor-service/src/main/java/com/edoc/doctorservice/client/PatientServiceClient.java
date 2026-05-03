@@ -32,6 +32,11 @@ public class PatientServiceClient {
                     .retrieve()
                     .bodyToMono(new ParameterizedTypeReference<List<Map>>() {})
                     .block();
+        } catch (WebClientResponseException e) {
+            log.error("Error fetching reports for patient: {} — HTTP {} {}", patientId, e.getStatusCode(), e.getResponseBodyAsString());
+            throw new RuntimeException(
+                    "Could not fetch patient reports: " + e.getStatusCode()
+            );
         } catch (Exception e) {
             log.error("Error fetching reports for patient: {}", patientId, e);
             throw new RuntimeException(
@@ -67,6 +72,11 @@ public class PatientServiceClient {
                     .retrieve()
                     .bodyToMono(Map.class)
                     .block();
+        } catch (WebClientResponseException e) {
+            log.error("Error fetching patient: {} — HTTP {} {}", patientId, e.getStatusCode(), e.getResponseBodyAsString());
+            throw new RuntimeException(
+                    "Could not fetch patient details: " + e.getStatusCode()
+            );
         } catch (Exception e) {
             log.error("Error fetching patient with id: {}", patientId, e);
             throw new RuntimeException(
