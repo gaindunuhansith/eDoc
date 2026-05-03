@@ -64,6 +64,8 @@ public class AppointmentService {
         appointment.setPatientId(request.getPatientId());
         appointment.setPatientUserId(request.getPatientUserId());  // Store patient's userId (String UUID)
         appointment.setPatientName(request.getPatientName());   // snapshot at booking time
+        appointment.setPatientEmail(request.getPatientEmail()); // snapshot for direct notification delivery
+        appointment.setPatientPhone(request.getPatientPhone()); // snapshot for direct notification delivery
         appointment.setDoctorId(request.getDoctorId());
         appointment.setAppointmentDate(request.getAppointmentDate());
         appointment.setTimeSlot(request.getTimeSlot());
@@ -415,7 +417,8 @@ public class AppointmentService {
     private void notifyBooking(Appointment appointment) {
         try {
             Map<String, Object> data = buildAppointmentData(appointment);
-            notificationServiceClient.sendToPatient("APPOINTMENT_BOOKED", appointment.getPatientId(), data);
+            notificationServiceClient.sendToPatient("APPOINTMENT_BOOKED", appointment.getPatientId(),
+                    appointment.getPatientEmail(), appointment.getPatientPhone(), data);
             notificationServiceClient.sendToDoctor("APPOINTMENT_BOOKED", appointment.getDoctorId(), data);
         } catch (Exception ex) {
             log.warn("Notification send failed for booking {}", appointment.getId(), ex);
@@ -424,7 +427,8 @@ public class AppointmentService {
 
     private void notifyAppointmentConfirmed(Appointment appointment) {
         try {
-            notificationServiceClient.sendToPatient("APPOINTMENT_CONFIRMED", appointment.getPatientId(), buildAppointmentData(appointment));
+            notificationServiceClient.sendToPatient("APPOINTMENT_CONFIRMED", appointment.getPatientId(),
+                    appointment.getPatientEmail(), appointment.getPatientPhone(), buildAppointmentData(appointment));
         } catch (Exception ex) {
             log.warn("Notification send failed for confirmation {}", appointment.getId(), ex);
         }
@@ -432,7 +436,8 @@ public class AppointmentService {
 
     private void notifyAppointmentRejected(Appointment appointment) {
         try {
-            notificationServiceClient.sendToPatient("APPOINTMENT_REJECTED", appointment.getPatientId(), buildAppointmentData(appointment));
+            notificationServiceClient.sendToPatient("APPOINTMENT_REJECTED", appointment.getPatientId(),
+                    appointment.getPatientEmail(), appointment.getPatientPhone(), buildAppointmentData(appointment));
         } catch (Exception ex) {
             log.warn("Notification send failed for rejection {}", appointment.getId(), ex);
         }
@@ -440,7 +445,8 @@ public class AppointmentService {
 
     private void notifyAppointmentCancelled(Appointment appointment) {
         try {
-            notificationServiceClient.sendToPatient("APPOINTMENT_CANCELLED", appointment.getPatientId(), buildAppointmentData(appointment));
+            notificationServiceClient.sendToPatient("APPOINTMENT_CANCELLED", appointment.getPatientId(),
+                    appointment.getPatientEmail(), appointment.getPatientPhone(), buildAppointmentData(appointment));
         } catch (Exception ex) {
             log.warn("Notification send failed for cancellation {}", appointment.getId(), ex);
         }
@@ -449,7 +455,8 @@ public class AppointmentService {
     private void notifyCompletion(Appointment appointment) {
         try {
             Map<String, Object> data = buildAppointmentData(appointment);
-            notificationServiceClient.sendToPatient("APPOINTMENT_COMPLETED", appointment.getPatientId(), data);
+            notificationServiceClient.sendToPatient("APPOINTMENT_COMPLETED", appointment.getPatientId(),
+                    appointment.getPatientEmail(), appointment.getPatientPhone(), data);
             notificationServiceClient.sendToDoctor("APPOINTMENT_COMPLETED", appointment.getDoctorId(), data);
         } catch (Exception ex) {
             log.warn("Notification send failed for completion {}", appointment.getId(), ex);

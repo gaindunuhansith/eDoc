@@ -24,21 +24,21 @@ public class PrescriptionService {
         this.patientRepository = patientRepository;
     }
 
-    public List<PrescriptionResponseDTO> getPrescriptionsForPatient(String userId) {
+    public List<PrescriptionResponseDTO> getPrescriptionsForPatient(String userId, String authHeader) {
         // Verify patient exists
         findPatientByUserIdOrThrow(userId);
         // Query doctor-service with userId, not patient's internal ID
         // Prescriptions are stored with patientId = userId (string UUID)
-        return doctorPrescriptionClient.getPrescriptionsByPatient(userId);
+        return doctorPrescriptionClient.getPrescriptionsByPatient(userId, authHeader);
     }
 
-    public List<PrescriptionResponseDTO> getPrescriptionsInternal(UUID patientId) {
+    public List<PrescriptionResponseDTO> getPrescriptionsInternal(UUID patientId, String authHeader) {
         Patient patient = patientRepository.findById(patientId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient not found"));
         if (patient.getUserId() == null || patient.getUserId().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Patient userId is missing");
         }
-        return doctorPrescriptionClient.getPrescriptionsByPatient(patient.getUserId());
+        return doctorPrescriptionClient.getPrescriptionsByPatient(patient.getUserId(), authHeader);
     }
 
     private Patient findPatientByUserIdOrThrow(String userId) {

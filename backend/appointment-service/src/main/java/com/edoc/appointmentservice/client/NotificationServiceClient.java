@@ -20,12 +20,12 @@ public class NotificationServiceClient {
 
     private final WebClient.Builder webClientBuilder;
 
-    public void sendToPatient(String type, String patientId, Map<String, Object> data) {
-        send(new NotificationRequest(type, patientId, null, null, data));
+    public void sendToPatient(String type, String patientId, String recipientEmail, String recipientPhone, Map<String, Object> data) {
+        send(new NotificationRequest(type, patientId, null, null, recipientEmail, recipientPhone, data));
     }
 
     public void sendToDoctor(String type, String doctorId, Map<String, Object> data) {
-        send(new NotificationRequest(type, null, doctorId, null, data));
+        send(new NotificationRequest(type, null, doctorId, null, null, null, data));
     }
 
     private void send(NotificationRequest request) {
@@ -56,6 +56,6 @@ public class NotificationServiceClient {
         return null;
     }
 
-    private record NotificationRequest(String type, String patientId, String doctorId, String userId, Map<String, Object> data) {}
+    private record NotificationRequest(String type, String patientId, String doctorId, String userId, String recipientEmail, String recipientPhone, Map<String, Object> data) {}
 }
 

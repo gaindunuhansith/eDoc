@@ -89,12 +89,16 @@ function BookingSheet({
   const handleBook = () => {
     if (!canSubmit) return;
     const patientName = currentUser?.name?.trim() || user?.name?.trim() || undefined;
+    const patientEmail = currentUser?.email || undefined;
+    const patientPhone = currentUser?.phoneNumber || undefined;
     const doctorName = `${doctor!.firstName} ${doctor!.lastName}`;
 
     createMutation.mutate(
       {
         patientId,
         patientName,
+        patientEmail,
+        patientPhone,
         doctorId: doctor!.id,
         doctorName,
         appointmentDate: getNextDateForDay(selectedDay!),

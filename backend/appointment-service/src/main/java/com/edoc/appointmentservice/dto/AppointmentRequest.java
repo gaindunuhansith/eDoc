@@ -36,4 +36,6 @@ public class AppointmentRequest {
     private String reasonForVisit;
 
     private String patientName;   // passed by frontend for display in doctor dashboard
+    private String patientEmail;  // passed by frontend; snapshotted for direct notification delivery
+    private String patientPhone;  // passed by frontend; snapshotted for direct notification delivery
 }

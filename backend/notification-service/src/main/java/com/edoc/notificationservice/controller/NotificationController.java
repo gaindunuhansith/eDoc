@@ -8,6 +8,7 @@ import com.edoc.notificationservice.service.UserNotificationService;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -38,8 +39,9 @@ public class NotificationController {
 
     @PostMapping("/send")
     // Unified notification endpoint used by other services (appointment/payment/etc.).
-    public ResponseEntity<NotificationResponse> send(@RequestBody NotificationRequestDTO request) {
-        NotificationResponse response = notificationService.send(request);
+    public ResponseEntity<NotificationResponse> send(@RequestBody NotificationRequestDTO request,
+                                                     HttpServletRequest httpRequest) {
+        NotificationResponse response = notificationService.send(request, httpRequest.getHeader("Authorization"));
         if ("FAILED".equals(response.status())) {
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(response);
         }
