@@ -1,4 +1,4 @@
-﻿package com.edoc.patientservice.dto.patient;
+package com.edoc.patientservice.dto.patient;
 
 import java.time.Instant;
 import java.time.LocalDate;
