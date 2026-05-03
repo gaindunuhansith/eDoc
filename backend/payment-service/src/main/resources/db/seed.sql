@@ -257,7 +257,7 @@ WITH patients (user_id, full_name, email, phone, city) AS (
     ('USR-PAT-13', 'Hasitha Jayasena',     'hasitha.jayasena@edoc.com',     '0755300013', 'Anuradhapura'),
     ('USR-PAT-14', 'Indika Kumara',        'indika.kumara@edoc.com',        '0766400014', 'Nuwara Eliya'),
     ('USR-PAT-15', 'Janani Thilakarathne', 'janani.thilakarathne@edoc.com', '0777500015', 'Colombo'),
-    ('USR-PAT-16', 'Lehan Navaratne',      'lehanxp@gmail.com',             '0788600016', 'Rajagiriya'))
+    ('USR-PAT-16', 'Lehan Navaratne',      'lehanxp@gmail.com',             '0788600016', 'Rajagiriya')
 )
 INSERT INTO billing_details (
     id, payment_id, full_name, email, phone, address, city, country, created_at
