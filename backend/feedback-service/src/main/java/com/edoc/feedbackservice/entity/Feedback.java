@@ -2,6 +2,7 @@ package com.edoc.feedbackservice.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(
@@ -13,11 +14,12 @@ import java.time.LocalDateTime;
 public class Feedback {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(columnDefinition = "uuid")
+    private UUID id;
 
-    @Column(name = "patient_id", nullable = false)
-    private Long patientId;
+    @Column(name = "patient_id", nullable = false, columnDefinition = "uuid")
+    private UUID patientId;
 
     @Column(name = "doctor_id", nullable = false)
     private String doctorId;
@@ -49,11 +51,11 @@ public class Feedback {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
-    public Long getPatientId() { return patientId; }
-    public void setPatientId(Long patientId) { this.patientId = patientId; }
+    public UUID getPatientId() { return patientId; }
+    public void setPatientId(UUID patientId) { this.patientId = patientId; }
 
     public String getDoctorId() { return doctorId; }
     public void setDoctorId(String doctorId) { this.doctorId = doctorId; }

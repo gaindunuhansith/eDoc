@@ -1,11 +1,12 @@
 package com.edoc.feedbackservice.dto;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 public class FeedbackResponseDTO {
 
-    private Long id;
-    private Long patientId;
+    private UUID id;
+    private UUID patientId;
     private String doctorId;
     private String appointmentId;
     private int rating;
@@ -15,7 +16,7 @@ public class FeedbackResponseDTO {
 
     public FeedbackResponseDTO() {}
 
-    public FeedbackResponseDTO(Long id, Long patientId, String doctorId, String appointmentId, int rating, String comment, LocalDateTime timestamp) {
+    public FeedbackResponseDTO(UUID id, UUID patientId, String doctorId, String appointmentId, int rating, String comment, LocalDateTime timestamp) {
         this.id = id;
         this.patientId = patientId;
         this.doctorId = doctorId;
@@ -25,11 +26,11 @@ public class FeedbackResponseDTO {
         this.timestamp = timestamp;
     }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
-    public Long getPatientId() { return patientId; }
-    public void setPatientId(Long patientId) { this.patientId = patientId; }
+    public UUID getPatientId() { return patientId; }
+    public void setPatientId(UUID patientId) { this.patientId = patientId; }
 
     public String getDoctorId() { return doctorId; }
     public void setDoctorId(String doctorId) { this.doctorId = doctorId; }
