@@ -82,7 +82,7 @@ public class Appointment {
     public enum PaymentStatus {
         NOT_REQUIRED,   // default before doctor confirms
         PENDING,        // doctor confirmed - payment now required
-        PAID,           // payment service confirmed payment
-        REFUNDED        // if appointment cancelled after payment
+        SUCCESS,        // payment service confirmed payment
+        FAILED          // failed or refunded
     }
 }

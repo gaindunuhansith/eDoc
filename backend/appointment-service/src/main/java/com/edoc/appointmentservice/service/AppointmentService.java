@@ -23,6 +23,11 @@ import java.util.Map;
 @Slf4j
 public class AppointmentService {
 
+    private static final List<Appointment.AppointmentStatus> ACTIVE_SLOT_STATUSES = List.of(
+            Appointment.AppointmentStatus.PENDING,
+            Appointment.AppointmentStatus.CONFIRMED
+    );
+
     private final AppointmentRepository appointmentRepository;
     private final DoctorServiceClient doctorServiceClient;
     private final PatientServiceClient patientServiceClient;
@@ -38,12 +43,12 @@ public class AppointmentService {
 
         // Step 2: Check the slot isn't already taken
         boolean slotTaken = appointmentRepository
-                .existsByDoctorIdAndAppointmentDateAndTimeSlotAndStatusNot(
-                        request.getDoctorId(),
-                        request.getAppointmentDate(),
-                        request.getTimeSlot(),
-                        Appointment.AppointmentStatus.CANCELLED
-                );
+            .existsByDoctorIdAndAppointmentDateAndTimeSlotAndStatusIn(
+                request.getDoctorId(),
+                request.getAppointmentDate(),
+                request.getTimeSlot(),
+                ACTIVE_SLOT_STATUSES
+            );
 
         if (slotTaken) {
             throw new RuntimeException(
@@ -175,9 +180,9 @@ public class AppointmentService {
         if (update.getStatus() == Appointment.AppointmentStatus.CANCELLED) {
             appointment.setCancellationReason(update.getCancellationReason());
 
-            // If already paid, mark as refunded
-            if (appointment.getPaymentStatus() == Appointment.PaymentStatus.PAID) {
-                appointment.setPaymentStatus(Appointment.PaymentStatus.REFUNDED);
+            // If already paid (SUCCESS), mark as failed/refunded in our model
+            if (appointment.getPaymentStatus() == Appointment.PaymentStatus.SUCCESS) {
+                appointment.setPaymentStatus(Appointment.PaymentStatus.FAILED);
             } else {
                 appointment.setPaymentStatus(Appointment.PaymentStatus.NOT_REQUIRED);
             }
@@ -196,6 +201,12 @@ public class AppointmentService {
             notifyAppointmentConfirmed(savedAppointment);
         }
         if (update.getStatus() == Appointment.AppointmentStatus.REJECTED) {
+            String startTime = appointment.getTimeSlot().split("-")[0];
+            doctorServiceClient.markSlotAsFree(
+                    appointment.getDoctorId(),
+                    appointment.getDayOfWeek(),
+                    startTime
+            );
             notifyAppointmentRejected(savedAppointment);
         }
         if (update.getStatus() == Appointment.AppointmentStatus.CANCELLED) {
@@ -222,8 +233,8 @@ public class AppointmentService {
             );
         }
 
-        // Can only pay if payment is still pending
-        if (appointment.getPaymentStatus() == Appointment.PaymentStatus.PAID) {
+        // Can only pay if payment is still pending / not already successful
+        if (appointment.getPaymentStatus() == Appointment.PaymentStatus.SUCCESS) {
             throw new RuntimeException("This appointment has already been paid.");
         }
 
@@ -273,8 +284,8 @@ public class AppointmentService {
         appointment.setUpdatedAt(LocalDateTime.now());
 
         // Handle payment refund if already paid
-        if (appointment.getPaymentStatus() == Appointment.PaymentStatus.PAID) {
-            appointment.setPaymentStatus(Appointment.PaymentStatus.REFUNDED);
+        if (appointment.getPaymentStatus() == Appointment.PaymentStatus.SUCCESS) {
+            appointment.setPaymentStatus(Appointment.PaymentStatus.FAILED);
         } else {
             appointment.setPaymentStatus(Appointment.PaymentStatus.NOT_REQUIRED);
         }
@@ -312,11 +323,12 @@ public class AppointmentService {
 
         // Check new slot is available
         boolean newSlotTaken = appointmentRepository
-                .existsByDoctorIdAndAppointmentDateAndTimeSlotAndStatusNot(
+            .existsByDoctorIdAndAppointmentDateAndTimeSlotAndStatusInAndIdNot(
                         request.getDoctorId(),
                         request.getAppointmentDate(),
                         request.getTimeSlot(),
-                        Appointment.AppointmentStatus.CANCELLED
+                ACTIVE_SLOT_STATUSES,
+                existing.getId()
                 );
 
         if (newSlotTaken) {
