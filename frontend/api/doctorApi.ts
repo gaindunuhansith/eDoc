@@ -48,7 +48,8 @@ export interface Medicine {
 export interface Prescription {
   id: string;
   doctorId: string;
-  patientId: string;
+  patientId?: string;
+  patientUserId?: string;
   appointmentId?: string;
   diagnosis?: string;
   notes?: string;
@@ -75,7 +76,8 @@ export interface CreateDoctorPayload {
 export type UpdateDoctorPayload = Partial<CreateDoctorPayload>;
 
 export interface CreatePrescriptionPayload {
-  patientId: string;
+  patientId?: string;
+  patientUserId: string;
   appointmentId?: string;
   diagnosis?: string;
   notes?: string;
@@ -132,8 +134,8 @@ export const deleteDoctorAvailability = (id: string, day: string) =>
 export const fetchPrescriptionsByDoctor = (doctorId: string) =>
   apiClient.get<Prescription[]>(DOCTOR_ENDPOINTS.PRESCRIPTIONS_BY_DOCTOR(doctorId));
 
-export const fetchPrescriptionsByPatient = (patientId: string) =>
-  apiClient.get<Prescription[]>(DOCTOR_ENDPOINTS.PRESCRIPTIONS_BY_PATIENT(patientId));
+export const fetchPrescriptionsByPatient = (patientUserId: string) =>
+  apiClient.get<Prescription[]>(DOCTOR_ENDPOINTS.PRESCRIPTIONS_BY_PATIENT(patientUserId));
 
 export const fetchPrescriptionById = (id: string) =>
   apiClient.get<Prescription>(DOCTOR_ENDPOINTS.PRESCRIPTION_BY_ID(id));
@@ -245,11 +247,11 @@ export const useGetPrescriptionsByAppointment = (appointmentId: string) =>
     enabled: !!appointmentId,
   });
 
-export const useGetPrescriptionsByPatient = (patientId: string) =>
+export const useGetPrescriptionsByPatient = (patientUserId: string) =>
   useQuery({
-    queryKey: [...queryKeys.doctor.prescriptions.all, "patient", patientId],
-    queryFn: () => fetchPrescriptionsByPatient(patientId).then((r) => r.data),
-    enabled: !!patientId,
+    queryKey: [...queryKeys.doctor.prescriptions.all, "patient", patientUserId],
+    queryFn: () => fetchPrescriptionsByPatient(patientUserId).then((r) => r.data),
+    enabled: !!patientUserId,
   });
 
 export const verifyDoctor = (id: string) =>

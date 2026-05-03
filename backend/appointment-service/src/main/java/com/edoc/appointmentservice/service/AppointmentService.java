@@ -57,6 +57,7 @@ public class AppointmentService {
         // Step 4: Build the appointment object
         Appointment appointment = new Appointment();
         appointment.setPatientId(request.getPatientId());
+        appointment.setPatientUserId(request.getPatientUserId());  // Store patient's userId (String UUID)
         appointment.setPatientName(request.getPatientName());   // snapshot at booking time
         appointment.setDoctorId(request.getDoctorId());
         appointment.setAppointmentDate(request.getAppointmentDate());

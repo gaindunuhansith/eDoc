@@ -24,13 +24,20 @@ public class PrescriptionService {
     }
 
     public List<PrescriptionResponseDTO> getPrescriptionsForPatient(String userId) {
-        Patient patient = findPatientByUserIdOrThrow(userId);
-        return doctorPrescriptionClient.getPrescriptionsByPatient(patient.getId().toString());
+        // Verify patient exists
+        findPatientByUserIdOrThrow(userId);
+        // Query doctor-service with userId, not patient's internal ID
+        // Prescriptions are stored with patientId = userId (string UUID)
+        return doctorPrescriptionClient.getPrescriptionsByPatient(userId);
     }
 
     public List<PrescriptionResponseDTO> getPrescriptionsInternal(Long patientId) {
-        assertPatientExists(patientId);
-        return doctorPrescriptionClient.getPrescriptionsByPatient(patientId.toString());
+        Patient patient = patientRepository.findById(patientId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient not found"));
+        if (patient.getUserId() == null || patient.getUserId().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Patient userId is missing");
+        }
+        return doctorPrescriptionClient.getPrescriptionsByPatient(patient.getUserId());
     }
 
     private void assertPatientExists(Long patientId) {

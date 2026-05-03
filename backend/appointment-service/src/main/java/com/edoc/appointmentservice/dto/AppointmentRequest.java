@@ -13,6 +13,8 @@ public class AppointmentRequest {
     @NotBlank(message = "Patient ID is required")
     private String patientId;
 
+    private String patientUserId;  // patient's userId (String UUID) for consistent ID usage
+
     @NotBlank(message = "Doctor ID is required")
     private String doctorId;
 

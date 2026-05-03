@@ -38,6 +38,7 @@ function formatDate(s: string) {
 
 function PrescriptionCard({ prescription }: { prescription: Prescription }) {
   const [expanded, setExpanded] = useState(false);
+  const patientRef = prescription.patientUserId || prescription.patientId || "Unknown";
 
   return (
     <Card className="border-border/60 hover:border-border/80 transition-colors">
@@ -47,7 +48,7 @@ function PrescriptionCard({ prescription }: { prescription: Prescription }) {
             <div className="flex items-center gap-2">
               <User className="w-4 h-4 text-muted-foreground" />
               <span className="font-medium">
-                Patient #{prescription.patientId}
+                Patient User ID: {patientRef}
               </span>
             </div>
             {prescription.diagnosis && (
@@ -142,7 +143,7 @@ export default function PrescriptionsHistoryPage() {
     if (!searchQuery.trim()) return prescriptions;
     const lowerQuery = searchQuery.toLowerCase();
     return prescriptions.filter((rx) =>
-      rx.patientId.toLowerCase().includes(lowerQuery)
+      (rx.patientUserId || rx.patientId || "").toLowerCase().includes(lowerQuery)
     );
   }, [prescriptions, searchQuery]);
 
@@ -167,7 +168,7 @@ export default function PrescriptionsHistoryPage() {
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search by Patient ID..."
+            placeholder="Search by Patient User ID..."
             className="pl-9"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}

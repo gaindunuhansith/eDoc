@@ -19,6 +19,7 @@ public class Appointment {
     private String id;
 
     private String patientId;
+    private String patientUserId;  // patient's userId (String UUID) for consistent ID usage
     private String patientName;    // snapshot from user-service at booking time
     private String doctorId;
 

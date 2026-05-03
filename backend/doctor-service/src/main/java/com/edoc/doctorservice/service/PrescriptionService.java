@@ -20,7 +20,14 @@ public class PrescriptionService {
     public Prescription issuePrescription(String doctorId, PrescriptionRequest request) {
         Prescription prescription = new Prescription();
         prescription.setDoctorId(doctorId);
-        prescription.setPatientId(request.getPatientId());
+        String patientUserId = request.getPatientUserId();
+        if (patientUserId == null || patientUserId.isBlank()) {
+            patientUserId = request.getPatientId();
+        }
+
+        // Keep patientId for compatibility, but use patientUserId as the primary key.
+        prescription.setPatientId(request.getPatientId() != null ? request.getPatientId() : patientUserId);
+        prescription.setPatientUserId(patientUserId);
         prescription.setAppointmentId(request.getAppointmentId());
         prescription.setDiagnosis(request.getDiagnosis());
         prescription.setNotes(request.getNotes());
@@ -48,8 +55,8 @@ public class PrescriptionService {
     }
 
     // Get prescriptions for a patient (patient can view their own)
-    public List<Prescription> getPrescriptionsByPatient(String patientId) {
-        return prescriptionRepository.findByPatientId(patientId);
+    public List<Prescription> getPrescriptionsByPatient(String patientUserId) {
+        return prescriptionRepository.findByPatientUserIdOrPatientId(patientUserId, patientUserId);
     }
 
     // Get prescription by appointment

@@ -221,9 +221,9 @@ export default function DoctorAppointmentsHub() {
     );
   };
 
-  const handleCreatePrescription = (patientId?: string, appointmentId?: string) => {
-    if (!patientId || !appointmentId) return;
-    router.push(`/doctor/prescriptions/create/${patientId}/${appointmentId}`);
+  const handleCreatePrescription = (patientUserId?: string, appointmentId?: string) => {
+    if (!patientUserId || !appointmentId) return;
+    router.push(`/doctor/prescriptions/create/${patientUserId}/${appointmentId}`);
   };
 
   const filteredAllAppointments = allAppointments.filter((app: any) => allTab === "ALL" || app.status === allTab).sort((a: any,b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -390,8 +390,8 @@ export default function DoctorAppointmentsHub() {
                           <Button
                             size="sm"
                             className="bg-emerald-600 hover:bg-emerald-700 shadow-sm"
-                            onClick={() => handleCreatePrescription(appt.patientId, appt.id)}
-                            disabled={!appt.patientId || !appt.id}
+                            onClick={() => handleCreatePrescription(appt.patientUserId || appt.patientId, appt.id)}
+                            disabled={!(appt.patientUserId || appt.patientId) || !appt.id}
                           >
                             <FileText className="h-4 w-4 mr-2" />
                             Create Prescription
