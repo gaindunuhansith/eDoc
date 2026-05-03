@@ -33,11 +33,11 @@ public class PrescriptionController {
         return ResponseEntity.ok(prescriptionService.getPrescriptionsByDoctor(doctorId));
     }
 
-    // GET /api/v1/prescriptions/patient/{patientId}
-    @GetMapping("/patient/{patientId}")
+    // GET /api/v1/prescriptions/patient/{patientUserId}
+    @GetMapping("/patient/{patientUserId}")
     public ResponseEntity<List<Prescription>> getPrescriptionsByPatient(
-            @PathVariable String patientId) {
-        return ResponseEntity.ok(prescriptionService.getPrescriptionsByPatient(patientId));
+            @PathVariable String patientUserId) {
+        return ResponseEntity.ok(prescriptionService.getPrescriptionsByPatient(patientUserId));
     }
 
     // GET /api/v1/prescriptions/appointment/{appointmentId}

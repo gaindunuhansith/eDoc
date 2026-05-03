@@ -39,6 +39,7 @@ import { DOCTOR_ENDPOINTS } from "@/api/utils/endpoints";
 
 interface PatientAppointmentCase {
   patientId: string;
+  patientUserId: string;
   patientName: string;
   appointmentId: string;
   appointmentDate: string;
@@ -157,7 +158,7 @@ function PrescriptionItem({ prescription }: { prescription: Prescription }) {
 function PatientsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialPatientId = searchParams.get("patientId") || "";
+  const initialPatientId = searchParams.get("patientUserId") || searchParams.get("patientId") || "";
 
   const { data: doctor } = useGetMyDoctorProfile();
   const { data: doctorAppointments = [], isLoading: appointmentsLoading } = useGetAppointmentsByDoctor(doctor?.id || "");
@@ -183,8 +184,9 @@ function PatientsContent() {
 
     const latestAppointmentByPatient = new Map<string, Appointment>();
     for (const appointment of relevantAppointments) {
-      if (!latestAppointmentByPatient.has(appointment.patientId)) {
-        latestAppointmentByPatient.set(appointment.patientId, appointment);
+      const patientUserId = appointment.patientUserId?.trim() || appointment.patientId;
+      if (!latestAppointmentByPatient.has(patientUserId)) {
+        latestAppointmentByPatient.set(patientUserId, appointment);
       }
     }
 
@@ -192,6 +194,7 @@ function PatientsContent() {
       .sort((a, b) => appointmentTimestamp(b) - appointmentTimestamp(a))
       .map((appointment) => ({
         patientId: appointment.patientId,
+        patientUserId: appointment.patientUserId?.trim() || appointment.patientId,
         patientName: appointment.patientName?.trim() || "Unknown Patient",
         appointmentId: appointment.id,
         appointmentDate: appointment.appointmentDate,
@@ -203,7 +206,7 @@ function PatientsContent() {
   }, [doctorAppointments]);
 
   const activePatientCase = useMemo(
-    () => patientCases.find((patientCase) => patientCase.patientId === activePatientId) || null,
+    () => patientCases.find((patientCase) => patientCase.patientUserId === activePatientId) || null,
     [patientCases, activePatientId]
   );
 
@@ -216,27 +219,27 @@ function PatientsContent() {
     // Try to resolve by patient name from the current appointment-derived list (case-insensitive substring)
     const match = patientCases.find((pc) => pc.patientName.toLowerCase().includes(query.toLowerCase()));
     if (match) {
-      setActivePatientId(match.patientId);
-      router.push(`/doctor/patients?patientId=${match.patientId}`);
+      setActivePatientId(match.patientUserId);
+      router.push(`/doctor/patients?patientUserId=${match.patientUserId}`);
       return;
     }
 
     // Fallback: if the input looks like an ID (contains numbers or dashes), try it directly
     if (/\d|-/g.test(query)) {
       setActivePatientId(query);
-      router.push(`/doctor/patients?patientId=${query}`);
+      router.push(`/doctor/patients?patientUserId=${query}`);
       return;
     }
 
     // No match found — use the raw query as patientId as a last resort
     setActivePatientId(query);
-    router.push(`/doctor/patients?patientId=${query}`);
+    router.push(`/doctor/patients?patientUserId=${query}`);
   };
 
   const handleSelectPatient = (patientId: string) => {
     setSearchInput(patientId);
     setActivePatientId(patientId);
-    router.push(`/doctor/patients?patientId=${patientId}`);
+    router.push(`/doctor/patients?patientUserId=${patientId}`);
   };
 
   useEffect(() => {
@@ -282,16 +285,16 @@ function PatientsContent() {
   }, [doctor?.id, patientCases]);
 
   useEffect(() => {
-    if (!doctor?.id || !activePatientId) return;
+    if (!doctor?.id || !activePatientId || !activePatientCase) return;
 
     let isMounted = true;
 
     const fetchAll = async () => {
       setLoading(true);
       const results = await Promise.allSettled([
-        fetchDoctorPatientProfile(doctor.id, activePatientId),
-        fetchDoctorPatientReports(doctor.id, activePatientId),
-        fetchPrescriptionsByPatient(activePatientId),
+        fetchDoctorPatientProfile(doctor.id, activePatientCase.patientId),
+        fetchDoctorPatientReports(doctor.id, activePatientCase.patientId),
+        fetchPrescriptionsByPatient(activePatientCase.patientUserId),
       ]);
 
       if (!isMounted) return;
@@ -328,7 +331,7 @@ function PatientsContent() {
     return () => {
       isMounted = false;
     };
-  }, [doctor?.id, activePatientId]);
+  }, [doctor?.id, activePatientCase, activePatientId]);
 
   return (
     <div className="space-y-6 p-6 max-w-5xl mx-auto">
@@ -360,13 +363,13 @@ function PatientsContent() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {patientCases.map((patientCase) => {
               const patientSummary = patientSummaryById[patientCase.patientId];
-              const isActive = patientCase.patientId === activePatientId;
+              const isActive = patientCase.patientUserId === activePatientId;
 
               return (
                 <button
                   key={patientCase.appointmentId}
                   type="button"
-                  onClick={() => handleSelectPatient(patientCase.patientId)}
+                  onClick={() => handleSelectPatient(patientCase.patientUserId)}
                   className={`text-left rounded-xl border p-4 transition-colors ${
                     isActive
                       ? "border-primary/60 bg-primary/5"
@@ -376,7 +379,7 @@ function PatientsContent() {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-semibold text-base">{patientCase.patientName}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">Patient ID: {patientCase.patientId}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Patient User ID: {patientCase.patientUserId}</p>
                     </div>
                     <Badge
                       variant="outline"

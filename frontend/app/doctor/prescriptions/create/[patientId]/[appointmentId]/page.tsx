@@ -24,7 +24,7 @@ export default function CreatePrescriptionPage() {
   const router = useRouter();
   const params = useParams();
   
-  const patientId = params?.patientId as string || "";
+  const patientUserId = params?.patientId as string || "";
   const appointmentId = params?.appointmentId as string || "";
 
   const { data: doctor } = useGetMyDoctorProfile();
@@ -46,7 +46,7 @@ export default function CreatePrescriptionPage() {
     );
 
   const canSubmit =
-    !!patientId &&
+    !!patientUserId &&
     medicines.length > 0 &&
     medicines.every((m) => m.name && m.dosage && m.frequency && m.duration);
 
@@ -58,7 +58,8 @@ export default function CreatePrescriptionPage() {
       {
         doctorId: doctor.id,
         payload: {
-          patientId,
+          patientUserId,
+          patientId: patientUserId,
           appointmentId: appointmentId || undefined,
           diagnosis: diagnosis.trim() || undefined,
           notes: notes.trim() || undefined,
@@ -84,7 +85,7 @@ export default function CreatePrescriptionPage() {
         <div>
           <h1 className="text-2xl font-semibold">Create Prescription</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Patient ID: {patientId} {appointmentId && `| Appointment ID: ${appointmentId}`}
+            Patient User ID: {patientUserId} {appointmentId && `| Appointment ID: ${appointmentId}`}
           </p>
         </div>
       </div>
@@ -203,7 +204,7 @@ export default function CreatePrescriptionPage() {
           <Button
             type="submit"
             disabled={!canSubmit || createMutation.isPending}
-            className="min-w-[120px]"
+            className="min-w-30"
           >
             {createMutation.isPending ? "Submitting..." : "Submit Prescription"}
           </Button>
