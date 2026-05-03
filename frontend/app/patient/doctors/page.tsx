@@ -89,7 +89,7 @@ function BookingSheet({
   const handleBook = () => {
     if (!canSubmit) return;
     const patientName = currentUser?.name?.trim() || user?.name?.trim() || undefined;
-    const doctorName = `Dr. ${doctor!.firstName} ${doctor!.lastName}`;   // change this to remove duplicate DR signs
+    const doctorName = `${doctor!.firstName} ${doctor!.lastName}`;
 
     createMutation.mutate(
       {

@@ -138,7 +138,7 @@ export default function BookAppointmentWizard() {
     const formattedDate = format(date, "yyyy-MM-dd");
     const patientName = currentUser?.name?.trim() || undefined;
     const patientUserId = currentUser?.userId;  // Get patient's userId (String UUID)
-    const doctorName = `Dr. ${selectedDoctor.firstName} ${selectedDoctor.lastName}`;
+   const doctorName = `${selectedDoctor.firstName} ${selectedDoctor.lastName}`;
 
     createMutation.mutate(
       {
