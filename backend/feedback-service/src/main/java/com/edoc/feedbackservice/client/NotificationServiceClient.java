@@ -13,7 +13,7 @@ public class NotificationServiceClient {
 
     private final RestClient restClient;
 
-    @Value("${notification.service.base-url}")
+    @Value("${notification.service.url}")
     private String notificationServiceBaseUrl;
 
     public NotificationServiceClient(RestClient.Builder restClientBuilder) {

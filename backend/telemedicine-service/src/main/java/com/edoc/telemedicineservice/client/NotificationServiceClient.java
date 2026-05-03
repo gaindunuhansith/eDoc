@@ -41,11 +41,11 @@ public class NotificationServiceClient {
     }
 
     private void sendUnified(NotificationRequest request, String authorizationHeader) {
+        if (authorizationHeader == null || authorizationHeader.isBlank()) {
+            throw new IllegalArgumentException("Authorization header is required for inter-service calls");
+        }
         try {
-            WebClient webClient = webClientBuilder.build();
-            if (authorizationHeader != null && !authorizationHeader.isBlank()) {
-                webClient = webClient.mutate().defaultHeader("Authorization", authorizationHeader).build();
-            }
+            WebClient webClient = webClientBuilder.defaultHeader("Authorization", authorizationHeader).build();
 
             webClient
                     .post()

@@ -15,7 +15,7 @@ public class PatientServiceClient {
 
     private final RestClient restClient;
 
-    @Value("${patient.service.base-url}")
+    @Value("${patient.service.url}")
     private String patientServiceBaseUrl;
 
     public PatientServiceClient(RestClient.Builder restClientBuilder) {
