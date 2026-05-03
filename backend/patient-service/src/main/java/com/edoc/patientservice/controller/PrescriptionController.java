@@ -4,6 +4,7 @@ import com.edoc.patientservice.dto.prescription.PrescriptionResponseDTO;
 import com.edoc.patientservice.service.CurrentPatientProvider;
 import com.edoc.patientservice.service.PrescriptionService;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,7 +31,7 @@ public class PrescriptionController {
 
     @GetMapping("/internal/patients/{id}/prescriptions")
     // Internal endpoint for cross-service prescription reads by patient id.
-    public List<PrescriptionResponseDTO> getPrescriptionsInternal(@PathVariable Long id) {
+    public List<PrescriptionResponseDTO> getPrescriptionsInternal(@PathVariable UUID id) {
         return prescriptionService.getPrescriptionsInternal(id);
     }
 }

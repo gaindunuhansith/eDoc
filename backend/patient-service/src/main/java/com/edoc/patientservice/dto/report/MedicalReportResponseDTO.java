@@ -1,13 +1,14 @@
 package com.edoc.patientservice.dto.report;
 
 import java.time.Instant;
+import java.util.UUID;
 
 // Medical report details returned to clients.
 // File content is accessed through dedicated /file or /download endpoints using report id.
 public class MedicalReportResponseDTO {
 
-    private Long id;
-    private Long patientId;
+    private UUID id;
+    private UUID patientId;
     private String reportName;
     private String reportType;
     private String doctorId;
@@ -15,19 +16,19 @@ public class MedicalReportResponseDTO {
     private String notes;
     private Instant createdAt;
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 
-    public Long getPatientId() {
+    public UUID getPatientId() {
         return patientId;
     }
 
-    public void setPatientId(Long patientId) {
+    public void setPatientId(UUID patientId) {
         this.patientId = patientId;
     }
 

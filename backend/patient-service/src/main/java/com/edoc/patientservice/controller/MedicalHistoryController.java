@@ -6,6 +6,7 @@ import com.edoc.patientservice.service.CurrentPatientProvider;
 import com.edoc.patientservice.service.MedicalHistoryService;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,14 +38,14 @@ public class MedicalHistoryController {
     @PostMapping("/internal/patients/{id}/history")
     @ResponseStatus(HttpStatus.CREATED)
     // Internal endpoint to add history entries for a patient.
-    public MedicalHistoryResponseDTO addHistoryInternal(@PathVariable Long id,
+    public MedicalHistoryResponseDTO addHistoryInternal(@PathVariable UUID id,
                                                         @Valid @RequestBody MedicalHistoryRequestDTO request) {
         return medicalHistoryService.addHistoryInternal(id, request);
     }
 
     @GetMapping("/internal/patients/{id}/history")
     // Internal endpoint to read history entries for a patient.
-    public List<MedicalHistoryResponseDTO> getHistoryInternal(@PathVariable Long id) {
+    public List<MedicalHistoryResponseDTO> getHistoryInternal(@PathVariable UUID id) {
         return medicalHistoryService.getHistoryInternal(id);
     }
 }

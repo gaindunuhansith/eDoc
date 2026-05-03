@@ -42,10 +42,10 @@ public class PatientMapper {
         response.setEmergencyContactPhone(patient.getEmergencyContactPhone());
         response.setHeight(patient.getHeight());
         response.setWeight(patient.getWeight());
-        response.setStatus(patient.getStatus());
-        response.setDeactivatedAt(patient.getDeactivatedAt());
-        response.setDeactivatedBy(patient.getDeactivatedBy());
-        response.setDeactivationReason(patient.getDeactivationReason());
+        response.setDeleted(patient.isDeleted());
+        response.setDeletedAt(patient.getDeletedAt());
+        response.setDeletedBy(patient.getDeletedBy());
+        response.setDeletionReason(patient.getDeletionReason());
         return response;
     }
 }

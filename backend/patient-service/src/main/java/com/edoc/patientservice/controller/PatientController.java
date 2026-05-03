@@ -7,6 +7,7 @@ import com.edoc.patientservice.dto.patient.PatientStatusUpdateRequestDTO;
 import com.edoc.patientservice.service.CurrentPatientProvider;
 import com.edoc.patientservice.service.PatientService;
 import jakarta.validation.Valid;
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -57,7 +58,7 @@ public class PatientController {
 
     @GetMapping("/internal/patients/{id}")
     // Internal lookup for other services by internal patient id.
-    public PatientResponseDTO getPatientInternal(@PathVariable Long id) {
+    public PatientResponseDTO getPatientInternal(@PathVariable UUID id) {
         return patientService.getPatient(id);
     }
 
@@ -69,13 +70,13 @@ public class PatientController {
 
     @GetMapping("/internal/patients/{id}/status")
     // Internal lightweight status lookup for booking and authorization checks.
-    public PatientStatusResponseDTO getPatientStatusInternal(@PathVariable Long id) {
+    public PatientStatusResponseDTO getPatientStatusInternal(@PathVariable UUID id) {
         return patientService.getPatientStatus(id);
     }
 
     @PatchMapping("/internal/patients/{id}/status")
     // Internal status updates for admin/staff workflows.
-    public PatientResponseDTO updatePatientStatusInternal(@PathVariable Long id,
+    public PatientResponseDTO updatePatientStatusInternal(@PathVariable UUID id,
                                                           @Valid @RequestBody PatientStatusUpdateRequestDTO request) {
         return patientService.changePatientStatus(id, request, request.getActedBy());
     }

@@ -5,6 +5,7 @@ import com.edoc.patientservice.dto.prescription.PrescriptionResponseDTO;
 import com.edoc.patientservice.entity.Patient;
 import com.edoc.patientservice.repository.PatientRepository;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,7 +32,7 @@ public class PrescriptionService {
         return doctorPrescriptionClient.getPrescriptionsByPatient(userId);
     }
 
-    public List<PrescriptionResponseDTO> getPrescriptionsInternal(Long patientId) {
+    public List<PrescriptionResponseDTO> getPrescriptionsInternal(UUID patientId) {
         Patient patient = patientRepository.findById(patientId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient not found"));
         if (patient.getUserId() == null || patient.getUserId().isBlank()) {
@@ -40,7 +41,7 @@ public class PrescriptionService {
         return doctorPrescriptionClient.getPrescriptionsByPatient(patient.getUserId());
     }
 
-    private void assertPatientExists(Long patientId) {
+    private void assertPatientExists(UUID patientId) {
         if (!patientRepository.existsById(patientId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient not found");
         }

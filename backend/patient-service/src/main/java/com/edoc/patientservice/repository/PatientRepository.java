@@ -1,17 +1,17 @@
 package com.edoc.patientservice.repository;
 
 import com.edoc.patientservice.entity.Patient;
-import com.edoc.patientservice.entity.PatientStatus;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 // Patient persistence and lookup queries.
-public interface PatientRepository extends JpaRepository<Patient, Long> {
+public interface PatientRepository extends JpaRepository<Patient, UUID> {
     Optional<Patient> findByUserId(String userId);
 
     boolean existsByUserId(String userId);
 
-    Optional<Patient> findByIdAndStatus(Long id, PatientStatus status);
+    Optional<Patient> findByIdAndDeleted(UUID id, boolean deleted);
 
-    boolean existsByIdAndStatus(Long id, PatientStatus status);
+    boolean existsByIdAndDeleted(UUID id, boolean deleted);
 }
