@@ -28,6 +28,9 @@ patient:
     url: ${PATIENT_SERVICE_URL:http://patient-service:8084}
 
 notification:
+
+seed:
+  enabled: ${SEED_ENABLED:false}
   service:
     url: ${NOTIFICATION_SERVICE_URL:http://notification-service:8083}
 
