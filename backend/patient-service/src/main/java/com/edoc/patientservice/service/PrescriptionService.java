@@ -24,8 +24,11 @@ public class PrescriptionService {
     }
 
     public List<PrescriptionResponseDTO> getPrescriptionsForPatient(String userId) {
-        Patient patient = findPatientByUserIdOrThrow(userId);
-        return doctorPrescriptionClient.getPrescriptionsByPatient(patient.getId().toString());
+        // Verify patient exists
+        findPatientByUserIdOrThrow(userId);
+        // Query doctor-service with userId, not patient's internal ID
+        // Prescriptions are stored with patientId = userId (string UUID)
+        return doctorPrescriptionClient.getPrescriptionsByPatient(userId);
     }
 
     public List<PrescriptionResponseDTO> getPrescriptionsInternal(Long patientId) {
