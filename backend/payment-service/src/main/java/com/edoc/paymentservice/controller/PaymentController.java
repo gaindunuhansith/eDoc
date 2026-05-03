@@ -73,7 +73,9 @@ public class PaymentController {
         String userId = JwtUtil.extractUserId(jwt);
         log.info("Fetching payment detail for paymentId={}", id);
         PaymentDetailResponse response = paymentService.getPaymentById(id);
-        if (!response.userId().equals(userId)) {
+        boolean isAdmin = jwt.getClaimAsStringList("roles") != null
+                && jwt.getClaimAsStringList("roles").contains("ROLE_ADMIN");
+        if (!isAdmin && !response.userId().equals(userId)) {
             throw new IllegalArgumentException("Payment not found");
         }
         return ResponseEntity.ok(response);
