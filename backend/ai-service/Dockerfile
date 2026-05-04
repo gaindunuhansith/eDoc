@@ -13,7 +13,7 @@ RUN uv sync --no-dev
 COPY app ./app
 COPY server.py ./server.py
 
-EXPOSE 8087
+EXPOSE 8090
 
 # Run using uv only
-CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8087"]
+CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8090"]
