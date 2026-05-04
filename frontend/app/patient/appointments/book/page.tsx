@@ -333,7 +333,7 @@ function Step1DoctorSearch({ onSelect }: { onSelect: (doctor: Doctor) => void })
                      <CardTitle className="text-lg flex justify-between items-start">
                         <span>Dr. {doc.firstName} {doc.lastName}</span>
                         <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20 font-medium whitespace-nowrap ml-2">
-                           ${doc.consultationFee}
+                           LKR {doc.consultationFee}
                         </Badge>
                      </CardTitle>
                      <div className="text-sm font-medium text-primary/80 mt-1">{doc.specialty}</div>
@@ -562,7 +562,7 @@ function Step3Confirmation({
 
          <div className="flex justify-between items-center py-3 border-y border-dashed">
             <span className="text-gray-600 font-medium">Consultation Fee</span>
-            <span className="text-xl font-bold">${doctor.consultationFee}</span>
+            <span className="text-xl font-bold">LKR {doctor.consultationFee}</span>
          </div>
 
          {/* Reason Textarea */}
