@@ -7,7 +7,9 @@ public class FeedbackResponseDTO {
 
     private UUID id;
     private UUID patientId;
+    private String patientName;
     private String doctorId;
+    private String doctorName;
     private String appointmentId;
     private int rating;
     private String comment;
@@ -32,8 +34,14 @@ public class FeedbackResponseDTO {
     public UUID getPatientId() { return patientId; }
     public void setPatientId(UUID patientId) { this.patientId = patientId; }
 
+    public String getPatientName() { return patientName; }
+    public void setPatientName(String patientName) { this.patientName = patientName; }
+
     public String getDoctorId() { return doctorId; }
     public void setDoctorId(String doctorId) { this.doctorId = doctorId; }
+
+    public String getDoctorName() { return doctorName; }
+    public void setDoctorName(String doctorName) { this.doctorName = doctorName; }
 
     public String getAppointmentId() { return appointmentId; }
     public void setAppointmentId(String appointmentId) { this.appointmentId = appointmentId; }

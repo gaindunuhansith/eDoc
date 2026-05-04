@@ -11,6 +11,7 @@ export interface Feedback {
   patientId: string;
   patientName?: string;
   doctorId: string;
+  doctorName?: string;
   appointmentId: string;
   rating: number;
   comment?: string;

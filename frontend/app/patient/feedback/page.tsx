@@ -277,8 +277,9 @@ function PatientFeedbackContent() {
             <TableHeader>
               <TableRow className="border-border/60 bg-muted/20 hover:bg-muted/20">
                 <TableHead className="text-muted-foreground font-medium py-4">Rating</TableHead>
+                <TableHead className="text-muted-foreground font-medium py-4">Doctor</TableHead>
                 <TableHead className="text-muted-foreground font-medium py-4">Comment</TableHead>
-                <TableHead className="text-muted-foreground font-medium py-4">Date</TableHead>
+                <TableHead className="text-muted-foreground font-medium py-4">Date &amp; Time</TableHead>
                 <TableHead className="text-muted-foreground font-medium py-4 w-32">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -291,18 +292,17 @@ function PatientFeedbackContent() {
                       <span className="text-sm text-muted-foreground ml-2">({feedback.rating})</span>
                     </div>
                   </TableCell>
+                  <TableCell className="py-4 text-sm text-foreground">
+                    {feedback.doctorName ? `Dr. ${feedback.doctorName}` : <span className="text-muted-foreground">—</span>}
+                  </TableCell>
                   <TableCell className="py-4 max-w-xs">
                     <p className="text-sm text-foreground truncate" title={feedback.comment}>
                       {feedback.comment || "No comment"}
                     </p>
-                    {feedback.doctorName && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Dr. {feedback.doctorName}
-                      </p>
-                    )}
                   </TableCell>
-                  <TableCell className="py-4 text-sm text-muted-foreground">
-                    {new Date(feedback.timestamp).toLocaleDateString()}
+                  <TableCell className="py-4">
+                    <p className="text-sm text-foreground">{new Date(feedback.timestamp).toLocaleDateString()}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{new Date(feedback.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                   </TableCell>
                   <TableCell className="py-4">
                     <div className="flex flex-col gap-1">
@@ -337,7 +337,7 @@ function PatientFeedbackContent() {
               ))}
               {paginatedFeedbacks.length === 0 && !isLoading && (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground py-10">No feedback found</TableCell>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-10">No feedback found</TableCell>
                 </TableRow>
               )}
             </TableBody>

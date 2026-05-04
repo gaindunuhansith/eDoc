@@ -25,14 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+
 import { cn } from "@/lib/utils";
 import { useGetMyDoctorFeedback, type Feedback } from "@/api/feedbackApi";
 
@@ -42,7 +35,6 @@ export default function DoctorFeedbackPage() {
   const [ratingFilter, setRatingFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 10;
-  const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
 
   const filteredFeedbacks = useMemo(() => {
     return feedbacks.filter((feedback) => {
@@ -146,8 +138,7 @@ export default function DoctorFeedbackPage() {
                 <TableHead className="text-muted-foreground font-medium py-4">Patient</TableHead>
                 <TableHead className="text-muted-foreground font-medium py-4">Rating</TableHead>
                 <TableHead className="text-muted-foreground font-medium py-4">Comment</TableHead>
-                <TableHead className="text-muted-foreground font-medium py-4">Date</TableHead>
-                <TableHead className="text-muted-foreground font-medium py-4 w-32">Actions</TableHead>
+                <TableHead className="text-muted-foreground font-medium py-4">Date &amp; Time</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -169,24 +160,15 @@ export default function DoctorFeedbackPage() {
                       {feedback.comment || "No comment"}
                     </p>
                   </TableCell>
-                  <TableCell className="py-4 text-sm text-muted-foreground">
-                    {new Date(feedback.timestamp).toLocaleDateString()}
-                  </TableCell>
                   <TableCell className="py-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSelectedFeedback(feedback)}
-                      className="h-8 w-8 p-0"
-                    >
-                      <Star className="h-4 w-4" />
-                    </Button>
+                    <p className="text-sm text-foreground">{new Date(feedback.timestamp).toLocaleDateString()}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{new Date(feedback.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                   </TableCell>
                 </TableRow>
               ))}
               {paginatedFeedbacks.length === 0 && !isLoading && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-10">No feedback found</TableCell>
+                  <TableCell colSpan={4} className="text-center text-muted-foreground py-10">No feedback found</TableCell>
                 </TableRow>
               )}
             </TableBody>
@@ -211,45 +193,6 @@ export default function DoctorFeedbackPage() {
         </div>
       </div>
 
-      {/* Feedback Detail Dialog */}
-      <Dialog open={!!selectedFeedback} onOpenChange={(open) => !open && setSelectedFeedback(null)}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Feedback Details</DialogTitle>
-            <DialogDescription>
-              Review from {selectedFeedback?.patientName}
-            </DialogDescription>
-          </DialogHeader>
-          {selectedFeedback && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="font-medium">Patient:</span>
-                <span>{selectedFeedback.patientName}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="font-medium">Rating:</span>
-                <div className="flex items-center gap-1">
-                  {renderStars(selectedFeedback.rating)}
-                  <span className="ml-2">({selectedFeedback.rating}/5)</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="font-medium">Date:</span>
-                <span>{new Date(selectedFeedback.timestamp).toLocaleDateString()}</span>
-              </div>
-              <div>
-                <span className="font-medium">Comment:</span>
-                <p className="mt-2 text-sm text-gray-700 bg-gray-50 p-3 rounded">
-                  {selectedFeedback.comment || "No comment provided"}
-                </p>
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button onClick={() => setSelectedFeedback(null)}>Close</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
