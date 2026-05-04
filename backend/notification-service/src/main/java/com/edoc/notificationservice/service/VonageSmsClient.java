@@ -39,8 +39,15 @@ public class VonageSmsClient {
             return SmsSendResult.failure("Vonage SMS from is missing.");
         }
 
+        // Normalize to E.164 format (Vonage requires +CountryCode format)
+        String normalizedTo = to;
+        if (to != null && !to.startsWith("+")) {
+            // Assume Sri Lanka (+94) for local numbers starting with 0
+            normalizedTo = "+94" + to.replaceFirst("^0", "");
+        }
+
         try {
-            TextMessage message = new TextMessage(smsFrom, to, text);
+            TextMessage message = new TextMessage(smsFrom, normalizedTo, text);
             SmsSubmissionResponse response = vonageClient.getSmsClient().submitMessage(message);
 
             if (response == null || response.getMessages() == null || response.getMessages().isEmpty()) {
