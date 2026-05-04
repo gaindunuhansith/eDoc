@@ -8,21 +8,13 @@ import org.springframework.stereotype.Service;
 import com.edoc.notificationservice.dto.EmailNotificationRequest;
 import com.edoc.notificationservice.dto.NotificationResponse;
 import com.edoc.notificationservice.dto.SmsNotificationRequest;
-import com.edoc.notificationservice.dto.data.AppointmentBookedData;
-import com.edoc.notificationservice.dto.data.AppointmentCancelledData;
-import com.edoc.notificationservice.dto.data.AppointmentCompletedData;
-import com.edoc.notificationservice.dto.data.AppointmentConfirmedData;
-import com.edoc.notificationservice.dto.data.AppointmentRejectedData;
-import com.edoc.notificationservice.dto.data.FeedbackReceivedData;
-import com.edoc.notificationservice.dto.data.NotificationData;
-import com.edoc.notificationservice.dto.data.PaymentSuccessData;
-import com.edoc.notificationservice.dto.data.TelemedicineSessionStartedData;
 import com.edoc.notificationservice.model.NotificationChannel;
 import com.edoc.notificationservice.model.NotificationLog;
 import com.edoc.notificationservice.model.NotificationStatus;
 import com.edoc.notificationservice.repository.NotificationLogRepository;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
 import com.edoc.notificationservice.dto.NotificationRequestDTO;
@@ -256,90 +248,54 @@ public class NotificationService {
         };
     }
 
-    private String buildMessage(NotificationType type, NotificationData data) {
+    private String buildMessage(NotificationType type, Map<String, Object> data) {
         return switch (type) {
-            case APPOINTMENT_BOOKED -> {
-                if (data instanceof AppointmentBookedData d) {
-                    yield "Hello " + orDefault(d.patientName(), "there")
-                            + ", your appointment with Dr. " + orDefault(d.doctorName(), "your doctor")
-                            + " on " + orDefault(d.date(), "the scheduled date")
-                            + " (" + orDefault(d.dayOfWeek(), "") + ")"
-                            + " at " + orDefault(d.timeSlot(), "the scheduled time")
-                            + " has been booked.";
-                }
-                yield "Your appointment has been booked.";
-            }
-            case APPOINTMENT_CONFIRMED -> {
-                if (data instanceof AppointmentConfirmedData d) {
-                    yield "Hello " + orDefault(d.patientName(), "there")
-                            + ", your appointment on " + orDefault(d.date(), "the scheduled date")
-                            + " (" + orDefault(d.dayOfWeek(), "") + ")"
-                            + " at " + orDefault(d.timeSlot(), "the scheduled time")
-                            + " has been confirmed.";
-                }
-                yield "Your appointment has been confirmed.";
-            }
-            case APPOINTMENT_REJECTED -> {
-                if (data instanceof AppointmentRejectedData d) {
-                    yield "Hello " + orDefault(d.patientName(), "there")
-                            + ", unfortunately your appointment request with Dr. "
-                            + orDefault(d.doctorName(), "your doctor")
-                            + " on " + orDefault(d.date(), "the scheduled date")
-                            + " (" + orDefault(d.dayOfWeek(), "") + ")"
-                            + " at " + orDefault(d.timeSlot(), "the scheduled time")
-                            + " has been rejected. Please book a new appointment.";
-                }
-                yield "Your appointment request has been rejected.";
-            }
-            case APPOINTMENT_CANCELLED -> {
-                if (data instanceof AppointmentCancelledData d) {
-                    yield "Hello " + orDefault(d.patientName(), "there")
-                            + ", your appointment on " + orDefault(d.date(), "the scheduled date")
-                            + " (" + orDefault(d.dayOfWeek(), "") + ")"
-                            + " at " + orDefault(d.timeSlot(), "the scheduled time")
-                            + " has been cancelled.";
-                }
-                yield "Your appointment has been cancelled.";
-            }
-            case APPOINTMENT_COMPLETED -> {
-                if (data instanceof AppointmentCompletedData d) {
-                    yield "Hello " + orDefault(d.patientName(), "there")
-                            + ", your consultation on " + orDefault(d.date(), "the scheduled date")
-                            + " (" + orDefault(d.dayOfWeek(), "") + ")"
-                            + " at " + orDefault(d.timeSlot(), "the scheduled time")
-                            + " has been completed.";
-                }
-                yield "Your consultation has been completed.";
-            }
-            case TELEMEDICINE_SESSION_STARTED -> {
-                if (data instanceof TelemedicineSessionStartedData d) {
-                    yield "Hello " + orDefault(d.recipientName(), "there")
-                            + ", your telemedicine session with Dr. " + orDefault(d.doctorName(), "your doctor")
-                            + " on " + orDefault(d.date(), "today")
-                            + " at " + orDefault(d.timeSlot(), "the scheduled time")
-                            + " has started. Please join now.";
-                }
-                yield "Your telemedicine session has started. Please join now.";
-            }
-            case FEEDBACK_RECEIVED -> {
-                if (data instanceof FeedbackReceivedData d) {
-                    yield "Dear Dr. " + orDefault(d.doctorName(), "Doctor")
-                            + ", you have received new feedback from a patient."
-                            + " Rating: " + (d.rating() != null ? d.rating() : "N/A") + "/5."
-                            + " Comment: " + orDefault(d.comment(), "No comment provided.");
-                }
-                yield "You have received new feedback from a patient.";
-            }
-            case PAYMENT_SUCCESS -> {
-                if (data instanceof PaymentSuccessData d) {
-                    yield "Your payment of Rs. " + (d.amount() != null ? d.amount() : "0") + " was successful.";
-                }
-                yield "Your payment was successful.";
-            }
+            case APPOINTMENT_BOOKED -> "Hello " + s(data, "patientName", "there")
+                    + ", your appointment with Dr. " + s(data, "doctorName", "your doctor")
+                    + " on " + s(data, "date", "the scheduled date")
+                    + " (" + s(data, "dayOfWeek", "") + ")"
+                    + " at " + s(data, "timeSlot", "the scheduled time")
+                    + " has been booked.";
+            case APPOINTMENT_CONFIRMED -> "Hello " + s(data, "patientName", "there")
+                    + ", your appointment on " + s(data, "date", "the scheduled date")
+                    + " (" + s(data, "dayOfWeek", "") + ")"
+                    + " at " + s(data, "timeSlot", "the scheduled time")
+                    + " has been confirmed.";
+            case APPOINTMENT_REJECTED -> "Hello " + s(data, "patientName", "there")
+                    + ", unfortunately your appointment request with Dr. "
+                    + s(data, "doctorName", "your doctor")
+                    + " on " + s(data, "date", "the scheduled date")
+                    + " (" + s(data, "dayOfWeek", "") + ")"
+                    + " at " + s(data, "timeSlot", "the scheduled time")
+                    + " has been rejected. Please book a new appointment.";
+            case APPOINTMENT_CANCELLED -> "Hello " + s(data, "patientName", "there")
+                    + ", your appointment on " + s(data, "date", "the scheduled date")
+                    + " (" + s(data, "dayOfWeek", "") + ")"
+                    + " at " + s(data, "timeSlot", "the scheduled time")
+                    + " has been cancelled.";
+            case APPOINTMENT_COMPLETED -> "Hello " + s(data, "patientName", "there")
+                    + ", your consultation on " + s(data, "date", "the scheduled date")
+                    + " (" + s(data, "dayOfWeek", "") + ")"
+                    + " at " + s(data, "timeSlot", "the scheduled time")
+                    + " has been completed.";
+            case TELEMEDICINE_SESSION_STARTED -> "Hello " + s(data, "recipientName", "there")
+                    + ", your telemedicine session with Dr. " + s(data, "doctorName", "your doctor")
+                    + " on " + s(data, "date", "today")
+                    + " at " + s(data, "timeSlot", "the scheduled time")
+                    + " has started. Please join now.";
+            case FEEDBACK_RECEIVED -> "Dear Dr. " + s(data, "doctorName", "Doctor")
+                    + ", you have received new feedback from a patient."
+                    + " Rating: " + (data != null && data.get("rating") != null ? data.get("rating") : "N/A") + "/5."
+                    + " Comment: " + s(data, "comment", "No comment provided.");
+            case PAYMENT_SUCCESS -> "Your payment of Rs. "
+                    + (data != null && data.get("amount") != null ? data.get("amount") : "0") + " was successful.";
         };
     }
 
-    private String orDefault(String value, String defaultValue) {
-        return value == null || value.isBlank() ? defaultValue : value;
+    private String s(Map<String, Object> data, String key, String defaultValue) {
+        if (data == null) return defaultValue;
+        Object val = data.get(key);
+        if (val == null || val.toString().isBlank()) return defaultValue;
+        return val.toString();
     }
 }

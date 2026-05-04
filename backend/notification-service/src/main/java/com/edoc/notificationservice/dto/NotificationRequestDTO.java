@@ -1,6 +1,6 @@
 package com.edoc.notificationservice.dto;
 
-import com.edoc.notificationservice.dto.data.NotificationData;
+import java.util.Map;
 
 // Unified request model for event-driven notifications.
 // Callers may pass IDs for resolution, or pre-resolved contact info to skip user-service lookups.
@@ -11,6 +11,6 @@ public record NotificationRequestDTO(
         String userId,          // user-service UUID  → resolves email directly
         String recipientEmail,  // pre-resolved email; if provided, skips user-service lookup for email/SMS
         String recipientPhone,  // pre-resolved phone; if provided, skips user-service lookup for email/SMS
-        NotificationData data
+        Map<String, Object> data
 ) {
 }
