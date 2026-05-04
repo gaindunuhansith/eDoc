@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { 
   Bot, 
   Sparkles, 
@@ -21,7 +21,9 @@ import {
 } from "lucide-react";
 import { useUser } from "@/store/store";
 import { Button } from "@/components/ui/button";
-import { type DoctorAnalysisResponse } from "@/api/aiApi";
+import { useAnalyzeDoctor, type DoctorAnalysisResponse } from "@/api/aiApi";
+import { useGetMyDoctorProfile } from "@/api/doctorApi";
+import { useGetAppointmentsByDoctor } from "@/api/appointmentApi";
 import {
   Select,
   SelectContent,
@@ -30,55 +32,36 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-const mockPatients = [
-  { id: "p-001", name: "John Carter" },
-  { id: "p-002", name: "Sophia Khan" },
-  { id: "p-003", name: "Michael Dsouza" },
-];
-
-const getMockDoctorAnalysis = (notes: string, patientName: string): DoctorAnalysisResponse => {
-  const normalizedNotes = notes.toLowerCase();
-
-  if (
-    (normalizedNotes.includes("fever") && normalizedNotes.includes("cough")) ||
-    (normalizedNotes.includes("fever") && normalizedNotes.includes("courgh"))
-  ) {
-    return {
-      clinical_analysis:
-        `After considering ${patientName}'s prescriptions and medical history, this presentation may be due to an acute upper respiratory tract infection with possible bronchial involvement. Please correlate with examination findings and vitals before final diagnosis.`,
-      differential_diagnosis: [
-        "Acute viral upper respiratory infection",
-        "Early bronchitis",
-        "Influenza-like illness",
-      ],
-      investigation_recommendations: [
-        "CBC with differential",
-        "CRP if symptoms persist beyond 48 hours",
-        "Chest auscultation and pulse oximetry",
-      ],
-      service_errors: [],
-    };
-  }
-
-  return {
-    clinical_analysis:
-      `After considering ${patientName}'s recent notes and medication profile, symptoms appear stable and likely manageable with standard follow-up care unless red flags appear.`,
-    differential_diagnosis: ["Non-specific mild respiratory illness"],
-    investigation_recommendations: ["Clinical follow-up within 48-72 hours"],
-    service_errors: [],
-  };
-};
-
 export default function DoctorDashboardAssistant() {
   const user = useUser();
+  const analyzeDoctor = useAnalyzeDoctor();
+  const { data: doctorProfile } = useGetMyDoctorProfile();
+  const { data: doctorAppointments = [] } = useGetAppointmentsByDoctor(doctorProfile?.id ?? "");
+
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
   const [chatActive, setChatActive] = useState(false);
-  const [selectedPatientId, setSelectedPatientId] = useState(mockPatients[0].id);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [selectedPatientId, setSelectedPatientId] = useState("");
   const [analysisResult, setAnalysisResult] = useState<DoctorAnalysisResponse | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  const isAnalyzing = analyzeDoctor.isPending;
+
+  const patientOptions = useMemo(() => {
+    const patientMap = new Map<string, string>();
+    doctorAppointments.forEach((appointment) => {
+      if (!appointment.patientId) return;
+      const fallback = `Patient ${appointment.patientId.slice(0, 8)}`;
+      patientMap.set(appointment.patientId, appointment.patientName || fallback);
+    });
+    return Array.from(patientMap.entries()).map(([id, name]) => ({ id, name }));
+  }, [doctorAppointments]);
+
+  useEffect(() => {
+    if (!selectedPatientId && patientOptions.length > 0) {
+      setSelectedPatientId(patientOptions[0].id);
+    }
+  }, [patientOptions, selectedPatientId]);
 
   const handleSubmit = async () => {
     if (!query.trim() || isAnalyzing || !selectedPatientId) return;
@@ -88,18 +71,17 @@ export default function DoctorDashboardAssistant() {
     setQuery("");
     setChatActive(true);
     setAnalysisResult(null);
-    setIsAnalyzing(true);
-
-    const selectedPatient = mockPatients.find((patient) => patient.id === selectedPatientId);
+    setApiError(null);
 
     try {
-      await wait(2400);
-      const result = getMockDoctorAnalysis(currentQuery, selectedPatient?.name || "the patient");
+      const result = await analyzeDoctor.mutateAsync({
+        patient_id: selectedPatientId,
+        professional_notes: currentQuery,
+      });
       setAnalysisResult(result);
     } catch (err) {
       console.error("AI Clinical Analysis failed:", err);
-    } finally {
-      setIsAnalyzing(false);
+      setApiError(err instanceof Error ? err.message : "Failed to analyze clinical notes.");
     }
   };
 
@@ -205,10 +187,17 @@ export default function DoctorDashboardAssistant() {
                       </ul>
                     </div>
                   )}
+
+                  {analysisResult.service_errors.length > 0 && (
+                    <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200">
+                      {analysisResult.service_errors.join(" ")}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-red-500 font-medium">Something went wrong with the clinical analysis. Please try again.</div>
               )}
+              {apiError && <div className="mt-3 text-red-500 font-medium">{apiError}</div>}
             </div>
           </div>
         </div>
@@ -221,16 +210,21 @@ export default function DoctorDashboardAssistant() {
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Patient</p>
             <Select value={selectedPatientId} onValueChange={setSelectedPatientId}>
               <SelectTrigger className="w-full h-10 bg-white dark:bg-[#171717] border-gray-200 dark:border-neutral-700">
-                <SelectValue placeholder="Select a patient" />
+                <SelectValue placeholder="Select a patient from your appointments" />
               </SelectTrigger>
               <SelectContent>
-                {mockPatients.map((patient) => (
+                {patientOptions.map((patient) => (
                   <SelectItem key={patient.id} value={patient.id}>
                     {patient.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {patientOptions.length === 0 && (
+              <p className="text-xs text-amber-700 dark:text-amber-300">
+                No patient IDs found in your appointments yet.
+              </p>
+            )}
           </div>
 
           <textarea
@@ -247,7 +241,7 @@ export default function DoctorDashboardAssistant() {
               <div className="flex items-center gap-1.5">
                 <Button 
                   onClick={handleSubmit}
-                  disabled={isAnalyzing}
+                  disabled={isAnalyzing || !selectedPatientId}
                   variant="secondary" 
                   size="sm" 
                   className="rounded-full bg-[#f0f6ff] dark:bg-blue-900/10 text-[#5c8aff] dark:text-blue-400 border border-[#e6efff] dark:border-blue-900/20 hover:bg-[#e6efff] dark:hover:bg-blue-900/30 gap-2 h-9 px-3.5 font-medium shadow-sm transition-colors"
