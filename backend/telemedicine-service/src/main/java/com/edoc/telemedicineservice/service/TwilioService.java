@@ -41,10 +41,13 @@ public class TwilioService {
                     .setType(Room.RoomType.GO)
                     .create();
             return room.getSid();
-        } catch (TwilioException e) {
-
-            Room room = Room.fetcher(roomName).fetch();
-            return room.getSid();
+        } catch (com.twilio.exception.ApiException e) {
+            if (e.getCode() == 53113) {
+                // Room with this unique name already in-progress — fetch existing SID
+                Room existing = Room.fetcher(roomName).fetch();
+                return existing.getSid();
+            }
+            throw e;
         }
     }
 

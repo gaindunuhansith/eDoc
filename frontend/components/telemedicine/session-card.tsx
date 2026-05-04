@@ -68,7 +68,7 @@ export function SessionCard({
   };
 
   const canJoinCall = () => {
-    return session.status === "scheduled" && onJoinCall;
+    return session.status === "active" && !!onJoinCall;
   };
 
   const canStartCall = () => {
@@ -76,7 +76,7 @@ export function SessionCard({
   };
 
   const canEndCall = () => {
-    return session.status === "ongoing" && onEnd;
+    return session.status === "active" && !!onEnd;
   };
 
   return (
@@ -167,7 +167,7 @@ export function SessionCard({
               className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
             >
               <Play className="h-4 w-4" />
-              Start Call
+              Go to Session
             </Button>
           )}
 

@@ -36,13 +36,6 @@ interface ParticipantInfo {
   isLocal: boolean;
 }
 
-interface ParticipantInfo {
-  identity: string;
-  videoTrack?: any;
-  audioTrack?: any;
-  isLocal: boolean;
-}
-
 export function VideoCall({ token, roomName, appointmentId, onLeaveCall, userName }: VideoCallProps) {
   const [room, setRoom] = useState<Room | null>(null);
   const [participants, setParticipants] = useState<ParticipantInfo[]>([]);

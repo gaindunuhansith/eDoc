@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import com.twilio.exception.TwilioException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
@@ -73,7 +74,14 @@ public class TelemedicineService {
         }
 
         String roomName = "appointment-" + appointmentId;
-        String roomSid = twilioService.createRoom(roomName);
+        String roomSid = null;
+        try {
+            roomSid = twilioService.createRoom(roomName);
+        } catch (TwilioException e) {
+            // Twilio GO rooms auto-create when the first participant connects using a valid token.
+            // Log the warning but do not block session creation — the room will be provisioned on join.
+            logger.warn("Twilio room pre-creation failed for appointment {} (will auto-create on join): {}", appointmentId, e.getMessage());
+        }
 
         VideoSession session = new VideoSession(appointmentId, doctorId, patientId);
         session.setRoomName(roomName);

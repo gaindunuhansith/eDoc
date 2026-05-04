@@ -38,7 +38,7 @@ import {
   type AppointmentStatus,
   type PaymentStatus
 } from "@/api/appointmentApi";
-import { useCreateSession } from "@/api/telemedicineApi";
+import { useCreateSession, SessionAlreadyActiveError } from "@/api/telemedicineApi";
 
 // --- Helpers -----------------------------------------------------------------
 
@@ -186,8 +186,12 @@ export default function DoctorAppointmentsHub() {
           router.push(`/doctor/telemedicine/session/${appt.id}`);
         },
         onError: (err: any) => {
-          // Session may already exist — still navigate
-          router.push(`/doctor/telemedicine/session/${appt.id}`);
+          if (err instanceof SessionAlreadyActiveError) {
+            // Session already exists — navigate to it
+            router.push(`/doctor/telemedicine/session/${appt.id}`);
+          } else {
+            toast.error(err?.message || "Failed to create session. Please try again.");
+          }
         },
       }
     );
