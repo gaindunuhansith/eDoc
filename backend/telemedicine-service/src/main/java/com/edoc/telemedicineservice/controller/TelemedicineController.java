@@ -86,7 +86,7 @@ public class TelemedicineController {
     }
 
     private String getUid(Jwt jwt) {
-        return jwt != null ? jwt.getClaimAsString("uid") : null;
+        return jwt != null ? jwt.getClaimAsString("userId") : null;
     }
 
     private String getRole(Jwt jwt) {

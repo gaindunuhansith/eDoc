@@ -288,11 +288,11 @@ export default function AppointmentsHistoryPage() {
                     </div>
                   )}
 
-                  {/* Video Join Button */}
-                  {appt.status === "CONFIRMED" && appt.videoSessionLink && (
+                  {/* Join Video Session — navigate to telemedicine session page */}
+                  {appt.status === "CONFIRMED" && appt.type === "VIDEO" && (
                     <div className="pt-2">
                        <Button 
-                         onClick={() => window.open(appt.videoSessionLink, "_blank")}
+                         onClick={() => router.push(`/patient/telemedicine/session/${appt.id}`)}
                          className="w-full bg-indigo-600 hover:bg-indigo-700 shadow-sm"
                        >
                           <Video className="w-4 h-4 mr-2" /> Join Video Session

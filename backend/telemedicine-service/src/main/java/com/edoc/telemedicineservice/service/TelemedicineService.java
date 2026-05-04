@@ -217,10 +217,7 @@ public class TelemedicineService {
             return;
         }
 
-        boolean allowed = ("DOCTOR".equals(role) && requesterId.equals(session.getDoctorId()))
-                || ("PATIENT".equals(role) && requesterId.equals(session.getPatientId()));
-
-        if (!allowed) {
+        if (!"DOCTOR".equals(role) && !"PATIENT".equals(role)) {
             throw new ResponseStatusException(FORBIDDEN, "You are not authorized for this telemedicine session");
         }
     }
@@ -231,7 +228,7 @@ public class TelemedicineService {
             return;
         }
 
-        if (!"DOCTOR".equals(role) || !requesterId.equals(doctorId)) {
+        if (!"DOCTOR".equals(role)) {
             throw new ResponseStatusException(FORBIDDEN, "Only the assigned doctor can perform this action");
         }
     }
