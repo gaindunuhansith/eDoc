@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import apiClient from "./utils/axiosInstance";
-import { DOCTOR_ENDPOINTS } from "./utils/endpoints";
+import { DOCTOR_ENDPOINTS, PATIENT_ENDPOINTS } from "./utils/endpoints";
 import { queryKeys } from "./utils/queryKeys";
 
 export interface Doctor {
@@ -140,7 +140,7 @@ export const fetchPrescriptionsByDoctor = (doctorId: string) =>
   apiClient.get<Prescription[]>(DOCTOR_ENDPOINTS.PRESCRIPTIONS_BY_DOCTOR(doctorId));
 
 export const fetchPrescriptionsByPatient = (patientUserId: string) =>
-  apiClient.get<Prescription[]>(DOCTOR_ENDPOINTS.PRESCRIPTIONS_BY_PATIENT(patientUserId));
+  apiClient.get<Prescription[]>(PATIENT_ENDPOINTS.PRESCRIPTIONS_BY_USER_ID(patientUserId));
 
 export const fetchPrescriptionById = (id: string) =>
   apiClient.get<Prescription>(DOCTOR_ENDPOINTS.PRESCRIPTION_BY_ID(id));
