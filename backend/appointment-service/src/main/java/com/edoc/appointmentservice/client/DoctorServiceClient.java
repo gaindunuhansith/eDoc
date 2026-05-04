@@ -23,7 +23,7 @@ public class DoctorServiceClient {
         try {
             return webClientBuilder.build()
                     .get()
-                    .uri(doctorServiceUrl + "/api/v1/doctors/internal/" + doctorId)
+                    .uri(doctorServiceUrl + "/api/v1/doctors/internal/" + doctorId + "/details")
                     .retrieve()
                     .bodyToMono(Map.class)
                     .block();

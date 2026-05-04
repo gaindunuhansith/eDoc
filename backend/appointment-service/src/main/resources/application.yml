@@ -21,15 +21,15 @@ jwt:
 
 doctor:
   service:
-    url: ${DOCTOR_SERVICE_URL:http://doctor-service:8082}
+    url: ${DOCTOR_SERVICE_URL:http://localhost:8082}
 
 patient:
   service:
-    url: ${PATIENT_SERVICE_URL:http://patient-service:8084}
+    url: ${PATIENT_SERVICE_URL:http://localhost:8084}
 
 notification:
   service:
-    url: ${NOTIFICATION_SERVICE_URL:http://notification-service:8083}
+    url: ${NOTIFICATION_SERVICE_URL:http://localhost:8083}
 
 seed:
   enabled: ${SEED_ENABLED:false}
