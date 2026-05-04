@@ -1,9 +1,12 @@
 import os
 import base64
 import textwrap
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load .env from the ai-service root regardless of where the process is launched from
+_env_path = Path(__file__).resolve().parent.parent.parent / ".env"
+load_dotenv(_env_path, override=True)
 
 class Settings:
     PROJECT_NAME: str = "eDoc AI Service"
@@ -18,9 +21,10 @@ class Settings:
 
     @property
     def RS256_PUBLIC_KEY(self) -> str:
-        if self.JWT_PUBLIC_KEY_BASE64:
+        jwt_key_b64 = os.getenv("JWT_PUBLIC_KEY_BASE64", "") or self.JWT_PUBLIC_KEY_BASE64
+        if jwt_key_b64:
             normalized = (
-                self.JWT_PUBLIC_KEY_BASE64
+                jwt_key_b64
                 .replace("-----BEGIN PUBLIC KEY-----", "")
                 .replace("-----END PUBLIC KEY-----", "")
                 .replace("\n", "")

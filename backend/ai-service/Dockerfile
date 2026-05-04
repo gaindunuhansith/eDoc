@@ -1,9 +1,7 @@
 FROM python:3.11-slim
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /app
-
-# Bootstrap: Install uv using pip (one-time only, for package management)
-RUN python -m pip install --no-cache-dir uv
 
 COPY pyproject.toml uv.lock ./
 
