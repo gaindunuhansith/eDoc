@@ -390,11 +390,7 @@ export default function PaymentsPage() {
                         <Button
                           size="sm"
                           className="h-7 px-3 text-xs gap-1.5"
-                          onClick={() =>
-                            router.push(
-                              `/patient/confirm-order?appointmentId=${tx.appointmentId}&amount=${tx.amount}&currency=${tx.currency}`
-                            )
-                          }
+                          onClick={() => router.push(`/patient/confirm-order?appointmentId=${tx.appointmentId}`)}
                         >
                           <CreditCard className="w-3 h-3" />
                           Complete Payment

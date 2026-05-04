@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Mail, Building, Check, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useStore } from "@/store/store";
-import { useGetMyPatientProfile } from "@/api/patientApi";
 import { useGetAppointmentById } from "@/api/appointmentApi";
 import {
   useInitiatePayment,
@@ -23,100 +22,36 @@ import {
 } from "@/components/ui/dialog";
 
 export default function ConfirmOrderPage() {
-  const MOCK_APPOINTMENT_ID = "00000000-0000-0000-0000-000000000001";
-  const FALLBACK_AMOUNT = 2500;
-
   const router = useRouter();
   const searchParams = useSearchParams();
   const user = useStore((s) => s.user);
 
-  const appointmentIdParam = searchParams.get("appointmentId") ?? "";
-  const amountParam = Number(searchParams.get("amount"));
-  const currencyParam = searchParams.get("currency") ?? "LKR";
-  const queryFullName = [searchParams.get("firstName"), searchParams.get("lastName")]
-    .filter(Boolean)
-    .join(" ");
-  const queryEmail = searchParams.get("email") ?? "";
-  const queryPhone = searchParams.get("phone") ?? "";
-  const queryAddress = searchParams.get("address") ?? "";
-  const queryCity = searchParams.get("city") ?? "";
-  const queryCountry = searchParams.get("country") ?? "";
-  const queryDoctorId = searchParams.get("doctorId") ?? "";
-  const queryDoctorName = searchParams.get("doctorName") ?? "";
-  const shouldFetchAppointment = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-    appointmentIdParam
-  );
+  const appointmentId = searchParams.get("appointmentId") ?? "";
 
   const [paymentOption, setPaymentOption] = useState<"card" | "other">("card");
-  const [fullName, setFullName] = useState(user?.name || queryFullName || "");
-  const [email, setEmail] = useState(user?.email || queryEmail || "");
-  const [phone, setPhone] = useState(user?.phoneNumber || queryPhone || "");
-  const [address, setAddress] = useState(queryAddress);
-  const [city, setCity] = useState(queryCity);
-  const [country, setCountry] = useState(queryCountry || "Sri Lanka");
-  const [currency, setCurrency] = useState(currencyParam.toUpperCase());
+  const [fullName, setFullName] = useState(user?.name ?? "");
+  const [email, setEmail] = useState(user?.email ?? "");
+  const [phone, setPhone] = useState(user?.phoneNumber ?? "");
+  const [address, setAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [country, setCountry] = useState("Sri Lanka");
   const [successOpen, setSuccessOpen] = useState(false);
 
-  const { data: patient } = useGetMyPatientProfile();
-  const { data: appointment } = useGetAppointmentById(
-    shouldFetchAppointment ? appointmentIdParam : ""
+  const { data: appointment, isLoading: appointmentLoading } = useGetAppointmentById(
+    appointmentId || ""
   );
-
-  useEffect(() => {
-    if (!phone && patient?.phone) {
-      setPhone(patient.phone);
-    }
-    if (!address && patient?.address) {
-      setAddress(patient.address);
-    }
-  }, [phone, address, patient]);
 
   const initiatePaymentMutation = useInitiatePayment();
 
-  const amount = Number.isFinite(amountParam) && amountParam > 0
-    ? amountParam
-    : (appointment?.consultationFee ?? FALLBACK_AMOUNT);
+  const amount = appointment?.consultationFee ?? 0;
+  const currency = "LKR";
   const paymentMethod: PaymentMethod =
     paymentOption === "card" ? "CARD" : "DIGITAL_WALLET";
   const isProcessing = initiatePaymentMutation.isPending;
 
-  const isUuid = (value: string) =>
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      value
-    );
-
-  const resolvedAppointmentId = isUuid(appointmentIdParam)
-    ? appointmentIdParam
-    : MOCK_APPOINTMENT_ID;
-
   const isValidEmail = (value: string) => {
     if (!value) return true;
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-  };
-
-  const resolveMetadata = () => {
-    const metadata: Record<string, string> = {
-      source: "confirm-order",
-      paymentMethod,
-      appointmentSource: appointment ? "appointment-api" : "mock-fallback",
-      mockAppointment: String(!appointment),
-    };
-
-    if (appointment?.timeSlot) metadata.timeSlot = appointment.timeSlot;
-    if (appointment?.appointmentDate) metadata.appointmentDate = appointment.appointmentDate;
-    if (appointment?.type) metadata.appointmentType = appointment.type;
-    if (appointment?.doctorId) metadata.doctorId = appointment.doctorId;
-    if (appointment?.doctorName) metadata.doctorName = appointment.doctorName;
-    if (queryDoctorId) metadata.redirectDoctorId = queryDoctorId;
-    if (queryDoctorName) metadata.redirectDoctorName = queryDoctorName;
-
-    searchParams.forEach((value, key) => {
-      if (key.startsWith("meta_") && value) {
-        metadata[key.replace("meta_", "")] = value;
-      }
-    });
-
-    return metadata;
   };
 
   const submitCheckoutForm = (actionUrl: string, fields: Record<string, string>) => {
@@ -138,12 +73,12 @@ export default function ConfirmOrderPage() {
   };
 
   const handleProceedToPay = async () => {
-    if (!fullName.trim()) {
-      toast.error("Full name is required.");
+    if (!appointmentId.trim()) {
+      toast.error("Appointment ID is missing. Please go back and try again.");
       return;
     }
-    if (!email.trim()) {
-      toast.error("Email is required.");
+    if (appointmentLoading) {
+      toast.error("Still loading appointment details. Please wait.");
       return;
     }
     if (!amount || amount <= 0) {
@@ -173,7 +108,7 @@ export default function ConfirmOrderPage() {
 
     try {
       const checkout = await initiatePaymentMutation.mutateAsync({
-        appointmentId: resolvedAppointmentId,
+        appointmentId: appointmentId,
         amount,
         currency: currency.toUpperCase(),
         fullName: fullName.trim() || undefined,
@@ -196,7 +131,7 @@ export default function ConfirmOrderPage() {
           cancel_url:   `${window.location.origin}/patient/payments`,
           notify_url:   checkout.notifyUrl,
           order_id:     checkout.orderId,
-          items:        `Appointment ${resolvedAppointmentId}`,
+          items:        `Appointment ${appointmentId}`,
           currency:     checkout.currency,
           amount:       String(checkout.amount),
           first_name:   fName,
@@ -372,7 +307,7 @@ export default function ConfirmOrderPage() {
                     <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></div>
                   </div>
                   <div>
-                    <div className="font-semibold text-sm">{appointment?.doctorName || queryDoctorName || "Medical Appointment"}</div>
+                    <div className="font-semibold text-sm">{appointment?.doctorName || "Medical Appointment"}</div>
                     <div className="text-xs text-muted-foreground">
                       {appointment 
                         ? `${new Date(appointment.appointmentDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} at ${appointment.timeSlot}`
@@ -387,9 +322,9 @@ export default function ConfirmOrderPage() {
               <div className="flex items-start justify-between mb-2">
                 <div>
                   <h3 className="font-bold text-base text-foreground">Appointment payment</h3>
-                  {appointmentIdParam && (
+                  {appointmentId && (
                     <p className="text-sm text-muted-foreground">
-                      Appointment ID: {appointmentIdParam}
+                      Appointment ID: {appointmentId}
                     </p>
                   )}
                 </div>

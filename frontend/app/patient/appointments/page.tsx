@@ -180,21 +180,7 @@ export default function AppointmentsHistoryPage() {
   };
 
   const handleProceedToPay = (appt: Appointment) => {
-    const nameParts = (user?.name ?? "").trim().split(/\s+/).filter(Boolean);
-    const firstName = nameParts[0] ?? "";
-    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "";
-    const params = new URLSearchParams({
-      appointmentId: appt.id,
-      amount: String(appt.consultationFee ?? 0),
-      currency: "LKR",
-      ...(firstName && { firstName }),
-      ...(lastName && { lastName }),
-      ...(user?.email && { email: user.email }),
-      ...(user?.phoneNumber && { phone: user.phoneNumber }),
-      ...(patient?.address && { address: patient.address }),
-      country: "Sri Lanka",
-    });
-    router.push(`/patient/confirm-order?${params.toString()}`);
+    router.push(`/patient/confirm-order?appointmentId=${appt.id}`);
   };
 
   const handleModify = (apptId: string) => {
