@@ -31,7 +31,7 @@ public class PatientReportController {
     public ResponseEntity<byte[]> getPatientReportFile(
             @PathVariable String doctorId,
             @PathVariable String patientId,
-            @PathVariable Long reportId) {
+            @PathVariable String reportId) {
         ResponseEntity<byte[]> upstream = patientServiceClient.getPatientReportFile(patientId, reportId);
         // Forward content-type and content-disposition from the upstream response
         HttpHeaders headers = new HttpHeaders();

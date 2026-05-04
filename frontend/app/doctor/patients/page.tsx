@@ -27,6 +27,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
+import { apiClient } from "@/api/utils/axiosInstance";
 import { 
   useGetMyDoctorProfile, 
   fetchDoctorPatientProfile, 
@@ -62,7 +63,7 @@ interface PatientSummary {
 }
 
 interface PatientReport {
-  id: number;
+  id: string;
   reportName: string;
   reportType: string;
   createdAt: string;
@@ -605,12 +606,21 @@ function PatientsContent() {
                                variant="outline" 
                                size="sm" 
                                className="shrink-0 gap-1.5"
-                               asChild
+                               onClick={async () => {
+                                 try {
+                                   const url = DOCTOR_ENDPOINTS.GET_PATIENT_REPORT_FILE(doctor!.id, activePatientCase!.patientId, report.id);
+                                   console.log("[View Report] doctorId:", doctor!.id, "patientId:", activePatientCase!.patientId, "reportId:", report.id, "url:", url);
+                                   const res = await apiClient.get(url, { responseType: "blob" });
+                                   const blobUrl = URL.createObjectURL(res.data as Blob);
+                                   window.open(blobUrl, "_blank");
+                                 } catch (err: any) {
+                                   console.error("[View Report] error:", err?.status, err?.message, err);
+                                   alert(`Failed to load report file. Status: ${err?.status ?? "unknown"} — ${err?.message ?? ""}`);
+                                 }
+                               }}
                             >
-                               <a href={DOCTOR_ENDPOINTS.GET_PATIENT_REPORT_FILE(doctor!.id, activePatientId, report.id)} target="_blank" rel="noopener noreferrer">
-                                  <Download className="w-3.5 h-3.5" />
-                                  View
-                               </a>
+                               <Download className="w-3.5 h-3.5" />
+                               View
                             </Button>
                          </CardContent>
                       </Card>
