@@ -40,14 +40,14 @@ payhere:
   merchant-id: ${PAYHERE_MERCHANT_ID:}
   merchant-secret: ${PAYHERE_MERCHANT_SECRET:}
   checkout-url: ${PAYHERE_CHECKOUT_URL:https://sandbox.payhere.lk/pay/checkout}
-  notify-url: ${PAYHERE_NOTIFY_URL:http://localhost:8085/api/v1/payments/webhook/notify}
+  notify-url: ${PAYHERE_NOTIFY_URL:https://smarty-lymphocytotic-larry.ngrok-free.dev/api/v1/payments/webhook/notify}
 
 app:
   appointment-service:
     base-url: ${APPOINTMENT_SERVICE_URL:http://appointment-service:8081}
     payment-update-path: ${APPOINTMENT_PAYMENT_UPDATE_PATH:/api/v1/appointments/{appointmentId}/payment}
   notification-service:
-    base-url: ${NOTIFICATION_SERVICE_URL:http://notification-service:8083}
+    base-url: ${NOTIFICATION_SERVICE_URL:http://localhost:8083}
     send-path: ${NOTIFICATION_SEND_PATH:/api/v1/notifications/send}
 
 springdoc:

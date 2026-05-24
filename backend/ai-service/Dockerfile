@@ -1,9 +1,7 @@
 FROM python:3.11-slim
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /app
-
-# Bootstrap: Install uv using pip (one-time only, for package management)
-RUN python -m pip install --no-cache-dir uv
 
 COPY pyproject.toml uv.lock ./
 
@@ -13,7 +11,7 @@ RUN uv sync --no-dev
 COPY app ./app
 COPY server.py ./server.py
 
-EXPOSE 8087
+EXPOSE 8090
 
 # Run using uv only
-CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8087"]
+CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8090"]

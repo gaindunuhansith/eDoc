@@ -1,14 +1,18 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
-import { 
-  Search, 
+import React, { useState, useMemo, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  Search,
   ChevronLeft,
   ChevronRight,
   Loader2,
   AlertCircle,
   CreditCard,
+  Check,
+  X,
+  ChevronRight as ChevronRightIcon,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,8 +33,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { useGetMyPaymentHistory, type PaymentStatus } from "@/api/paymentApi";
+import { useGetMyPaymentHistory, usePollPaymentByOrder, downloadInvoice, type PaymentStatus } from "@/api/paymentApi";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 const PAGE_SIZE = 10;
 
@@ -46,6 +58,11 @@ function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
 }
 
+function truncateId(id: string) {
+  if (!id) return "—";
+  return id.length > 8 ? `${id.slice(0, 8)}…` : id;
+}
+
 const statusLabel: Record<PaymentStatus, string> = {
   PENDING: "Pending",
   SUCCESS: "Completed",
@@ -58,6 +75,145 @@ const statusClass: Record<PaymentStatus, string> = {
   FAILED: "bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-500/10 dark:border-rose-500/20 dark:text-rose-400",
 };
 
+// ─── Webhook poll modal ──────────────────────────────────────────────────────
+
+const POLL_TIMEOUT_MS = 45_000;
+
+function PaymentPollModalInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const qc = useQueryClient();
+
+  const orderId = searchParams.get("order_id") ?? "";
+  const [open, setOpen] = useState(!!orderId);
+  const [polling, setPolling] = useState(!!orderId);
+  const [timedOut, setTimedOut] = useState(false);
+
+  const { data } = usePollPaymentByOrder(orderId, polling);
+  const status = data?.status;
+
+  // Stop polling once finalised
+  useEffect(() => {
+    if (status === "SUCCESS" || status === "FAILED") setPolling(false);
+  }, [status]);
+
+  // Timeout safety valve
+  useEffect(() => {
+    if (!orderId) return;
+    const t = setTimeout(() => {
+      setPolling(false);
+      setTimedOut(true);
+    }, POLL_TIMEOUT_MS);
+    return () => clearTimeout(t);
+  }, [orderId]);
+
+  const handleClose = () => {
+    setOpen(false);
+    // Refresh payment history so the new status shows in the table
+    qc.invalidateQueries({ queryKey: ["payment", "history"] });
+    // Strip PayHere query params from the URL
+    const url = new URL(window.location.href);
+    ["order_id", "payment_id", "status_code"].forEach((k) => url.searchParams.delete(k));
+    router.replace(url.pathname + (url.search || ""));
+  };
+
+  if (!orderId || !open) return null;
+
+  const isLoading = !timedOut && (status === "PENDING" || !status);
+  const isSuccess = status === "SUCCESS";
+  const isFailed = status === "FAILED" || timedOut;
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o && !isLoading) handleClose(); }}>
+      <DialogContent
+        showCloseButton={false}
+        className="sm:max-w-md text-center p-8 border-none shadow-2xl gap-0 rounded-2xl"
+      >
+        <DialogTitle className="sr-only">Payment Status</DialogTitle>
+        <DialogDescription className="sr-only">Waiting for payment confirmation</DialogDescription>
+
+        {isLoading && (
+          <>
+            <div className="mx-auto w-14 h-14 rounded-full flex items-center justify-center border-[3px] border-border mt-2 mb-6">
+              <Loader2 className="w-7 h-7 animate-spin text-muted-foreground" />
+            </div>
+            <div className="space-y-3 mb-8">
+              <h2 className="text-[22px] font-semibold text-foreground tracking-tight">
+                Processing Payment
+              </h2>
+              <p className="text-[15px] text-muted-foreground leading-relaxed">
+                Please wait while we confirm your payment with PayHere&hellip;
+              </p>
+            </div>
+          </>
+        )}
+
+        {isSuccess && (
+          <>
+            <div className="mx-auto w-14 h-14 text-emerald-500 rounded-full flex items-center justify-center border-[3px] border-emerald-500 mt-2 mb-6 shadow-sm">
+              <Check className="w-8 h-8 stroke-3" />
+            </div>
+            <div className="space-y-3 mb-8">
+              <h2 className="text-[22px] font-semibold text-foreground tracking-tight">
+                Payment Confirmed
+              </h2>
+              <p className="text-[15px] text-muted-foreground leading-relaxed">
+                Your appointment has been successfully paid.
+              </p>
+            </div>
+            <div className="flex justify-center border-t border-border/40 pt-4 -mx-8 -mb-4">
+              <Button
+                variant="ghost"
+                className="text-muted-foreground hover:text-foreground text-sm font-medium gap-1 h-auto py-2"
+                onClick={handleClose}
+              >
+                Done <ChevronRightIcon className="w-4 h-4 ml-1 opacity-70" />
+              </Button>
+            </div>
+          </>
+        )}
+
+        {isFailed && (
+          <>
+            <div className="mx-auto w-14 h-14 text-rose-500 rounded-full flex items-center justify-center border-[3px] border-rose-500 mt-2 mb-6">
+              <X className="w-8 h-8" />
+            </div>
+            <div className="space-y-3 mb-8">
+              <h2 className="text-[22px] font-semibold text-foreground tracking-tight">
+                {timedOut ? "Confirmation Timed Out" : "Payment Failed"}
+              </h2>
+              <p className="text-[15px] text-muted-foreground leading-relaxed">
+                {timedOut
+                  ? "We couldn't confirm your payment in time. Check your transaction history below."
+                  : "Your payment was not successful. Please try again."}
+              </p>
+            </div>
+            <div className="flex justify-center border-t border-border/40 pt-4 -mx-8 -mb-4">
+              <Button
+                variant="ghost"
+                className="text-muted-foreground hover:text-foreground text-sm font-medium gap-1 h-auto py-2"
+                onClick={handleClose}
+              >
+                Close <ChevronRightIcon className="w-4 h-4 ml-1 opacity-70" />
+              </Button>
+            </div>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function PaymentPollModal() {
+  return (
+    <Suspense fallback={null}>
+      <PaymentPollModalInner />
+    </Suspense>
+  );
+}
+
+// ─── Payments page ────────────────────────────────────────────────────────────
+
 export default function PaymentsPage() {
   const router = useRouter();
   const [page, setPage] = useState(0);
@@ -65,6 +221,23 @@ export default function PaymentsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
 
   const { data, isLoading, isError } = useGetMyPaymentHistory(page, PAGE_SIZE);
+
+  const handleDownloadInvoice = async (id: string) => {
+    try {
+      const response = await downloadInvoice(id);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `invoice-${id}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Failed to download invoice:", error);
+      toast.error("Failed to download invoice. Please try again.");
+    }
+  };
 
   const filtered = useMemo(() => {
     if (!data?.content) return [];
@@ -102,6 +275,7 @@ export default function PaymentsPage() {
 
   return (
     <div className="w-full h-full p-6 lg:p-10 space-y-8">
+      <PaymentPollModal />
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h2 className="text-2xl font-bold text-foreground tracking-tight">Recent Transactions</h2>
       </div>
@@ -148,6 +322,7 @@ export default function PaymentsPage() {
                 <TableHead className="text-muted-foreground font-medium py-4">Amount</TableHead>
                 <TableHead className="text-muted-foreground font-medium py-4 hidden md:table-cell">Receipt #</TableHead>
                 <TableHead className="text-muted-foreground font-medium py-4">Status</TableHead>
+                <TableHead className="text-muted-foreground font-medium py-4 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -181,12 +356,12 @@ export default function PaymentsPage() {
                     <Checkbox className="border-border/60 w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity" />
                   </TableCell>
                   <TableCell className="py-4">
-                    <p className="font-semibold text-foreground text-sm">
-                      {tx.appointmentId ? `Appointment #${tx.appointmentId}` : "—"}
+                    <p className="font-semibold text-foreground text-sm" title={tx.appointmentId}>
+                      {tx.appointmentId ? `Appointment #${truncateId(tx.appointmentId)}` : "—"}
                     </p>
                   </TableCell>
-                  <TableCell className="py-4 text-sm font-medium text-foreground">
-                    {tx.orderId ?? tx.id}
+                  <TableCell className="py-4 text-sm font-medium text-foreground" title={tx.orderId ?? tx.id}>
+                    {truncateId(tx.orderId ?? tx.id)}
                   </TableCell>
                   <TableCell className="py-4">
                     <div className="text-sm text-foreground font-medium">{formatDate(tx.createdAt)}</div>
@@ -198,7 +373,7 @@ export default function PaymentsPage() {
                     </span>
                   </TableCell>
                   <TableCell className="py-4 text-xs text-muted-foreground font-mono hidden md:table-cell max-w-45 truncate" title={tx.id}>
-                    {tx.id}
+                    {truncateId(tx.id)}
                   </TableCell>
                   <TableCell className="py-4">
                     <div className="flex flex-col items-start gap-2">
@@ -215,17 +390,25 @@ export default function PaymentsPage() {
                         <Button
                           size="sm"
                           className="h-7 px-3 text-xs gap-1.5"
-                          onClick={() =>
-                            router.push(
-                              `/patient/confirm-order?appointmentId=${tx.appointmentId}&amount=${tx.amount}&currency=${tx.currency}`
-                            )
-                          }
+                          onClick={() => router.push(`/patient/confirm-order?appointmentId=${tx.appointmentId}`)}
                         >
                           <CreditCard className="w-3 h-3" />
                           Complete Payment
                         </Button>
                       )}
                     </div>
+                  </TableCell>
+                  <TableCell className="py-4 text-right">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-primary transition-colors"
+                      disabled={tx.status !== "SUCCESS"}
+                      onClick={() => handleDownloadInvoice(tx.id)}
+                      title="Download Invoice"
+                    >
+                      <FileText className="w-4 h-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}

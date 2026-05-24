@@ -8,40 +8,18 @@ import {
   Activity
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { type AdminAnalysisResponse } from "@/api/aiApi";
-
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-const getMockAdminAnalysis = (query: string): AdminAnalysisResponse => {
-  const normalizedQuery = query.toLowerCase();
-
-  if (normalizedQuery.includes("appointment") && normalizedQuery.includes("analytics")) {
-    return {
-      operational_insight:
-        "Appointment analytics show stronger booking activity in late morning and early evening slots, with moderate no-show patterns in mid-afternoon.",
-      actionable_metrics: [
-        "Peak booking windows: 10 AM-12 PM and 5 PM-7 PM.",
-        "No-show trend is highest for 2 PM-4 PM slots.",
-        "Average appointment completion rate remains stable above target.",
-      ],
-      service_errors: [],
-    };
-  }
-
-  return {
-    operational_insight:
-      "System indicators are stable. No critical operational anomaly detected for the selected query.",
-    actionable_metrics: ["Continue monitoring appointment volume and no-show rates daily."],
-    service_errors: [],
-  };
-};
+import { useAnalyzeAdmin, type AdminAnalysisResponse } from "@/api/aiApi";
 
 export default function AdminDashboardAssistant() {
+  const analyzeAdmin = useAnalyzeAdmin();
+
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
   const [chatActive, setChatActive] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AdminAnalysisResponse | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  const isAnalyzing = analyzeAdmin.isPending;
 
   const handleSubmit = async () => {
     if (!query.trim() || isAnalyzing) return;
@@ -51,16 +29,14 @@ export default function AdminDashboardAssistant() {
     setQuery("");
     setChatActive(true);
     setAnalysisResult(null);
-    setIsAnalyzing(true);
+    setApiError(null);
 
     try {
-      await wait(2000);
-      const result = getMockAdminAnalysis(currentQuery);
+      const result = await analyzeAdmin.mutateAsync({ query: currentQuery });
       setAnalysisResult(result);
     } catch (err) {
       console.error("AI Admin Analysis failed:", err);
-    } finally {
-      setIsAnalyzing(false);
+      setApiError(err instanceof Error ? err.message : "Failed to analyze admin query.");
     }
   };
 
@@ -130,10 +106,17 @@ export default function AdminDashboardAssistant() {
                       </ul>
                     </div>
                   )}
+
+                  {analysisResult.service_errors.length > 0 && (
+                    <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200">
+                      {analysisResult.service_errors.join(" ")}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-red-500">Analysis failed. Please try again.</div>
               )}
+              {apiError && <div className="mt-3 text-red-500">{apiError}</div>}
             </div>
           </div>
         </div>

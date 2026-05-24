@@ -46,7 +46,7 @@ public class PatientServiceClient {
     }
 
     // Download the actual file bytes of a report (for doctor access)
-    public ResponseEntity<byte[]> getPatientReportFile(String patientId, Long reportId) {
+    public ResponseEntity<byte[]> getPatientReportFile(String patientId, String reportId) {
         try {
             return webClientBuilder.build()
                     .get()

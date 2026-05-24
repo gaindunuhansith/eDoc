@@ -22,6 +22,7 @@ export const PATIENT_ENDPOINTS = {
   ADMIN_ALL: "/api/v1/patients/admin/all",
   ADMIN_BY_ID: (id: string) => `/api/v1/patients/admin/${id}`,
   ADMIN_UPDATE_STATUS: (id: string) => `/api/v1/patients/admin/${id}/status`,
+  PRESCRIPTIONS_BY_USER_ID: (userId: string) => `/api/v1/patients/${userId}/prescriptions`,
 } as const;
 
 export const REPORT_ENDPOINTS = {

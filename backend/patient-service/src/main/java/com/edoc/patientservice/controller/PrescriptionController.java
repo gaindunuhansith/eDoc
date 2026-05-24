@@ -6,6 +6,7 @@ import com.edoc.patientservice.service.PrescriptionService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -37,5 +38,13 @@ public class PrescriptionController {
     public List<PrescriptionResponseDTO> getPrescriptionsInternal(@PathVariable UUID id,
                                                                    HttpServletRequest request) {
         return prescriptionService.getPrescriptionsInternal(id, request.getHeader("Authorization"));
+    }
+
+    @GetMapping("/patients/{userId}/prescriptions")
+    @PreAuthorize("hasAnyRole('DOCTOR', 'ADMIN')")
+    // Doctor/admin endpoint to view a specific patient's prescriptions by their user-service UUID.
+    public List<PrescriptionResponseDTO> getPatientPrescriptions(@PathVariable String userId,
+                                                                  HttpServletRequest request) {
+        return prescriptionService.getPrescriptionsForPatient(userId, request.getHeader("Authorization"));
     }
 }

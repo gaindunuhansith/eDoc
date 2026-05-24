@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { 
   Search, 
   ChevronLeft,
@@ -61,6 +62,7 @@ const statusClass: Record<PaymentStatus, string> = {
 };
 
 export default function AdminPaymentsPage() {
+  const router = useRouter();
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -178,7 +180,11 @@ export default function AdminPaymentsPage() {
                 </TableRow>
               )}
               {!isLoading && !isError && filtered.map((tx) => (
-                <TableRow key={tx.id} className="border-border/60 hover:bg-muted/10 transition-colors group">
+                <TableRow
+                  key={tx.id}
+                  className="border-border/60 hover:bg-muted/10 transition-colors group cursor-pointer"
+                  onClick={() => router.push(`/admin/payments/${tx.id}`)}
+                >
                   <TableCell className="text-center px-4">
                     <Checkbox className="border-border/60 w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity" />
                   </TableCell>

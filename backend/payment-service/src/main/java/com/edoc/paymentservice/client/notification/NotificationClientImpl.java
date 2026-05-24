@@ -70,10 +70,13 @@ public class NotificationClientImpl implements NotificationClient {
             log.warn("Notification-service failed for paymentId={}: {}",
                     payment.getId(), ex.getMessage());
 
+            String safeMsg = ex.getMessage() == null ? "" : ex.getMessage()
+                    .replace("\\", "\\\\")
+                    .replace("\"", "\\\"");
             transactionLogRepository.save(PaymentTransactionLog.builder()
                     .payment(payment)
                     .event(PaymentConstants.EVENT_NOTIFICATION_FAILED)
-                    .rawPayload("{\"error\":\"" + ex.getMessage() + "\"}")
+                    .rawPayload("{\"error\":\"" + safeMsg + "\"}")
                     .build());
         }
     }

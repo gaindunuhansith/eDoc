@@ -21,67 +21,41 @@ import {
 } from "lucide-react";
 import { useUser } from "@/store/store";
 import { Button } from "@/components/ui/button";
-import { type PatientAnalysisResponse } from "@/api/aiApi";
-
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-const getMockPatientAnalysis = (symptoms: string): PatientAnalysisResponse => {
-  const normalizedSymptoms = symptoms.toLowerCase();
-
-  if (normalizedSymptoms.includes("cough") || normalizedSymptoms.includes("coughing") || normalizedSymptoms.includes("fever")) {
-    return {
-      analysis:
-        "Your symptoms suggest a likely upper respiratory infection, such as a viral flu-like illness. Please rest, stay hydrated, monitor your temperature, and avoid self-medicating with antibiotics unless prescribed by a doctor.",
-      recommended_actions: [
-        "Take plenty of fluids and rest for 24-48 hours.",
-        "Use paracetamol/acetaminophen for fever as advised by your doctor.",
-        "Track warning signs like breathing difficulty, persistent high fever, or chest pain.",
-      ],
-      recommended_specialty: "General Physician or Pulmonologist",
-      available_doctors: [],
-      service_errors: [],
-    };
-  }
-
-  return {
-    analysis:
-      "Based on the symptoms you shared, this appears non-emergency. Maintain hydration, take adequate rest, and monitor for progression over the next day.",
-    recommended_actions: [
-      "Continue symptom observation and log changes.",
-      "Book an appointment if symptoms worsen or persist for more than 48 hours.",
-    ],
-    recommended_specialty: "General Physician",
-    available_doctors: [],
-    service_errors: [],
-  };
-};
+import { useAnalyzePatient, type PatientAnalysisResponse } from "@/api/aiApi";
+import { useGetMyPatientProfile } from "@/api/patientApi";
 
 export default function PatientDashboardAssistant() {
   const user = useUser();
+  const { data: myPatientProfile } = useGetMyPatientProfile();
+  const analyzePatient = useAnalyzePatient();
+
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
   const [chatActive, setChatActive] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<PatientAnalysisResponse | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  const isAnalyzing = analyzePatient.isPending;
 
   const handleSubmit = async () => {
-    if (!query.trim() || isAnalyzing) return;
+    if (!query.trim() || isAnalyzing || !myPatientProfile?.id) return;
     
     const currentQuery = query;
     setSubmittedQuery(currentQuery);
     setQuery("");
     setChatActive(true);
     setAnalysisResult(null);
-    setIsAnalyzing(true);
+    setApiError(null);
 
     try {
-      await wait(2200);
-      const result = getMockPatientAnalysis(currentQuery);
+      const result = await analyzePatient.mutateAsync({
+        patient_id: myPatientProfile.id,
+        symptoms: currentQuery,
+      });
       setAnalysisResult(result);
     } catch (err) {
       console.error("AI Analysis failed:", err);
-    } finally {
-      setIsAnalyzing(false);
+      setApiError(err instanceof Error ? err.message : "Failed to analyze symptoms.");
     }
   };
 
@@ -182,10 +156,32 @@ export default function PatientDashboardAssistant() {
                       <p className="text-sm text-muted-foreground">Based on your shared symptoms.</p>
                     </div>
                   )}
+
+                  {analysisResult.available_doctors.length > 0 && (
+                    <div>
+                      <p className="font-semibold mb-2">Available Doctors</p>
+                      <ul className="list-disc pl-5 space-y-1">
+                        {analysisResult.available_doctors.map((doctor: any, i) => (
+                          <li key={doctor?.id ?? i}>
+                            {[doctor?.firstName, doctor?.lastName].filter(Boolean).join(" ") || "Doctor"}
+                            {doctor?.specialty ? ` - ${doctor.specialty}` : ""}
+                            {doctor?.hospital ? ` (${doctor.hospital})` : ""}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {analysisResult.service_errors.length > 0 && (
+                    <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200">
+                      {analysisResult.service_errors.join(" ")}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-red-500 font-medium">Something went wrong with the analysis. Please try again.</div>
               )}
+              {apiError && <div className="mt-3 text-red-500 font-medium">{apiError}</div>}
             </div>
           </div>
         </div>
@@ -208,7 +204,7 @@ export default function PatientDashboardAssistant() {
               <div className="flex items-center gap-1.5">
                 <Button 
                   onClick={handleSubmit}
-                  disabled={isAnalyzing}
+                  disabled={isAnalyzing || !myPatientProfile?.id}
                   variant="secondary" 
                   size="sm" 
                   className="rounded-full bg-[#f0f6ff] dark:bg-blue-900/10 text-[#5c8aff] dark:text-blue-400 border border-[#e6efff] dark:border-blue-900/20 hover:bg-[#e6efff] dark:hover:bg-blue-900/30 gap-2 h-9 px-3.5 font-medium shadow-sm transition-colors"
@@ -216,6 +212,11 @@ export default function PatientDashboardAssistant() {
                   <Sparkles size={16} />
                   Analyze Symptoms
                 </Button>
+                {!myPatientProfile?.id && (
+                  <span className="text-xs text-amber-700 dark:text-amber-300">
+                    Complete your patient profile to use AI symptom analysis.
+                  </span>
+                )}
                 <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground">
                   <ImageIcon size={18} strokeWidth={1.5} />
                 </Button>

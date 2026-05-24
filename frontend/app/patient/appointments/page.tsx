@@ -4,7 +4,7 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { 
   CalendarDays, Clock, Building2, Video, 
-  XCircle, Trash2, Edit 
+  XCircle, Trash2, Edit, CreditCard 
 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -25,6 +25,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 
 import { useGetMyPatientProfile } from "@/api/patientApi";
+import { useStore } from "@/store/store";
 import {
   useGetAppointmentsByPatient,
   useCancelAppointment,
@@ -110,6 +111,7 @@ export default function AppointmentsHistoryPage() {
   const [deleteTarget, setDeleteTarget] = useState<Appointment | null>(null);
   const [modifyTarget, setModifyTarget] = useState<Appointment | null>(null);
 
+  const user = useStore((s) => s.user);
   const { data: patient, isLoading: patientLoading } = useGetMyPatientProfile();
   const patientId = patient?.id ? String(patient.id) : "";
 
@@ -175,6 +177,10 @@ export default function AppointmentsHistoryPage() {
         },
       }
     );
+  };
+
+  const handleProceedToPay = (appt: Appointment) => {
+    router.push(`/patient/confirm-order?appointmentId=${appt.id}`);
   };
 
   const handleModify = (apptId: string) => {
@@ -302,6 +308,15 @@ export default function AppointmentsHistoryPage() {
                 </CardContent>
 
                 <CardFooter className="p-4 border-t bg-gray-50 flex gap-3 flex-wrap">
+                  {appt.status === "CONFIRMED" && (appt.paymentStatus === "PENDING" || appt.paymentStatus === "FAILED") && (
+                    <Button
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                      onClick={() => handleProceedToPay(appt)}
+                    >
+                      <CreditCard className="w-4 h-4 mr-2" /> Proceed to Pay
+                    </Button>
+                  )}
+
                   {appt.status === "PENDING" && (
                     <div className="grid grid-cols-2 gap-3 w-full">
                       <Button 
