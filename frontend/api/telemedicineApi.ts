@@ -99,7 +99,7 @@ export const checkTelemedicineAccess = () => {
   if (!user) {
     throw new AuthenticationError();
   }
-  if (!["PATIENT", "DOCTOR"].includes(user.role)) {
+  if (!["PATIENT", "DOCTOR", "ADMIN"].includes(user.role)) {
     throw new AuthorizationError();
   }
   return user;

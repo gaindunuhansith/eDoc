@@ -6,19 +6,20 @@ import com.edoc.telemedicineservice.dto.SessionTokenResponse;
 import com.edoc.telemedicineservice.model.SessionStatus;
 import com.edoc.telemedicineservice.model.VideoSession;
 import com.edoc.telemedicineservice.repository.VideoSessionRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
-import com.twilio.exception.TwilioException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
@@ -26,27 +27,15 @@ import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class TelemedicineService {
-
-    private static final Logger logger = LoggerFactory.getLogger(TelemedicineService.class);
 
     private final VideoSessionRepository sessionRepository;
     private final TwilioService twilioService;
     private final AppointmentServiceClient appointmentClient;
     private final NotificationServiceClient notificationClient;
     private final SimpMessagingTemplate messagingTemplate;
-
-    public TelemedicineService(VideoSessionRepository sessionRepository,
-                             TwilioService twilioService,
-                             AppointmentServiceClient appointmentClient,
-                             NotificationServiceClient notificationClient,
-                             SimpMessagingTemplate messagingTemplate) {
-        this.sessionRepository = sessionRepository;
-        this.twilioService = twilioService;
-        this.appointmentClient = appointmentClient;
-        this.notificationClient = notificationClient;
-        this.messagingTemplate = messagingTemplate;
-    }
 
     public VideoSession createSession(String appointmentId,
                                       String doctorId,
@@ -74,16 +63,12 @@ public class TelemedicineService {
         }
 
         String roomName = "appointment-" + appointmentId;
-        String roomSid = null;
-        try {
-            roomSid = twilioService.createRoom(roomName);
-        } catch (TwilioException e) {
-            // Twilio GO rooms auto-create when the first participant connects using a valid token.
-            // Log the warning but do not block session creation — the room will be provisioned on join.
-            logger.warn("Twilio room pre-creation failed for appointment {} (will auto-create on join): {}", appointmentId, e.getMessage());
-        }
+        String roomSid = twilioService.createRoom(roomName);
 
-        VideoSession session = new VideoSession(appointmentId, doctorId, patientId);
+        VideoSession session = new VideoSession();
+        session.setAppointmentId(appointmentId);
+        session.setDoctorId(doctorId);
+        session.setPatientId(patientId);
         session.setRoomName(roomName);
         session.setTwilioRoomSid(roomSid);
         session.setStatus(SessionStatus.SCHEDULED);
@@ -149,8 +134,11 @@ public class TelemedicineService {
         VideoSession savedSession = sessionRepository.save(session);
 
         // Send WebSocket notification
-        messagingTemplate.convertAndSend("/topic/telemedicine/session/" + appointmentId,
-            "{\"type\": \"SESSION_STARTED\", \"appointmentId\": \"" + appointmentId + "\", \"roomName\": \"appointment-" + appointmentId + "\"}");
+        Map<String, String> startMsg = new LinkedHashMap<>();
+        startMsg.put("type", "SESSION_STARTED");
+        startMsg.put("appointmentId", appointmentId);
+        startMsg.put("roomName", savedSession.getRoomName());
+        messagingTemplate.convertAndSend("/topic/telemedicine/session/" + appointmentId, startMsg);
 
         try {
             AppointmentServiceClient.AppointmentDTO appointment = appointmentClient.getAppointment(appointmentId, authorizationHeader);
@@ -182,8 +170,10 @@ public class TelemedicineService {
         VideoSession savedSession = sessionRepository.save(session);
 
         // Send WebSocket notification
-        messagingTemplate.convertAndSend("/topic/telemedicine/session/" + appointmentId,
-            "{\"type\": \"SESSION_ENDED\", \"appointmentId\": \"" + appointmentId + "\"}");
+        Map<String, String> endMsg = new LinkedHashMap<>();
+        endMsg.put("type", "SESSION_ENDED");
+        endMsg.put("appointmentId", appointmentId);
+        messagingTemplate.convertAndSend("/topic/telemedicine/session/" + appointmentId, endMsg);
 
         try {
             appointmentClient.updateAppointmentStatus(appointmentId,
@@ -191,7 +181,7 @@ public class TelemedicineService {
                     AppointmentServiceClient.AppointmentStatus.COMPLETED,
                     "Telemedicine session completed successfully"), authorizationHeader);
         } catch (Exception ex) {
-            logger.warn("Failed to update appointment status to COMPLETED for appointmentId={}: {}",
+            log.warn("Failed to update appointment status to COMPLETED for appointmentId={}: {}",
                     appointmentId, ex.getMessage());
         }
 
@@ -225,7 +215,10 @@ public class TelemedicineService {
             return;
         }
 
-        if (!"DOCTOR".equals(role) && !"PATIENT".equals(role)) {
+        boolean allowed = ("DOCTOR".equals(role) && requesterId.equals(session.getDoctorId()))
+                || ("PATIENT".equals(role) && requesterId.equals(session.getPatientId()));
+
+        if (!allowed) {
             throw new ResponseStatusException(FORBIDDEN, "You are not authorized for this telemedicine session");
         }
     }
@@ -236,7 +229,7 @@ public class TelemedicineService {
             return;
         }
 
-        if (!"DOCTOR".equals(role)) {
+        if (!"DOCTOR".equals(role) || !requesterId.equals(doctorId)) {
             throw new ResponseStatusException(FORBIDDEN, "Only the assigned doctor can perform this action");
         }
     }

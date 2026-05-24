@@ -81,8 +81,8 @@ export function WaitingRoom({
       }
 
       const constraints = {
-        video: cameraEnabled ? { deviceId: selectedCamera ? { exact: selectedCamera } : undefined } : false,
-        audio: micEnabled ? { deviceId: selectedMic ? { exact: selectedMic } : undefined } : false,
+        video: cameraEnabled ? { deviceId: selectedCamera ? { ideal: selectedCamera } : undefined } : false,
+        audio: micEnabled ? { deviceId: selectedMic ? { ideal: selectedMic } : undefined } : false,
       };
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints);

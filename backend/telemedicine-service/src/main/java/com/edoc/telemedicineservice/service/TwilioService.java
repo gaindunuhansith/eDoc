@@ -1,15 +1,17 @@
 package com.edoc.telemedicineservice.service;
 
 import com.twilio.Twilio;
+import com.twilio.exception.TwilioException;
 import com.twilio.jwt.accesstoken.AccessToken;
 import com.twilio.jwt.accesstoken.VideoGrant;
 import com.twilio.rest.video.v1.Room;
-import com.twilio.exception.TwilioException;
 import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class TwilioService {
 
     @Value("${telemedicine.twilio.account-sid}")
@@ -28,42 +30,41 @@ public class TwilioService {
     public void init() {
         if (hasText(accountSid) && hasText(authToken)) {
             Twilio.init(accountSid, authToken);
+            log.info("Twilio initialized successfully");
+        } else {
+            log.warn("Twilio credentials not configured — running in local/mock mode");
         }
     }
 
     public String createRoom(String roomName) {
         if (!hasBaseCredentials()) {
+            log.debug("No Twilio credentials — returning local room for: {}", roomName);
             return "local-room-" + roomName;
         }
         try {
             Room room = Room.creator()
                     .setUniqueName(roomName)
-                    .setType(Room.RoomType.GO)
+                    .setType(Room.RoomType.GROUP)
                     .create();
             return room.getSid();
-        } catch (com.twilio.exception.ApiException e) {
-            if (e.getCode() == 53113) {
-                // Room with this unique name already in-progress — fetch existing SID
-                Room existing = Room.fetcher(roomName).fetch();
-                return existing.getSid();
-            }
-            throw e;
+        } catch (TwilioException e) {
+            log.warn("Room '{}' may already exist, fetching existing: {}", roomName, e.getMessage());
+            Room room = Room.fetcher(roomName).fetch();
+            return room.getSid();
         }
     }
 
     public String generateToken(String roomName, String identity) {
         if (!hasTokenCredentials()) {
+            log.debug("No Twilio token credentials — returning local token for identity: {}", identity);
             return "local-token-" + identity + "-" + roomName;
         }
 
         VideoGrant grant = new VideoGrant().setRoom(roomName);
-
-        AccessToken token = new AccessToken.Builder(
-                accountSid,
-                apiKeySid,
-                apiSecret
-        ).identity(identity).grant(grant).build();
-
+        AccessToken token = new AccessToken.Builder(accountSid, apiKeySid, apiSecret)
+                .identity(identity)
+                .grant(grant)
+                .build();
         return token.toJwt();
     }
 

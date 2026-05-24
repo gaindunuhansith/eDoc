@@ -68,7 +68,7 @@ export default function PatientTelemedicinePage() {
             </p>
           </div>
           <div className="flex gap-3">
-            <Button variant="outline" className="flex items-center gap-2">
+            <Button variant="outline" className="flex items-center gap-2" onClick={() => router.push('/patient/appointments')}>
               <Calendar className="h-4 w-4" />
               Schedule New
             </Button>
@@ -146,9 +146,7 @@ export default function PatientTelemedicinePage() {
                       session={session}
                       userRole="patient"
                       onJoinCall={() => router.push(`/patient/telemedicine/session/${session.appointmentId}`)}
-                      onViewDetails={() => {
-                        console.log("View details for session:", session.id);
-                      }}
+                      onViewDetails={() => router.push(`/patient/telemedicine/session/${session.appointmentId}`)}
                     />
                   ))
                 ) : (
@@ -174,10 +172,7 @@ export default function PatientTelemedicinePage() {
                       key={session.id}
                       session={session}
                       userRole="patient"
-                      onViewDetails={() => {
-                        console.log("View details for session:", session.id);
-                      }}
-                      onJoinCall={undefined} // Completed sessions can't be joined
+                      onViewDetails={() => router.push(`/patient/telemedicine/session/${session.appointmentId}`)}
                     />
                   ))
                 ) : (
@@ -200,10 +195,7 @@ export default function PatientTelemedicinePage() {
                       key={session.id}
                       session={session}
                       userRole="patient"
-                      onViewDetails={() => {
-                        console.log("View details for session:", session.id);
-                      }}
-                      onJoinCall={undefined} // Cancelled sessions can't be joined
+                      onViewDetails={() => router.push(`/patient/telemedicine/session/${session.appointmentId}`)}
                     />
                   ))
                 ) : (

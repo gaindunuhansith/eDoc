@@ -51,13 +51,14 @@ export default function PatientSessionPage() {
   useEffect(() => {
     if (!appointmentId) return;
     let connected = false;
+    const subscriptionRef = { current: null as { unsubscribe: () => void } | null };
 
     const connect = async () => {
       try {
         const token = localStorage.getItem("token");
         await telemedicineWebSocket.connect(token || undefined);
         connected = true;
-        telemedicineWebSocket.subscribeToSession(appointmentId, (msg) => {
+        const sub = telemedicineWebSocket.subscribeToSession(appointmentId, (msg) => {
           if (msg.type === "SESSION_STARTED") {
             toast.success("Doctor has started the session! You can now join.");
             refetch();
@@ -67,6 +68,7 @@ export default function PatientSessionPage() {
             refetch();
           }
         });
+        if (sub) subscriptionRef.current = sub;
       } catch {
         // non-critical
       }
@@ -74,9 +76,20 @@ export default function PatientSessionPage() {
 
     connect();
     return () => {
+      // Unsubscribe from this session's topic without killing the shared connection
+      subscriptionRef.current?.unsubscribe();
+      subscriptionRef.current = null;
       if (connected) telemedicineWebSocket.disconnect();
     };
   }, [appointmentId]);
+
+  // Polling fallback: refetch every 15 s while waiting for the doctor to start.
+  // This covers cases where the WebSocket connection is unavailable.
+  useEffect(() => {
+    if (session?.status !== "SCHEDULED" || isInCall) return;
+    const interval = setInterval(() => refetch(), 15000);
+    return () => clearInterval(interval);
+  }, [session?.status, isInCall, refetch]);
 
   const handleJoinCall = () => {
     if (!tokenData) {
@@ -220,26 +233,13 @@ export default function PatientSessionPage() {
 
       {/* Session is active — show waiting room to preview camera before joining */}
       {!isEnded && session.status === "ACTIVE" && !isInCall && (
-        <>
-          <WaitingRoom
-            appointmentId={appointmentId}
-            doctorName={session.doctorName}
-            patientName={session.patientName}
-            onJoinCall={handleJoinCall}
-            isLoading={tokenLoading}
-          />
-          <div className="flex justify-center">
-            <Button
-              size="lg"
-              className="bg-indigo-600 hover:bg-indigo-700 min-w-48 shadow-md"
-              onClick={handleJoinCall}
-              disabled={tokenLoading || !tokenData}
-            >
-              <Video className="h-5 w-5 mr-2" />
-              {tokenLoading ? "Loading..." : "Join Session"}
-            </Button>
-          </div>
-        </>
+        <WaitingRoom
+          appointmentId={appointmentId}
+          doctorName={session.doctorName}
+          patientName={session.patientName}
+          onJoinCall={handleJoinCall}
+          isLoading={tokenLoading}
+        />
       )}
     </div>
   );
