@@ -4,6 +4,7 @@ import com.edoc.feedbackservice.client.AppointmentServiceClient;
 import com.edoc.feedbackservice.client.DoctorServiceClient;
 import com.edoc.feedbackservice.client.NotificationServiceClient;
 import com.edoc.feedbackservice.client.PatientServiceClient;
+import com.edoc.feedbackservice.client.UserServiceClient;
 import com.edoc.feedbackservice.dto.FeedbackRequestDTO;
 import com.edoc.feedbackservice.dto.FeedbackResponseDTO;
 import com.edoc.feedbackservice.dto.UpdateFeedbackRequestDTO;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,19 +35,22 @@ public class FeedbackService {
     private final NotificationServiceClient notificationServiceClient;
     private final PatientServiceClient patientServiceClient;
     private final DoctorServiceClient doctorServiceClient;
+    private final UserServiceClient userServiceClient;
 
     @Autowired
     public FeedbackService(FeedbackRepository feedbackRepository, FeedbackMapper feedbackMapper,
                           AppointmentServiceClient appointmentServiceClient,
                           NotificationServiceClient notificationServiceClient,
                           PatientServiceClient patientServiceClient,
-                          DoctorServiceClient doctorServiceClient) {
+                          DoctorServiceClient doctorServiceClient,
+                          UserServiceClient userServiceClient) {
         this.feedbackRepository = feedbackRepository;
         this.feedbackMapper = feedbackMapper;
         this.appointmentServiceClient = appointmentServiceClient;
         this.notificationServiceClient = notificationServiceClient;
         this.patientServiceClient = patientServiceClient;
         this.doctorServiceClient = doctorServiceClient;
+        this.userServiceClient = userServiceClient;
     }
 
     @Transactional
@@ -113,11 +118,13 @@ public class FeedbackService {
         }
     }
 
-    public List<FeedbackResponseDTO> getAllFeedback() {
-        return feedbackRepository.findAll()
+    public List<FeedbackResponseDTO> getAllFeedback(String authHeader) {
+        List<FeedbackResponseDTO> feedbacks = feedbackRepository.findAll()
                 .stream()
                 .map(feedbackMapper::toResponseDTO)
                 .collect(Collectors.toList());
+        enrichPatientNames(feedbacks, authHeader);
+        return feedbacks;
     }
 
     public List<FeedbackResponseDTO> getFeedbackForDoctor(String doctorId) {
@@ -132,7 +139,9 @@ public class FeedbackService {
         if (doctor == null || doctor.getId() == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authenticated doctor profile not found");
         }
-        return getFeedbackForDoctor(doctor.getId());
+        List<FeedbackResponseDTO> feedbacks = getFeedbackForDoctor(doctor.getId());
+        enrichPatientNames(feedbacks, authHeader);
+        return feedbacks;
     }
 
     public List<FeedbackResponseDTO> getFeedbackForPatient(UUID patientId) {
@@ -143,7 +152,16 @@ public class FeedbackService {
     }
 
     public List<FeedbackResponseDTO> getFeedbackForCurrentPatient(String authHeader) {
-        return getFeedbackForPatient(resolveCurrentPatientId(authHeader));
+        List<FeedbackResponseDTO> feedbacks = getFeedbackForPatient(resolveCurrentPatientId(authHeader));
+        feedbacks.forEach(dto -> {
+            try {
+                DoctorServiceClient.DoctorDTO doctor = doctorServiceClient.getDoctorById(dto.getDoctorId(), authHeader);
+                if (doctor != null) dto.setDoctorName(doctor.getFullName());
+            } catch (Exception ignored) {
+                // non-critical – leave doctorName null if lookup fails
+            }
+        });
+        return feedbacks;
     }
 
     public List<FeedbackResponseDTO> getFeedbackForAppointment(String appointmentId) {
@@ -157,6 +175,36 @@ public class FeedbackService {
         Feedback feedback = feedbackRepository.findById(id)
                 .orElseThrow(() -> new FeedbackNotFoundException("Feedback not found"));
         return feedbackMapper.toResponseDTO(feedback);
+    }
+
+    /**
+     * Resolves patient names for a list of feedback DTOs.
+     * For each feedback, looks up the patient's userId from patient-service,
+     * then batch-fetches names from user-service.
+     */
+    private void enrichPatientNames(List<FeedbackResponseDTO> feedbacks, String authHeader) {
+        Map<UUID, String> patientIdToUserId = new HashMap<>();
+        feedbacks.forEach(dto -> {
+            try {
+                PatientServiceClient.PatientDTO patient = patientServiceClient.getPatientById(dto.getPatientId(), authHeader);
+                if (patient != null && patient.getUserId() != null) {
+                    patientIdToUserId.put(dto.getPatientId(), patient.getUserId());
+                }
+            } catch (Exception ignored) {
+                // non-critical – leave patientName null if lookup fails
+            }
+        });
+
+        if (!patientIdToUserId.isEmpty()) {
+            Map<String, String> userNames = userServiceClient.getUserNames(
+                    new ArrayList<>(patientIdToUserId.values()), authHeader);
+            feedbacks.forEach(dto -> {
+                String userId = patientIdToUserId.get(dto.getPatientId());
+                if (userId != null) {
+                    dto.setPatientName(userNames.get(userId));
+                }
+            });
+        }
     }
 
     @Transactional

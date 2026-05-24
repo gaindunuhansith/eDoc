@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +11,7 @@ import { Video, Calendar, Clock, CheckCircle, AlertCircle } from "lucide-react";
 import { useGetSessions } from "@/api/telemedicineApi";
 
 export default function PatientTelemedicinePage() {
+  const router = useRouter();
   const { data: sessions = [], isLoading, error } = useGetSessions();
   const [activeTab, setActiveTab] = useState("upcoming");
 
@@ -27,7 +29,9 @@ export default function PatientTelemedicinePage() {
     notes: session.notes,
   }));
 
-  const upcomingSessions = transformedSessions.filter(session => session.status === "scheduled");
+  const upcomingSessions = transformedSessions.filter(session =>
+    session.status === "scheduled" || session.status === "active"
+  );
   const completedSessions = transformedSessions.filter(session => session.status === "ended");
   const cancelledSessions = transformedSessions.filter(session => session.status === "cancelled");
 
@@ -64,7 +68,7 @@ export default function PatientTelemedicinePage() {
             </p>
           </div>
           <div className="flex gap-3">
-            <Button variant="outline" className="flex items-center gap-2">
+            <Button variant="outline" className="flex items-center gap-2" onClick={() => router.push('/patient/appointments')}>
               <Calendar className="h-4 w-4" />
               Schedule New
             </Button>
@@ -141,14 +145,8 @@ export default function PatientTelemedicinePage() {
                       key={session.id}
                       session={session}
                       userRole="patient"
-                      onJoinCall={() => {
-                        // Navigate to video call page
-                        window.location.href = `/patient/telemedicine/session/${session.appointmentId}`;
-                      }}
-                      onViewDetails={() => {
-                        // Show session details modal
-                        console.log("View details for session:", session.id);
-                      }}
+                      onJoinCall={() => router.push(`/patient/telemedicine/session/${session.appointmentId}`)}
+                      onViewDetails={() => router.push(`/patient/telemedicine/session/${session.appointmentId}`)}
                     />
                   ))
                 ) : (
@@ -174,10 +172,7 @@ export default function PatientTelemedicinePage() {
                       key={session.id}
                       session={session}
                       userRole="patient"
-                      onViewDetails={() => {
-                        console.log("View details for session:", session.id);
-                      }}
-                      onJoinCall={undefined} // Completed sessions can't be joined
+                      onViewDetails={() => router.push(`/patient/telemedicine/session/${session.appointmentId}`)}
                     />
                   ))
                 ) : (
@@ -200,10 +195,7 @@ export default function PatientTelemedicinePage() {
                       key={session.id}
                       session={session}
                       userRole="patient"
-                      onViewDetails={() => {
-                        console.log("View details for session:", session.id);
-                      }}
-                      onJoinCall={undefined} // Cancelled sessions can't be joined
+                      onViewDetails={() => router.push(`/patient/telemedicine/session/${session.appointmentId}`)}
                     />
                   ))
                 ) : (

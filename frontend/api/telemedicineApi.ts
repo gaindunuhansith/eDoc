@@ -99,7 +99,7 @@ export const checkTelemedicineAccess = () => {
   if (!user) {
     throw new AuthenticationError();
   }
-  if (!["PATIENT", "DOCTOR"].includes(user.role)) {
+  if (!["PATIENT", "DOCTOR", "ADMIN"].includes(user.role)) {
     throw new AuthorizationError();
   }
   return user;
@@ -138,9 +138,51 @@ export const handleTelemedicineError = (error: unknown, context: string): Teleme
           "SERVER_ERROR",
           status
         );
+      case 503:
+        return new TelemedicineError(
+          (data as any)?.message || "Video service is temporarily unavailable. Please try again later.",
+          "SERVICE_UNAVAILABLE",
+          status
+        );
       default:
         return new TelemedicineError(
           (data as any)?.message || `Request failed with status ${status}`,
+          "API_ERROR",
+          status,
+          error
+        );
+    }
+  }
+
+  // Handle errors already transformed by the axios interceptor (plain Error with .status)
+  if (error instanceof Error && typeof (error as any).status === "number") {
+    const status = (error as any).status as number;
+    switch (status) {
+      case 401:
+        return new AuthenticationError();
+      case 403:
+        return new AuthorizationError();
+      case 404:
+        return new SessionNotFoundError("unknown");
+      case 409:
+        return error.message.includes("already active")
+          ? new SessionAlreadyActiveError("unknown")
+          : new TelemedicineError(error.message || "Conflict error", "CONFLICT", status);
+      case 503:
+        return new TelemedicineError(
+          error.message || "Video service is temporarily unavailable. Please try again later.",
+          "SERVICE_UNAVAILABLE",
+          status
+        );
+      case 500:
+        return new TelemedicineError(
+          "Server error occurred. Please try again later.",
+          "SERVER_ERROR",
+          status
+        );
+      default:
+        return new TelemedicineError(
+          error.message || `Request failed with status ${status}`,
           "API_ERROR",
           status,
           error
@@ -188,6 +230,12 @@ export const showTelemedicineErrorToast = (error: TelemedicineError) => {
     case "SERVER_ERROR":
       title = "Server Error";
       description = "Our servers are experiencing issues. Please try again later.";
+      break;
+    case "SERVICE_UNAVAILABLE":
+      title = "Video Service Unavailable";
+      description = error.message?.startsWith("Failed to create")
+        ? error.message
+        : "The video service is temporarily unavailable. Please try again in a moment.";
       break;
     default:
       title = "Something went wrong";
@@ -341,7 +389,7 @@ export const useGetSessionByAppointmentId = (appointmentId: string) =>
     staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 5 * 60 * 1000, // 5 minutes
     retry: (failureCount, error) => {
-      if (error instanceof AuthenticationError || error instanceof AuthorizationError) {
+      if (error instanceof AuthenticationError || error instanceof AuthorizationError || error instanceof SessionNotFoundError) {
         return false;
       }
       return failureCount < 3;
@@ -358,7 +406,7 @@ export const useGetSessionToken = (appointmentId: string) => {
     staleTime: 1 * 60 * 1000, // 1 minute - tokens expire quickly
     gcTime: 2 * 60 * 1000, // 2 minutes
     retry: (failureCount, error) => {
-      if (error instanceof AuthenticationError || error instanceof AuthorizationError) {
+      if (error instanceof AuthenticationError || error instanceof AuthorizationError || error instanceof SessionNotFoundError) {
         return false;
       }
       return failureCount < 2; // Fewer retries for tokens
@@ -376,7 +424,6 @@ export const useCreateSession = () => {
       qc.invalidateQueries({ queryKey: queryKeys.telemedicine.sessions() });
       // Set the new session in cache for immediate UI update
       qc.setQueryData(queryKeys.telemedicine.session(data.data.appointmentId), data.data);
-      showTelemedicineSuccessToast("Session Created", "Your telemedicine session has been scheduled successfully.");
     },
     onError: (error) => {
       if (error instanceof TelemedicineError) {

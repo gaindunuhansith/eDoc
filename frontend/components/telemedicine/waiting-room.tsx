@@ -59,10 +59,10 @@ export function WaitingRoom({
       const mics = deviceList.filter(device => device.kind === 'audioinput');
 
       if (cameras.length > 0) {
-        setSelectedCamera(cameras[0].deviceId);
+        setSelectedCamera(cameras[0].deviceId || 'camera-0');
       }
       if (mics.length > 0) {
-        setSelectedMic(mics[0].deviceId);
+        setSelectedMic(mics[0].deviceId || 'mic-0');
       }
 
       setDeviceCheckComplete(true);
@@ -81,8 +81,8 @@ export function WaitingRoom({
       }
 
       const constraints = {
-        video: cameraEnabled ? { deviceId: selectedCamera ? { exact: selectedCamera } : undefined } : false,
-        audio: micEnabled ? { deviceId: selectedMic ? { exact: selectedMic } : undefined } : false,
+        video: cameraEnabled ? { deviceId: selectedCamera ? { ideal: selectedCamera } : undefined } : false,
+        audio: micEnabled ? { deviceId: selectedMic ? { ideal: selectedMic } : undefined } : false,
       };
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -201,9 +201,9 @@ export function WaitingRoom({
                         <SelectValue placeholder="Select camera" />
                       </SelectTrigger>
                       <SelectContent>
-                        {cameras.map((camera) => (
-                          <SelectItem key={camera.deviceId} value={camera.deviceId}>
-                            {camera.label || `Camera ${camera.deviceId.slice(0, 8)}`}
+                        {cameras.map((camera, idx) => (
+                          <SelectItem key={camera.deviceId || `camera-${idx}`} value={camera.deviceId || `camera-${idx}`}>
+                            {camera.label || `Camera ${idx + 1}`}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -217,9 +217,9 @@ export function WaitingRoom({
                         <SelectValue placeholder="Select microphone" />
                       </SelectTrigger>
                       <SelectContent>
-                        {microphones.map((mic) => (
-                          <SelectItem key={mic.deviceId} value={mic.deviceId}>
-                            {mic.label || `Microphone ${mic.deviceId.slice(0, 8)}`}
+                        {microphones.map((mic, idx) => (
+                          <SelectItem key={mic.deviceId || `mic-${idx}`} value={mic.deviceId || `mic-${idx}`}>
+                            {mic.label || `Microphone ${idx + 1}`}
                           </SelectItem>
                         ))}
                       </SelectContent>

@@ -36,13 +36,6 @@ interface ParticipantInfo {
   isLocal: boolean;
 }
 
-interface ParticipantInfo {
-  identity: string;
-  videoTrack?: any;
-  audioTrack?: any;
-  isLocal: boolean;
-}
-
 export function VideoCall({ token, roomName, appointmentId, onLeaveCall, userName }: VideoCallProps) {
   const [room, setRoom] = useState<Room | null>(null);
   const [participants, setParticipants] = useState<ParticipantInfo[]>([]);
@@ -55,6 +48,9 @@ export function VideoCall({ token, roomName, appointmentId, onLeaveCall, userNam
 
   const localVideoRef = useRef<HTMLDivElement>(null);
   const remoteVideosRef = useRef<HTMLDivElement>(null);
+  // Use a ref to hold the room so the cleanup closure always has the latest value
+  const roomRef = useRef<Room | null>(null);
+  const wsSubscriptionRef = useRef<{ unsubscribe: () => void } | null>(null);
   const user = useStore.getState().user;
 
   useEffect(() => {
@@ -62,9 +58,15 @@ export function VideoCall({ token, roomName, appointmentId, onLeaveCall, userNam
     connectWebSocket();
 
     return () => {
-      if (room) {
-        room.disconnect();
+      // Unsubscribe from session topic first
+      wsSubscriptionRef.current?.unsubscribe();
+      wsSubscriptionRef.current = null;
+      // Disconnect Twilio room using the ref (not stale state)
+      if (roomRef.current) {
+        roomRef.current.disconnect();
+        roomRef.current = null;
       }
+      // Ref-counted: only truly disconnects when no other consumers remain
       telemedicineWebSocket.disconnect();
     };
   }, [token, roomName, appointmentId]);
@@ -75,15 +77,16 @@ export function VideoCall({ token, roomName, appointmentId, onLeaveCall, userNam
       await telemedicineWebSocket.connect(authToken || undefined);
       setWebSocketConnected(true);
 
-      // Subscribe to session messages
-      telemedicineWebSocket.subscribeToSession(appointmentId, handleWebSocketMessage);
+      // Subscribe to session messages and store subscription for cleanup
+      const sub = telemedicineWebSocket.subscribeToSession(appointmentId, handleWebSocketMessage);
+      if (sub) wsSubscriptionRef.current = sub;
 
       // Join the session
       if (user?.userId) {
         telemedicineWebSocket.joinSession(appointmentId, user.userId);
       }
 
-      // Start health checks for connection monitoring
+      // Start health checks — idempotent, won't stack intervals
       telemedicineWebSocket.startHealthChecks();
 
     } catch (error) {
@@ -127,6 +130,7 @@ export function VideoCall({ token, roomName, appointmentId, onLeaveCall, userNam
       });
 
       setRoom(connectedRoom);
+      roomRef.current = connectedRoom;
       setIsConnected(true);
 
       // Handle local participant
@@ -293,8 +297,9 @@ export function VideoCall({ token, roomName, appointmentId, onLeaveCall, userNam
   };
 
   const leaveCall = () => {
-    if (room) {
-      room.disconnect();
+    if (roomRef.current) {
+      roomRef.current.disconnect();
+      roomRef.current = null;
     }
 
     // Leave WebSocket session

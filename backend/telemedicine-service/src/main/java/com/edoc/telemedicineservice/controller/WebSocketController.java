@@ -20,20 +20,12 @@ public class WebSocketController {
     @MessageMapping("/telemedicine/session/{appointmentId}/join")
     @SendTo("/topic/telemedicine/session/{appointmentId}")
     public String joinSession(@DestinationVariable String appointmentId, @Payload String userId) {
-        // Notify all subscribers that a user joined the session
-        messagingTemplate.convertAndSend("/topic/telemedicine/session/" + appointmentId,
-            "{\"type\": \"PARTICIPANT_JOINED\", \"userId\": \"" + userId + "\", \"appointmentId\": \"" + appointmentId + "\"}");
-
         return "{\"type\": \"PARTICIPANT_JOINED\", \"userId\": \"" + userId + "\", \"appointmentId\": \"" + appointmentId + "\"}";
     }
 
     @MessageMapping("/telemedicine/session/{appointmentId}/leave")
     @SendTo("/topic/telemedicine/session/{appointmentId}")
     public String leaveSession(@DestinationVariable String appointmentId, @Payload String userId) {
-        // Notify all subscribers that a user left the session
-        messagingTemplate.convertAndSend("/topic/telemedicine/session/" + appointmentId,
-            "{\"type\": \"PARTICIPANT_LEFT\", \"userId\": \"" + userId + "\", \"appointmentId\": \"" + appointmentId + "\"}");
-
         return "{\"type\": \"PARTICIPANT_LEFT\", \"userId\": \"" + userId + "\", \"appointmentId\": \"" + appointmentId + "\"}";
     }
 

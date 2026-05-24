@@ -1,129 +1,84 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SessionCard } from "@/components/telemedicine";
 import {
   Video,
-  Calendar,
   Clock,
   CheckCircle,
   AlertCircle,
   Users,
   Search,
-  Filter,
   BarChart3,
   Activity,
   Monitor
 } from "lucide-react";
-
-// Mock data - replace with actual API calls
-const mockSessions = [
-  {
-    id: "1",
-    appointmentId: "APT-001",
-    doctorName: "Dr. Sarah Johnson",
-    patientName: "John Doe",
-    scheduledDate: "2024-01-15",
-    scheduledTime: "10:00 AM",
-    status: "scheduled",
-    duration: 30,
-    notes: "Follow-up consultation"
-  },
-  {
-    id: "2",
-    appointmentId: "APT-002",
-    doctorName: "Dr. Michael Chen",
-    patientName: "Jane Smith",
-    scheduledDate: "2024-01-10",
-    scheduledTime: "2:30 PM",
-    status: "ongoing",
-    duration: 25,
-    notes: "Skin condition check"
-  },
-  {
-    id: "3",
-    appointmentId: "APT-003",
-    doctorName: "Dr. Emily Davis",
-    patientName: "Mike Johnson",
-    scheduledDate: "2024-01-08",
-    scheduledTime: "11:15 AM",
-    status: "completed",
-    duration: 30,
-    notes: "Regular checkup"
-  },
-  {
-    id: "4",
-    appointmentId: "APT-004",
-    doctorName: "Dr. Robert Wilson",
-    patientName: "Alice Brown",
-    scheduledDate: "2024-01-16",
-    scheduledTime: "9:00 AM",
-    status: "cancelled",
-    duration: 30,
-    notes: "Emergency consultation"
-  }
-];
-
-const mockStats = {
-  totalSessions: 156,
-  activeSessions: 8,
-  completedToday: 23,
-  totalDoctors: 12,
-  totalPatients: 89,
-  averageDuration: 28
-};
+import { useGetSessions } from "@/api/telemedicineApi";
 
 export default function AdminTelemedicinePage() {
-  const [sessions, setSessions] = useState(mockSessions);
-  const [stats, setStats] = useState(mockStats);
+  const { data: rawSessions = [], isLoading, refetch } = useGetSessions();
   const [activeTab, setActiveTab] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [doctorFilter, setDoctorFilter] = useState("all");
 
-  const filteredSessions = sessions.filter(session => {
-    const matchesSearch = session.appointmentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         session.doctorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         session.patientName.toLowerCase().includes(searchTerm.toLowerCase());
+  // Normalise to the shape SessionCard expects
+  const sessions = rawSessions.map(s => ({
+    id: s.id,
+    appointmentId: s.appointmentId,
+    doctorName: s.doctorName,
+    patientName: s.patientName,
+    scheduledDate: new Date(s.scheduledAt).toLocaleDateString(),
+    scheduledTime: new Date(s.scheduledAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    status: s.status.toLowerCase(),
+    duration: s.duration,
+    notes: s.notes,
+  }));
 
+  const filteredSessions = sessions.filter(session => {
+    const matchesSearch =
+      session.appointmentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (session.doctorName ?? "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (session.patientName ?? "").toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || session.status === statusFilter;
     const matchesDoctor = doctorFilter === "all" || session.doctorName === doctorFilter;
-
     return matchesSearch && matchesStatus && matchesDoctor;
   });
 
   const upcomingSessions = filteredSessions.filter(session => session.status === "scheduled");
-  const ongoingSessions = filteredSessions.filter(session => session.status === "ongoing");
-  const completedSessions = filteredSessions.filter(session => session.status === "completed");
+  const ongoingSessions = filteredSessions.filter(session => session.status === "active");
+  const completedSessions = filteredSessions.filter(session => session.status === "ended");
   const cancelledSessions = filteredSessions.filter(session => session.status === "cancelled");
 
-  const uniqueDoctors = [...new Set(sessions.map(session => session.doctorName))];
+  const uniqueDoctors = [...new Set(sessions.map(session => session.doctorName).filter(Boolean))];
+  const uniquePatients = [...new Set(sessions.map(session => session.patientName).filter(Boolean))];
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "scheduled": return "bg-blue-100 text-blue-800";
-      case "ongoing": return "bg-green-100 text-green-800";
-      case "completed": return "bg-gray-100 text-gray-800";
-      case "cancelled": return "bg-red-100 text-red-800";
-      default: return "bg-gray-100 text-gray-800";
-    }
-  };
+  // Derived real stats
+  const totalSessions = sessions.length;
+  const activeSessions = sessions.filter(s => s.status === "active").length;
+  const totalDoctors = uniqueDoctors.length;
+  const totalPatients = uniquePatients.length;
+  const avgDuration = sessions.length
+    ? Math.round(sessions.reduce((sum, s) => sum + (s.duration ?? 0), 0) / sessions.length)
+    : 0;
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "scheduled": return <Clock className="h-4 w-4" />;
-      case "ongoing": return <Video className="h-4 w-4" />;
-      case "completed": return <CheckCircle className="h-4 w-4" />;
-      case "cancelled": return <AlertCircle className="h-4 w-4" />;
-      default: return null;
-    }
-  };
+  if (isLoading) {
+    return (
+      <div className="p-6 space-y-4">
+        <Skeleton className="h-24 w-full" />
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-24" />)}
+        </div>
+        <Skeleton className="h-96 w-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 p-6">
@@ -144,22 +99,22 @@ export default function AdminTelemedicinePage() {
               <BarChart3 className="h-4 w-4" />
               Generate Report
             </Button>
-            <Button variant="outline" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Schedule Session
+            <Button variant="outline" className="flex items-center gap-2" onClick={() => refetch()}>
+              <Activity className="h-4 w-4" />
+              Refresh
             </Button>
           </div>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <Card className="bg-white border border-gray-200 shadow-sm">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Sessions</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalSessions}</p>
+                <p className="text-2xl font-bold text-gray-900">{totalSessions}</p>
               </div>
               <Video className="h-8 w-8 text-gray-600" />
             </div>
@@ -171,7 +126,7 @@ export default function AdminTelemedicinePage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Active Now</p>
-                <p className="text-2xl font-bold text-green-600">{stats.activeSessions}</p>
+                <p className="text-2xl font-bold text-green-600">{activeSessions}</p>
               </div>
               <Activity className="h-8 w-8 text-green-600" />
             </div>
@@ -182,20 +137,8 @@ export default function AdminTelemedicinePage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Completed Today</p>
-                <p className="text-2xl font-bold text-blue-600">{stats.completedToday}</p>
-              </div>
-              <CheckCircle className="h-8 w-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white border border-gray-200 shadow-sm">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
                 <p className="text-sm font-medium text-gray-600">Total Doctors</p>
-                <p className="text-2xl font-bold text-purple-600">{stats.totalDoctors}</p>
+                <p className="text-2xl font-bold text-purple-600">{totalDoctors}</p>
               </div>
               <Users className="h-8 w-8 text-purple-600" />
             </div>
@@ -207,7 +150,7 @@ export default function AdminTelemedicinePage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Patients</p>
-                <p className="text-2xl font-bold text-orange-600">{stats.totalPatients}</p>
+                <p className="text-2xl font-bold text-orange-600">{totalPatients}</p>
               </div>
               <Users className="h-8 w-8 text-orange-600" />
             </div>
@@ -219,7 +162,7 @@ export default function AdminTelemedicinePage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Avg Duration</p>
-                <p className="text-2xl font-bold text-indigo-600">{stats.averageDuration}m</p>
+                <p className="text-2xl font-bold text-indigo-600">{avgDuration}m</p>
               </div>
               <Clock className="h-8 w-8 text-indigo-600" />
             </div>
@@ -249,8 +192,8 @@ export default function AdminTelemedicinePage() {
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="scheduled">Scheduled</SelectItem>
-                <SelectItem value="ongoing">Ongoing</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="ended">Ended</SelectItem>
                 <SelectItem value="cancelled">Cancelled</SelectItem>
               </SelectContent>
             </Select>
@@ -307,9 +250,6 @@ export default function AdminTelemedicinePage() {
                       key={session.id}
                       session={session}
                       userRole="admin"
-                      onViewDetails={() => {
-                        console.log("View details for session:", session.id);
-                      }}
                     />
                   ))
                 ) : (
@@ -332,9 +272,6 @@ export default function AdminTelemedicinePage() {
                       key={session.id}
                       session={session}
                       userRole="admin"
-                      onViewDetails={() => {
-                        console.log("View details for session:", session.id);
-                      }}
                     />
                   ))
                 ) : (
@@ -357,9 +294,6 @@ export default function AdminTelemedicinePage() {
                       key={session.id}
                       session={session}
                       userRole="admin"
-                      onViewDetails={() => {
-                        console.log("View details for session:", session.id);
-                      }}
                     />
                   ))
                 ) : (
@@ -382,9 +316,6 @@ export default function AdminTelemedicinePage() {
                       key={session.id}
                       session={session}
                       userRole="admin"
-                      onViewDetails={() => {
-                        console.log("View details for session:", session.id);
-                      }}
                     />
                   ))
                 ) : (
@@ -407,9 +338,6 @@ export default function AdminTelemedicinePage() {
                       key={session.id}
                       session={session}
                       userRole="admin"
-                      onViewDetails={() => {
-                        console.log("View details for session:", session.id);
-                      }}
                     />
                   ))
                 ) : (

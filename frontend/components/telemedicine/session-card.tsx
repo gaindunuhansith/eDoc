@@ -68,7 +68,11 @@ export function SessionCard({
   };
 
   const canJoinCall = () => {
-    return session.status === "scheduled" && onJoinCall;
+    return session.status === "active" && !!onJoinCall;
+  };
+
+  const canViewSession = () => {
+    return userRole === "patient" && session.status === "scheduled" && !!onViewDetails;
   };
 
   const canStartCall = () => {
@@ -76,7 +80,7 @@ export function SessionCard({
   };
 
   const canEndCall = () => {
-    return session.status === "ongoing" && onEnd;
+    return session.status === "active" && !!onEnd;
   };
 
   return (
@@ -167,7 +171,7 @@ export function SessionCard({
               className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
             >
               <Play className="h-4 w-4" />
-              Start Call
+              Go to Session
             </Button>
           )}
 
@@ -182,7 +186,17 @@ export function SessionCard({
             </Button>
           )}
 
-          {onViewDetails && (
+          {canViewSession() && (
+            <Button
+              onClick={onViewDetails}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-2"
+            >
+              <Video className="h-4 w-4" />
+              View Session
+            </Button>
+          )}
+
+          {!canViewSession() && onViewDetails && (
             <Button
               onClick={onViewDetails}
               variant="outline"

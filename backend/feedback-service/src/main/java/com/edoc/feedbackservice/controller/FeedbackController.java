@@ -36,8 +36,9 @@ public class FeedbackController {
     }
 
     @GetMapping("/all")
-    public ResponseEntity<List<FeedbackResponseDTO>> getAllFeedback() {
-        List<FeedbackResponseDTO> feedbacks = feedbackService.getAllFeedback();
+    public ResponseEntity<List<FeedbackResponseDTO>> getAllFeedback(@AuthenticationPrincipal Jwt jwt) {
+        String authHeader = "Bearer " + jwt.getTokenValue();
+        List<FeedbackResponseDTO> feedbacks = feedbackService.getAllFeedback(authHeader);
         return ResponseEntity.ok(feedbacks);
     }
 

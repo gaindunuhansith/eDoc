@@ -42,15 +42,33 @@ public class PatientServiceClient {
         }
     }
 
+    public PatientDTO getPatientById(UUID patientId, String authHeader) {
+        try {
+            return restClient.get()
+                    .uri(patientServiceBaseUrl + "/api/v1/internal/patients/{id}", patientId)
+                    .header(HttpHeaders.AUTHORIZATION, authHeader)
+                    .retrieve()
+                    .body(PatientDTO.class);
+        } catch (RestClientResponseException ex) {
+            if (ex.getStatusCode() == HttpStatus.NOT_FOUND) {
+                return null;
+            }
+            System.err.println("Error fetching patient by id: " + ex.getMessage());
+            return null;
+        } catch (Exception ex) {
+            System.err.println("Unexpected error fetching patient by id: " + ex.getMessage());
+            return null;
+        }
+    }
+
     public static class PatientDTO {
         private UUID id;
+        private String userId;
 
-        public UUID getId() {
-            return id;
-        }
+        public UUID getId() { return id; }
+        public void setId(UUID id) { this.id = id; }
 
-        public void setId(UUID id) {
-            this.id = id;
-        }
+        public String getUserId() { return userId; }
+        public void setUserId(String userId) { this.userId = userId; }
     }
 }

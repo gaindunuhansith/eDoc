@@ -17,11 +17,14 @@ export class TelemedicineWebSocketService {
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
   private messageHandlers: Map<string, (message: WebSocketMessage) => void> = new Map();
+  private connectionRefCount = 0;
+  private healthCheckInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor(private baseUrl: string = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080') {}
 
   connect(token?: string): Promise<void> {
     return new Promise((resolve, reject) => {
+      this.connectionRefCount++;
       if (this.client && this.isConnected) {
         resolve();
         return;
@@ -137,6 +140,11 @@ export class TelemedicineWebSocketService {
   }
 
   disconnect() {
+    this.connectionRefCount = Math.max(0, this.connectionRefCount - 1);
+    if (this.connectionRefCount > 0) {
+      return; // other consumers still hold a reference
+    }
+    this.stopHealthChecks();
     if (this.client) {
       this.client.deactivate();
       this.client = null;
@@ -179,11 +187,19 @@ export class TelemedicineWebSocketService {
     }
   }
 
-  // Start periodic health checks
+  // Start periodic health checks (no-op if already running)
   startHealthChecks(intervalMs: number = 30000) {
-    setInterval(() => {
+    if (this.healthCheckInterval !== null) return;
+    this.healthCheckInterval = setInterval(() => {
       this.checkConnectionHealth();
     }, intervalMs);
+  }
+
+  stopHealthChecks() {
+    if (this.healthCheckInterval !== null) {
+      clearInterval(this.healthCheckInterval);
+      this.healthCheckInterval = null;
+    }
   }
 
   isWebSocketConnected(): boolean {

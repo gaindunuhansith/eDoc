@@ -12,7 +12,6 @@ import {
   Video,
   Building2,
   FileText,
-  Link as LinkIcon
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -23,7 +22,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -40,6 +38,7 @@ import {
   type AppointmentStatus,
   type PaymentStatus
 } from "@/api/appointmentApi";
+import { useCreateSession, SessionAlreadyActiveError } from "@/api/telemedicineApi";
 
 // --- Helpers -----------------------------------------------------------------
 
@@ -123,34 +122,6 @@ function CompleteDialog({ open, onClose, onConfirm, isPending }: any) {
   );
 }
 
-function VideoLinkDialog({ open, onClose, onConfirm, isPending }: any) {
-  const [link, setLink] = useState("");
-  return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Add Video Link</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3 py-2">
-          <Label htmlFor="video-link">Video Meeting URL</Label>
-          <Input 
-            id="video-link" 
-            value={link} 
-            onChange={(e: any) => setLink(e.target.value)} 
-            placeholder="https://meet.google.com/..." 
-          />
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isPending}>Cancel</Button>
-          <Button onClick={() => onConfirm(link)} disabled={isPending || !link}>
-            {isPending ? "Saving..." : "Save Link"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 // --- Main Page ------------------------------------------------------------------
 
 export default function DoctorAppointmentsHub() {
@@ -163,11 +134,11 @@ export default function DoctorAppointmentsHub() {
 
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [completeId, setCompleteId] = useState<string | null>(null);
-  const [videoLinkApptId, setVideoLinkApptId] = useState<string | null>(null);
 
   const { data: pendingAppointments = [], isLoading: pendingLoading } = useGetPendingAppointmentsByDoctor(doctorId);
   const { data: allAppointments = [], isLoading: allLoading } = useGetAppointmentsByDoctor(doctorId);
   const updateStatus = useUpdateAppointmentStatus();
+  const createSessionMutation = useCreateSession();
 
   const handleAccept = (id: string) => {
     updateStatus.mutate(
@@ -207,16 +178,21 @@ export default function DoctorAppointmentsHub() {
     );
   };
 
-  const handleAddVideoLink = (link: string) => {
-    if (!videoLinkApptId) return;
-    updateStatus.mutate(
-      { id: videoLinkApptId, update: { status: "CONFIRMED", videoSessionLink: link } },
+  const handleGoToSession = (appt: any) => {
+    createSessionMutation.mutate(
+      { appointmentId: appt.id, doctorId: appt.doctorId, patientId: appt.patientId },
       {
         onSuccess: () => {
-          toast.success("Video link added successfully");
-          setVideoLinkApptId(null);
+          router.push(`/doctor/telemedicine/session/${appt.id}`);
         },
-        onError: (err: any) => toast.error(err?.response?.data?.message || err?.message || "Failed to save link.")
+        onError: (err: any) => {
+          if (err instanceof SessionAlreadyActiveError) {
+            // Session already exists — navigate to it
+            router.push(`/doctor/telemedicine/session/${appt.id}`);
+          } else {
+            toast.error(err?.message || "Failed to create session. Please try again.");
+          }
+        },
       }
     );
   };
@@ -359,24 +335,26 @@ export default function DoctorAppointmentsHub() {
                         </div>
                       )}
                       
-                      {((appt.type === "VIDEO" && appt.status === "CONFIRMED") || appt.videoSessionLink) && (
+                      {appt.type === "VIDEO" && appt.status === "CONFIRMED" && (
                         <div className="text-sm pt-1">
-                          <strong className="text-gray-600">Video Link:</strong> {appt.videoSessionLink ? (
-                            <a href={appt.videoSessionLink} target="_blank" rel="noreferrer" className="text-blue-600 font-medium hover:underline ml-1">
-                              {appt.videoSessionLink.substring(0,40)}...
-                            </a>
-                          ) : (
-                            <span className="text-muted-foreground italic ml-1">Link not provided yet.</span>
-                          )}
+                          <span className="inline-flex items-center gap-1.5 text-blue-700 font-medium">
+                            <Video className="h-4 w-4" /> Telemedicine video session scheduled
+                          </span>
                         </div>
                       )}
 
                       {appt.status === "CONFIRMED" && (
                         <div className="flex flex-wrap gap-3 pt-3 border-t mt-4">
                           {appt.type === "VIDEO" && (
-                            <Button size="sm" variant="outline" className="text-blue-600 border-blue-200 hover:bg-blue-50 shadow-sm" onClick={() => setVideoLinkApptId(appt.id)}>
-                              <LinkIcon className="h-4 w-4 mr-2" />
-                              {appt.videoSessionLink ? "Update Video Link" : "Add Video Link"}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-blue-600 border-blue-200 hover:bg-blue-50 shadow-sm"
+                              onClick={() => handleGoToSession(appt)}
+                              disabled={createSessionMutation.isPending}
+                            >
+                              <Video className="h-4 w-4 mr-2" />
+                              {createSessionMutation.isPending ? "Opening..." : "Go to Video Session"}
                             </Button>
                           )}
                           <Button size="sm" className="bg-blue-600 hover:bg-blue-700 shadow-sm" onClick={() => setCompleteId(appt.id)}>
@@ -409,7 +387,6 @@ export default function DoctorAppointmentsHub() {
 
       <RejectDialog open={!!rejectId} onClose={() => setRejectId(null)} onConfirm={handleReject} isPending={updateStatus.isPending} />
       <CompleteDialog open={!!completeId} onClose={() => setCompleteId(null)} onConfirm={handleComplete} isPending={updateStatus.isPending} />
-      <VideoLinkDialog open={!!videoLinkApptId} onClose={() => setVideoLinkApptId(null)} onConfirm={handleAddVideoLink} isPending={updateStatus.isPending} />
     </div>
   );
 }
